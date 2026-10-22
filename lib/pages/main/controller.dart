@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:PiliPlus/common/widgets/liquid_glass/glass_scroll_chrome.dart';
+
 import 'package:PiliPlus/common/widgets/view_safe_area.dart';
 import 'package:PiliPlus/grpc/dyn.dart';
 import 'package:PiliPlus/http/loading_state.dart';
@@ -39,6 +41,9 @@ class MainController extends GetxController
   bool useBottomNav = false;
   late dynamic controller;
   final RxInt selectedIndex = 0.obs;
+  final scrollChrome = {
+    for (final type in NavigationBarType.values) type: GlassScrollController(),
+  };
 
   final RxInt dynCount = 0.obs;
   late DynamicBadgeMode dynamicBadgeMode;
@@ -345,6 +350,9 @@ class MainController extends GetxController
 
   @override
   void onClose() {
+    for (final chrome in scrollChrome.values) {
+      chrome.dispose();
+    }
     barOffset?.close();
     controller.dispose();
     super.onClose();

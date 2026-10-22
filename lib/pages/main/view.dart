@@ -8,6 +8,7 @@ import 'package:PiliPlus/common/widgets/main_layout.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_navigation_bar.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_navigation_rail.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_platform.dart';
+import 'package:PiliPlus/common/widgets/liquid_glass/glass_scroll_chrome.dart';
 import 'package:PiliPlus/common/widgets/route_aware_mixin.dart';
 import 'package:PiliPlus/models/common/nav_bar_config.dart';
 import 'package:PiliPlus/pages/home/view.dart';
@@ -184,11 +185,21 @@ class _MainAppState extends PopScopeState<MainApp>
     if (_mainController.navigationBars.length > 1) {
       if (GlassCapabilities.isIOS) {
         bottomNav = Obx(
-          () => GlassNavigationBar(
-            selectedIndex: _mainController.selectedIndex.value,
-            onSelected: _mainController.setIndex,
-            destinations: _iosDestinations,
-          ),
+          () {
+            final index = _mainController.selectedIndex.value;
+            final destinations = _iosDestinations;
+            final chrome = _mainController
+                .scrollChrome[_mainController.navigationBars[index]]!;
+            return ListenableBuilder(
+              listenable: chrome,
+              builder: (context, _) => GlassNavigationBar(
+                selectedIndex: index,
+                onSelected: _mainController.setIndex,
+                destinations: destinations,
+                compact: chrome.compact,
+              ),
+            );
+          },
         );
       } else if (_mainController.floatingNavBar) {
         bottomNav = Obx(
@@ -245,7 +256,7 @@ class _MainAppState extends PopScopeState<MainApp>
         );
       }
 
-      if (_mainController.hideBottomBar) {
+      if (!GlassCapabilities.isIOS && _mainController.hideBottomBar) {
         if (_mainController.barOffset case final barOffset?) {
           return Obx(
             () => FractionalTranslation(
@@ -342,19 +353,30 @@ class _MainAppState extends PopScopeState<MainApp>
 
   @override
   Widget build(BuildContext context) {
+    final pages = _mainController.navigationBars
+        .map(
+          (type) => GlassCapabilities.isIOS && _mainController.useBottomNav
+              ? GlassScrollScope(
+                  key: ValueKey(type),
+                  controller: _mainController.scrollChrome[type]!,
+                  child: type.page,
+                )
+              : type.page,
+        )
+        .toList();
     Widget child;
     if (_mainController.mainTabBarView) {
       child = TabBarView(
         controller: _mainController.controller,
         physics: const NeverScrollableScrollPhysics(),
         scrollDirection: _mainController.useBottomNav ? .horizontal : .vertical,
-        children: _mainController.navigationBars.map((i) => i.page).toList(),
+        children: pages,
       );
     } else {
       child = PageView(
         controller: _mainController.controller,
         physics: const NeverScrollableScrollPhysics(),
-        children: _mainController.navigationBars.map((i) => i.page).toList(),
+        children: pages,
       );
     }
 
@@ -370,7 +392,10 @@ class _MainAppState extends PopScopeState<MainApp>
           child: bottomNav,
         );
       }
-      padding = _padding.copyWith(bottom: 0);
+      padding = _padding.copyWith(
+        top: GlassCapabilities.isIOS ? 0 : _padding.top,
+        bottom: 0,
+      );
     } else {
       sideBar = DecoratedBox(
         decoration: BoxDecoration(

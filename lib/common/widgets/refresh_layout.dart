@@ -1,3 +1,4 @@
+import 'package:PiliPlus/common/widgets/liquid_glass/glass_scroll_chrome.dart';
 import 'package:PiliPlus/common/widgets/flutter/refresh_indicator.dart'
     show displacement, kIndicatorSize;
 import 'package:PiliPlus/common/widgets/slotted_layout_helper.dart';
@@ -32,7 +33,24 @@ class RefreshLayout
 
   @override
   RenderRefreshLayout createRenderObject(BuildContext context) {
-    return RenderRefreshLayout(scale: scale, position: position);
+    return RenderRefreshLayout(
+      scale: scale,
+      position: position,
+      topInset: GlassScrollInsets.topOf(context),
+    );
+  }
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    RenderRefreshLayout renderObject,
+  ) {
+    final inset = GlassScrollInsets.topOf(context);
+    if (renderObject.topInset != inset) {
+      renderObject
+        ..topInset = inset
+        ..markNeedsLayout();
+    }
   }
 }
 
@@ -41,10 +59,13 @@ class RenderRefreshLayout extends RenderBox
   RenderRefreshLayout({
     required this.scale,
     required this.position,
+    required this.topInset,
   }) {
     scale.addListener(_scaleListener);
     position.addListener(_positionListener);
   }
+
+  double topInset;
 
   final Animation<double> scale;
 
@@ -112,7 +133,8 @@ class RenderRefreshLayout extends RenderBox
       indicator,
       Offset(
         (constraints.maxWidth - scaleSize) / 2,
-        (kIndicatorSize + displacement) * heightFactor -
+        topInset +
+            (kIndicatorSize + displacement) * heightFactor -
             kIndicatorSize +
             (kIndicatorSize - scaleSize) / 2,
       ),
@@ -129,14 +151,14 @@ class RenderRefreshLayout extends RenderBox
     final indicator = this.indicator;
     if (indicator != null && heightFactor > 0 && scaleFactor > 0) {
       final indicatorOffset = getOffset(indicator);
-      if (indicatorOffset.dy > 0) {
+      if (indicatorOffset.dy > topInset) {
         context.paintChild(indicator, indicatorOffset + offset);
         layer = null;
       } else {
         layer = context.pushClipRect(
           needsCompositing,
           offset,
-          Offset.zero & size,
+          Rect.fromLTWH(0, topInset, size.width, size.height - topInset),
           (context, offset) {
             context.paintChild(indicator, indicatorOffset + offset);
           },

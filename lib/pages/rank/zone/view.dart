@@ -1,3 +1,4 @@
+import 'package:PiliPlus/common/widgets/liquid_glass/glass_scroll_chrome.dart';
 import 'package:PiliPlus/common/widgets/flutter/refresh_indicator.dart';
 import 'package:PiliPlus/common/widgets/loading_widget/http_error.dart';
 import 'package:PiliPlus/common/widgets/video_card/video_card_h.dart';
@@ -44,6 +45,7 @@ class _ZonePageState extends State<ZonePage>
         controller: controller.scrollController,
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
+          const GlassScrollSpacer(),
           SliverPadding(
             padding: const EdgeInsets.only(top: 7, bottom: 100),
             sliver: Obx(() => _buildBody(controller.loadingState.value)),

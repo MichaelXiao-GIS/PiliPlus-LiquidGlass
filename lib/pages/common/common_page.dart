@@ -1,4 +1,5 @@
 import 'package:PiliPlus/common/style.dart';
+import 'package:PiliPlus/common/widgets/liquid_glass/glass_platform.dart';
 import 'package:PiliPlus/pages/home/controller.dart';
 import 'package:PiliPlus/pages/main/controller.dart';
 import 'package:flutter/foundation.dart' show clampDouble;
@@ -24,6 +25,7 @@ abstract class CommonPageState<T extends StatefulWidget> extends State<T> {
   }
 
   Widget onBuild(Widget child) {
+    if (GlassCapabilities.isIOS) return child;
     if (_barOffset != null) {
       return NotificationListener<ScrollNotification>(
         onNotification: onNotificationType2,

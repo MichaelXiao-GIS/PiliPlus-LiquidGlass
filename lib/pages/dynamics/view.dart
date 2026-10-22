@@ -1,5 +1,6 @@
 import 'package:PiliPlus/common/widgets/scroll_physics.dart' show tabBarView;
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_platform.dart';
+import 'package:PiliPlus/common/widgets/liquid_glass/glass_scroll_chrome.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_surface.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_tab_bar.dart';
 import 'package:PiliPlus/http/loading_state.dart';
@@ -65,22 +66,30 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
   Widget upPanelPart(ColorScheme colorScheme) {
     final isTop = upPanelPosition == .top;
     final needBg = upPanelPosition.index > 2;
-    return Material(
-      type: needBg ? .canvas : .transparency,
-      color: needBg ? colorScheme.surface : null,
-      child: SizedBox(
-        width: isTop ? null : 64,
-        height: isTop ? 76 : null,
-        child: NotificationListener<ScrollEndNotification>(
-          onNotification: (notification) {
-            final metrics = notification.metrics;
-            if (metrics.pixels >= metrics.maxScrollExtent - 300) {
-              _dynamicsController.onLoadMore();
-            }
-            return false;
-          },
-          child: Obx(
-            () => _buildUpPanel(_dynamicsController.loadingState.value),
+    final top =
+        GlassScrollPage.enabled(context) &&
+            (upPanelPosition == .leftFixed || upPanelPosition == .rightFixed)
+        ? MediaQuery.viewPaddingOf(context).top + 62
+        : 0.0;
+    return Padding(
+      padding: EdgeInsets.only(top: top),
+      child: Material(
+        type: needBg ? .canvas : .transparency,
+        color: needBg ? colorScheme.surface : null,
+        child: SizedBox(
+          width: isTop ? null : 64,
+          height: isTop ? 76 : null,
+          child: NotificationListener<ScrollEndNotification>(
+            onNotification: (notification) {
+              final metrics = notification.metrics;
+              if (metrics.pixels >= metrics.maxScrollExtent - 300) {
+                _dynamicsController.onLoadMore();
+              }
+              return false;
+            },
+            child: Obx(
+              () => _buildUpPanel(_dynamicsController.loadingState.value),
+            ),
           ),
         ),
       ),
@@ -134,21 +143,31 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
     Widget? leading;
     Widget actions;
 
-    Widget child = tabBarView(
-      controller: _dynamicsController.tabController,
-      children: DynamicsTabType.values
-          .map((e) => DynamicsTabPage(dynamicsType: e))
-          .toList(),
+    final immersive = GlassScrollPage.enabled(context);
+    Widget child = AnimatedBuilder(
+      animation: _dynamicsController.tabController,
+      builder: (context, _) => tabBarView(
+        controller: _dynamicsController.tabController,
+        children: [
+          for (final type in DynamicsTabType.values)
+            GlassScrollBody(
+              active: _dynamicsController.tabController.index == type.index,
+              child: DynamicsTabPage(dynamicsType: type),
+            ),
+        ],
+      ),
     );
 
     switch (upPanelPosition) {
       case .top:
-        child = Column(
-          children: [
-            upPanelPart(colorScheme),
-            Expanded(child: child),
-          ],
-        );
+        if (!immersive) {
+          child = Column(
+            children: [
+              upPanelPart(colorScheme),
+              Expanded(child: child),
+            ],
+          );
+        }
         actions = _createDynamicBtn(colorScheme);
       case .leftFixed:
         child = Row(
@@ -174,6 +193,49 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
         endDrawer = upPanelPart(colorScheme);
         leading = _createDynamicBtn(colorScheme, isRight: false);
         actions = const EndDrawerButton();
+    }
+
+    if (immersive) {
+      return Scaffold(
+        primary: false,
+        resizeToAvoidBottomInset: false,
+        backgroundColor: Colors.transparent,
+        drawer: drawer,
+        endDrawer: endDrawer,
+        body: GlassScrollPage(
+          headerExtent: 62 + (upPanelPosition == .top ? 76 : 0),
+          header: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 6, 12, 8),
+                child: Row(
+                  children: [
+                    ?leading,
+                    Expanded(
+                      child: GlassTabBar(
+                        controller: _dynamicsController.tabController,
+                        labels: DynamicsTabType.values
+                            .map((e) => e.label)
+                            .toList(),
+                        onTap: (_) {
+                          if (!_dynamicsController
+                              .tabController
+                              .indexIsChanging) {
+                            _dynamicsController.animateToTop();
+                          }
+                        },
+                      ),
+                    ),
+                    GlassSurface(child: actions),
+                  ],
+                ),
+              ),
+              if (upPanelPosition == .top) upPanelPart(colorScheme),
+            ],
+          ),
+          body: child,
+        ),
+      );
     }
 
     return Scaffold(

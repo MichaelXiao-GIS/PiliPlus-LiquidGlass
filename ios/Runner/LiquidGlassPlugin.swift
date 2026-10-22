@@ -122,6 +122,7 @@ private final class GlassControlView: UIView {
   private var buttons: [GlassTabButton] = []
   private var arguments: [String: Any] = [:]
   private var radius: CGFloat = 28
+  private var materialStyle: String?
 
   override init(frame: CGRect) {
     super.init(frame: frame)
@@ -156,20 +157,25 @@ private final class GlassControlView: UIView {
     radius = (args["radius"] as? NSNumber)?.doubleValue ?? 32
     let opaque = UIAccessibility.isReduceTransparencyEnabled ||
       UIAccessibility.isDarkerSystemColorsEnabled
-    if opaque {
-      material.effect = nil
-      material.backgroundColor = .secondarySystemBackground
-      material.layer.borderWidth = 1
-      material.layer.borderColor = UIColor.separator.cgColor
-    } else {
-      material.backgroundColor = .clear
-      material.layer.borderWidth = 0
-      if #available(iOS 26.0, *) {
-        let glass = UIGlassEffect(style: .regular)
-        glass.isInteractive = isNavigation && !UIAccessibility.isReduceMotionEnabled
-        material.effect = glass
+    let interactive = isNavigation && !UIAccessibility.isReduceMotionEnabled
+    let style = "\(opaque)-\(interactive)"
+    if materialStyle != style {
+      materialStyle = style
+      if opaque {
+        material.effect = nil
+        material.backgroundColor = .secondarySystemBackground
+        material.layer.borderWidth = 1
+        material.layer.borderColor = UIColor.separator.cgColor
       } else {
-        material.effect = UIBlurEffect(style: .systemMaterial)
+        material.backgroundColor = .clear
+        material.layer.borderWidth = 0
+        if #available(iOS 26.0, *) {
+          let glass = UIGlassEffect(style: .regular)
+          glass.isInteractive = interactive
+          material.effect = glass
+        } else {
+          material.effect = UIBlurEffect(style: .systemMaterial)
+        }
       }
     }
     guard isNavigation, let items = args["destinations"] as? [[String: Any]] else {
@@ -189,12 +195,14 @@ private final class GlassControlView: UIView {
     let selected = args["selectedIndex"] as? Int ?? 0
     let tint = UIColor(argb: (args["tint"] as? NSNumber)?.uint32Value ?? 0xFFFB7299)
     let scale = (args["textScale"] as? NSNumber)?.doubleValue ?? 1
+    let compact = (args["compactProgress"] as? NSNumber)?.doubleValue ?? 0
     for (index, item) in items.enumerated() {
       buttons[index].configure(
         title: item["label"] as? String ?? "",
         symbol: item["symbol"] as? String ?? "circle",
         badge: item["badge"] as? String,
-        selected: index == selected, tint: tint, textScale: scale
+        selected: index == selected, tint: tint, textScale: scale,
+        compactProgress: compact
       )
     }
     setNeedsLayout()
@@ -223,6 +231,7 @@ private final class GlassTabButton: UIControl {
   private let imageView = UIImageView()
   private let label = UILabel()
   private let badgeLabel = UILabel()
+  private var compactProgress: CGFloat = 0
 
   override init(frame: CGRect) {
     super.init(frame: frame)
@@ -246,7 +255,7 @@ private final class GlassTabButton: UIControl {
 
   func configure(
     title: String, symbol: String, badge: String?, selected: Bool,
-    tint: UIColor, textScale: Double
+    tint: UIColor, textScale: Double, compactProgress: Double
   ) {
     isSelected = selected
     accessibilityLabel = title
@@ -255,6 +264,9 @@ private final class GlassTabButton: UIControl {
     label.text = title
     label.font = .systemFont(ofSize: 11 * textScale, weight: .semibold)
     label.textColor = selected ? tint : .label
+    self.compactProgress = min(1, max(0, compactProgress))
+    label.alpha = 1 - self.compactProgress
+    label.isHidden = self.compactProgress >= 1
     imageView.tintColor = selected ? tint : .label
     let selectedSymbol = "\(symbol).fill"
     imageView.image = (selected ? UIImage(systemName: selectedSymbol) : nil) ??
@@ -275,7 +287,7 @@ private final class GlassTabButton: UIControl {
     super.layoutSubviews()
     layer.cornerRadius = bounds.height / 2
     let labelHeight = ceil(label.font.lineHeight)
-    let total = 23 + 2 + labelHeight
+    let total = 23 + (2 + labelHeight) * (1 - compactProgress)
     let top = max(2, (bounds.height - total) / 2)
     imageView.frame = CGRect(x: (bounds.width - 25) / 2, y: top, width: 25, height: 23)
     label.frame = CGRect(x: 4, y: top + 25, width: max(0, bounds.width - 8), height: labelHeight)

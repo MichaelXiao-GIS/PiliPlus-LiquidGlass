@@ -1,3 +1,5 @@
+import 'package:PiliPlus/common/widgets/liquid_glass/glass_scroll_chrome.dart';
+
 import 'dart:async';
 
 import 'package:PiliPlus/common/widgets/flutter/refresh_indicator.dart';
@@ -55,6 +57,7 @@ class _DynamicsTabPageState extends State<DynamicsTabPage>
         physics: const AlwaysScrollableScrollPhysics(),
         controller: controller.scrollController,
         slivers: [
+          const GlassScrollSpacer(),
           SliverPadding(
             padding: const EdgeInsets.only(bottom: 100),
             sliver: buildPage(

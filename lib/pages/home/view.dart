@@ -2,6 +2,7 @@ import 'package:PiliPlus/common/style.dart';
 import 'package:PiliPlus/common/widgets/custom_height_widget.dart';
 import 'package:PiliPlus/common/widgets/image/network_img_layer.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_platform.dart';
+import 'package:PiliPlus/common/widgets/liquid_glass/glass_scroll_chrome.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_surface.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_tab_bar.dart';
 import 'package:PiliPlus/common/widgets/scroll_physics.dart' show tabBarView;
@@ -94,7 +95,7 @@ class _HomePageState extends CommonPageState<HomePage>
     } else {
       tabBar = const SizedBox(height: 6);
     }
-    return Column(
+    final header = Column(
       children: [
         if (iosBottomNav)
           Padding(
@@ -132,14 +133,38 @@ class _HomePageState extends CommonPageState<HomePage>
                 : MediaQuery.sizeOf(context).isPortrait))
           customAppBar(),
         tabBar,
-        Expanded(
-          child: onBuild(
-            tabBarView(
-              controller: _homeController.tabController,
-              children: _homeController.tabs.map((e) => e.page).toList(),
+      ],
+    );
+    final pages = AnimatedBuilder(
+      animation: _homeController.tabController,
+      builder: (context, _) => tabBarView(
+        controller: _homeController.tabController,
+        children: [
+          for (var i = 0; i < _homeController.tabs.length; i++)
+            GlassScrollBody(
+              active: _homeController.tabController.index == i,
+              child: _homeController.tabs[i].page,
             ),
-          ),
-        ),
+        ],
+      ),
+    );
+    if (GlassScrollPage.enabled(context)) {
+      final titleHeight = (MediaQuery.textScalerOf(context).scale(34) * 1.2)
+          .clamp(44.0, double.infinity);
+      return GlassScrollPage(
+        header: header,
+        headerExtent:
+            titleHeight +
+            12 +
+            Style.topBarHeight +
+            (_homeController.tabs.length > 1 ? 48 : 6),
+        body: pages,
+      );
+    }
+    return Column(
+      children: [
+        header,
+        Expanded(child: onBuild(pages)),
       ],
     );
   }
@@ -160,7 +185,9 @@ class _HomePageState extends CommonPageState<HomePage>
         ],
       ],
     );
-    if (GlassCapabilities.isIOS && _homeController.hideTopBar) {
+    if (GlassCapabilities.isIOS &&
+        !GlassScrollPage.enabled(context) &&
+        _homeController.hideTopBar) {
       final search = Padding(padding: padding, child: child);
       if (_mainController.barOffset case final barOffset?) {
         return Obx(
@@ -185,7 +212,7 @@ class _HomePageState extends CommonPageState<HomePage>
         );
       }
     }
-    if (_homeController.hideTopBar) {
+    if (!GlassCapabilities.isIOS && _homeController.hideTopBar) {
       if (_mainController.barOffset case final barOffset?) {
         return Obx(
           () {

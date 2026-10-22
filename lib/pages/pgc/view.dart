@@ -1,3 +1,5 @@
+import 'package:PiliPlus/common/widgets/liquid_glass/glass_scroll_chrome.dart';
+
 import 'dart:math';
 
 import 'package:PiliPlus/common/style.dart';
@@ -61,6 +63,7 @@ class _PgcPageState extends State<PgcPage> with AutomaticKeepAliveClientMixin {
         controller: controller.scrollController,
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
+          const GlassScrollSpacer(),
           _buildFollow(theme),
           if (controller.showPgcTimeline)
             SliverToBoxAdapter(

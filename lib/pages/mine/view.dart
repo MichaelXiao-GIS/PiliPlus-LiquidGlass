@@ -6,6 +6,7 @@ import 'package:PiliPlus/common/widgets/flutter/list_tile.dart';
 import 'package:PiliPlus/common/widgets/flutter/refresh_indicator.dart';
 import 'package:PiliPlus/common/widgets/image/network_img_layer.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_platform.dart';
+import 'package:PiliPlus/common/widgets/liquid_glass/glass_scroll_chrome.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_surface.dart';
 import 'package:PiliPlus/common/widgets/player_bar.dart';
 import 'package:PiliPlus/http/loading_state.dart';
@@ -79,37 +80,53 @@ class _MediaPageState extends CommonPageState<MinePage>
   Widget build(BuildContext context) {
     super.build(context);
     final secondary = theme.colorScheme.secondary;
-    return Column(
-      children: [
-        Padding(
-          padding: const .symmetric(vertical: 10),
-          child: _buildHeaderActions,
-        ),
-        Expanded(
-          child: Material(
-            type: .transparency,
-            child: refreshIndicator(
-              onRefresh: controller.onRefresh,
-              child: onBuild(
-                ListView(
-                  padding: const .only(bottom: 150),
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  children: [
-                    _buildUserInfo(theme, secondary),
-                    _buildActions(secondary),
-                    for (final tab in controller.mineTabs)
-                      switch (tab) {
-                        .favorite => Obx(_buildFav),
-                        .history => Obx(_buildHistory),
-                        .later => Obx(_buildLater),
-                        .sub => Obx(_buildSub),
-                      },
-                  ],
+    final header = Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: _buildHeaderActions,
+    );
+    final body = Material(
+      type: MaterialType.transparency,
+      child: Builder(
+        builder: (context) => refreshIndicator(
+          onRefresh: controller.onRefresh,
+          child: GlassScrollBody(
+            child: onBuild(
+              ListView(
+                padding: EdgeInsets.only(
+                  top: GlassScrollInsets.topOf(context),
+                  bottom: 150,
                 ),
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: [
+                  _buildUserInfo(theme, secondary),
+                  _buildActions(secondary),
+                  for (final tab in controller.mineTabs)
+                    switch (tab) {
+                      .favorite => Obx(_buildFav),
+                      .history => Obx(_buildHistory),
+                      .later => Obx(_buildLater),
+                      .sub => Obx(_buildSub),
+                    },
+                ],
               ),
             ),
           ),
         ),
+      ),
+    );
+    if (GlassScrollPage.enabled(context) && !widget.showBackBtn) {
+      final titleHeight = (MediaQuery.textScalerOf(context).scale(34) * 1.2)
+          .clamp(48.0, double.infinity);
+      return GlassScrollPage(
+        header: header,
+        headerExtent: titleHeight + 20,
+        body: body,
+      );
+    }
+    return Column(
+      children: [
+        header,
+        Expanded(child: body),
       ],
     );
   }

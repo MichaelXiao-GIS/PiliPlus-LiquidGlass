@@ -1,3 +1,4 @@
+import 'package:PiliPlus/common/widgets/liquid_glass/glass_scroll_chrome.dart';
 import 'package:PiliPlus/common/widgets/flutter/vertical_tabs.dart';
 import 'package:PiliPlus/models/common/rank_type.dart';
 import 'package:PiliPlus/pages/rank/controller.dart';
@@ -25,16 +26,31 @@ class _RankPageState extends State<RankPage>
     final theme = Theme.of(context);
     return Row(
       children: [
-        _buildTab(theme),
+        Padding(
+          padding: EdgeInsets.only(top: GlassScrollInsets.topOf(context)),
+          child: NotificationListener<Notification>(
+            onNotification: (notification) =>
+                GlassScrollInsets.topOf(context) > 0 &&
+                (notification is ScrollNotification ||
+                    notification is ScrollMetricsNotification),
+            child: _buildTab(theme),
+          ),
+        ),
         Expanded(
           child: TabBarView(
             physics: const NeverScrollableScrollPhysics(),
             controller: _rankController.tabController,
             children: RankType.values
                 .map(
-                  (item) => ZonePage(
-                    rid: item.rid,
-                    seasonType: item.seasonType,
+                  (item) => AnimatedBuilder(
+                    animation: _rankController.tabController,
+                    builder: (context, _) => GlassScrollBody(
+                      active: _rankController.tabController.index == item.index,
+                      child: ZonePage(
+                        rid: item.rid,
+                        seasonType: item.seasonType,
+                      ),
+                    ),
                   ),
                 )
                 .toList(),
