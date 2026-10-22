@@ -90,14 +90,22 @@ class _GlassNavigationBarState extends State<GlassNavigationBar> {
     final capabilities = GlassCapabilities.of(context);
     final textScale = MediaQuery.textScalerOf(context).scale(12) / 12;
     final height = 64.0 + math.max(0.0, textScale - 1) * 24;
+    final width = math.min(
+      430.0,
+      10 +
+          widget.destinations.length *
+              (84.0 + math.max(0.0, textScale - 1) * 16),
+    );
     final native = capabilities.nativeGlass;
 
     return SafeArea(
       top: false,
       minimum: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 430),
+      child: Center(
+        widthFactor: 1,
+        heightFactor: 1,
         child: SizedBox(
+          width: width,
           height: height,
           child: native
               ? UiKitView(

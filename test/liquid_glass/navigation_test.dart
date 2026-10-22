@@ -153,6 +153,13 @@ void main() {
           );
           await tester.pumpAndSettle();
           expect(tester.takeException(), isNull);
+          final bar = tester.getRect(find.byType(GlassSurface));
+          expect(bar.center.dx, closeTo(width / 2, 0.001));
+          expect(bar.left, greaterThanOrEqualTo(16));
+          expect(bar.right, lessThanOrEqualTo(width - 16));
+          if (scale == 1) {
+            expect(bar.width, lessThan(width * 0.85));
+          }
           for (final label in ['首页', '动态', '我的']) {
             final rect = tester.getRect(find.bySemanticsLabel(label));
             expect(rect.width, greaterThanOrEqualTo(44));
