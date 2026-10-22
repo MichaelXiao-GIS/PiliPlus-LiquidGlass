@@ -69,7 +69,9 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
     final top =
         GlassScrollPage.enabled(context) &&
             (upPanelPosition == .leftFixed || upPanelPosition == .rightFixed)
-        ? MediaQuery.viewPaddingOf(context).top + 62
+        ? MediaQuery.viewPaddingOf(context).top +
+              GlassTabBar.heightOf(context) +
+              14
         : 0.0;
     return Padding(
       padding: EdgeInsets.only(top: top),
@@ -203,7 +205,10 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
         drawer: drawer,
         endDrawer: endDrawer,
         body: GlassScrollPage(
-          headerExtent: 62 + (upPanelPosition == .top ? 76 : 0),
+          headerExtent:
+              GlassTabBar.heightOf(context) +
+              14 +
+              (upPanelPosition == .top ? 76 : 0),
           header: Column(
             children: [
               Padding(
@@ -244,7 +249,9 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
       backgroundColor: Colors.transparent,
       appBar: GlassCapabilities.isIOS
           ? PreferredSize(
-              preferredSize: const Size.fromHeight(62),
+              preferredSize: Size.fromHeight(
+                GlassTabBar.heightOf(context) + 14,
+              ),
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(12, 6, 12, 8),
                 child: Row(

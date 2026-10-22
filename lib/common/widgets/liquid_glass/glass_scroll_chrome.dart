@@ -159,11 +159,15 @@ class GlassScrollPage extends StatelessWidget {
     super.key,
     required this.header,
     required this.headerExtent,
+    this.contentHeaderExtent,
     required this.body,
   });
 
   final Widget header;
   final double headerExtent;
+
+  /// Keep the initial content inset stable while the controls move upward.
+  final double? contentHeaderExtent;
   final Widget body;
 
   static bool enabled(BuildContext context) =>
@@ -183,7 +187,10 @@ class GlassScrollPage extends StatelessWidget {
     return Stack(
       children: [
         Positioned.fill(
-          child: GlassScrollInsets(top: extent, child: body),
+          child: GlassScrollInsets(
+            top: top + (contentHeaderExtent ?? headerExtent),
+            child: body,
+          ),
         ),
         Positioned(
           top: 0,
@@ -196,20 +203,29 @@ class GlassScrollPage extends StatelessWidget {
               padding: EdgeInsets.only(top: top),
               child: SizedBox(height: headerExtent, child: header),
             ),
-            builder: (context, child) => ClipRect(
-              child: BackdropFilter(
-                enabled: !opaque && controller.blur > 0,
-                filter: ImageFilter.blur(
-                  sigmaX: 20 * controller.blur,
-                  sigmaY: 20 * controller.blur,
-                ),
-                child: ColoredBox(
-                  color: colors.surface.withValues(
-                    alpha: opaque ? 1 : 0.78 * controller.blur,
+            builder: (context, child) => Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: ClipRect(
+                      child: BackdropFilter(
+                        enabled: !opaque && controller.blur > 0,
+                        filter: ImageFilter.blur(
+                          sigmaX: 20 * controller.blur,
+                          sigmaY: 20 * controller.blur,
+                        ),
+                        child: ColoredBox(
+                          color: colors.surface.withValues(
+                            alpha: opaque ? 1 : 0.78 * controller.blur,
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
-                  child: child,
                 ),
-              ),
+                child!,
+              ],
             ),
           ),
         ),

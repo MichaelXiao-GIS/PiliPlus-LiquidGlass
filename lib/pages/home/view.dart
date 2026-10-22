@@ -9,6 +9,7 @@ import 'package:PiliPlus/common/widgets/scroll_physics.dart' show tabBarView;
 import 'package:PiliPlus/pages/common/common_page.dart';
 import 'package:PiliPlus/pages/home/controller.dart';
 import 'package:PiliPlus/pages/home/widgets/collapsing_search_bar.dart';
+import 'package:PiliPlus/pages/home/widgets/ios_home_header.dart';
 import 'package:PiliPlus/pages/main/controller.dart';
 import 'package:PiliPlus/pages/mine/controller.dart';
 import 'package:PiliPlus/utils/extension/get_ext.dart';
@@ -149,16 +150,50 @@ class _HomePageState extends CommonPageState<HomePage>
       ),
     );
     if (GlassScrollPage.enabled(context)) {
-      final titleHeight = (MediaQuery.textScalerOf(context).scale(34) * 1.2)
-          .clamp(44.0, double.infinity);
-      return GlassScrollPage(
-        header: header,
-        headerExtent:
-            titleHeight +
-            12 +
-            Style.topBarHeight +
-            (_homeController.tabs.length > 1 ? 48 : 6),
-        body: pages,
+      final chrome = GlassScrollScope.maybeOf(context)!;
+      final tabsExtent = _homeController.tabs.length > 1
+          ? GlassTabBar.heightOf(context)
+          : 6.0;
+      return ListenableBuilder(
+        listenable: chrome,
+        child: pages,
+        builder: (context, body) => TweenAnimationBuilder<double>(
+          tween: Tween(end: chrome.compact ? 1.0 : 0.0),
+          duration: GlassCapabilities.duration(context, 280),
+          curve: Curves.easeInOutCubic,
+          builder: (context, progress, _) => GlassScrollPage(
+            headerExtent: IosHomeHeader.extentOf(context, progress, tabsExtent),
+            contentHeaderExtent: IosHomeHeader.extentOf(context, 0, tabsExtent),
+            header: Obx(
+              () => IosHomeHeader(
+                progress: progress,
+                hint: _homeController.defaultSearch.value.isEmpty
+                    ? '搜索视频、UP主和番剧'
+                    : _homeController.defaultSearch.value,
+                onSearch: () => Get.toNamed(
+                  '/search',
+                  parameters: _homeController.enableSearchWord
+                      ? {'hintText': _homeController.defaultSearch.value}
+                      : null,
+                ),
+                actions: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    msgBadge(_mainController),
+                    const SizedBox(width: 6),
+                    userAvatar(
+                      colorScheme: _colorScheme,
+                      mainController: _mainController,
+                    ),
+                  ],
+                ),
+                tabs: tabBar,
+                tabsExtent: tabsExtent,
+              ),
+            ),
+            body: body!,
+          ),
+        ),
       );
     }
     return Column(
