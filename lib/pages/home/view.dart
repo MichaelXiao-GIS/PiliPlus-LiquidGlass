@@ -1,6 +1,9 @@
 import 'package:PiliPlus/common/style.dart';
 import 'package:PiliPlus/common/widgets/custom_height_widget.dart';
 import 'package:PiliPlus/common/widgets/image/network_img_layer.dart';
+import 'package:PiliPlus/common/widgets/liquid_glass/glass_platform.dart';
+import 'package:PiliPlus/common/widgets/liquid_glass/glass_surface.dart';
+import 'package:PiliPlus/common/widgets/liquid_glass/glass_tab_bar.dart';
 import 'package:PiliPlus/common/widgets/scroll_physics.dart' show tabBarView;
 import 'package:PiliPlus/pages/common/common_page.dart';
 import 'package:PiliPlus/pages/home/controller.dart';
@@ -65,7 +68,18 @@ class _HomePageState extends CommonPageState<HomePage>
           ),
         ),
       );
-      if (_homeController.hideTopBar &&
+      if (GlassCapabilities.isIOS) {
+        tabBar = GlassTabBar(
+          controller: _homeController.tabController,
+          labels: _homeController.tabs.map((e) => e.label).toList(),
+          onTap: (_) {
+            feedBack();
+            if (!_homeController.tabController.indexIsChanging) {
+              _homeController.animateToTop();
+            }
+          },
+        );
+      } else if (_homeController.hideTopBar &&
           _mainController.barHideType == .instant) {
         tabBar = Material(
           color: _colorScheme.surface,
@@ -77,8 +91,40 @@ class _HomePageState extends CommonPageState<HomePage>
     }
     return Column(
       children: [
+        if (GlassCapabilities.isIOS && _mainController.useBottomNav)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 14, 4),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Semantics(
+                    container: true,
+                    header: true,
+                    child: Text(
+                      '浏览',
+                      style: TextStyle(
+                        fontSize: 34,
+                        height: 1.2,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.8,
+                        color: _colorScheme.onSurface,
+                      ),
+                    ),
+                  ),
+                ),
+                msgBadge(_mainController),
+                const SizedBox(width: 6),
+                userAvatar(
+                  colorScheme: _colorScheme,
+                  mainController: _mainController,
+                ),
+              ],
+            ),
+          ),
         if (!_mainController.useSideBar &&
-            MediaQuery.sizeOf(context).isPortrait)
+            (GlassCapabilities.isIOS
+                ? _mainController.useBottomNav
+                : MediaQuery.sizeOf(context).isPortrait))
           customAppBar(),
         tabBar,
         Expanded(
@@ -98,10 +144,15 @@ class _HomePageState extends CommonPageState<HomePage>
     final child = Row(
       children: [
         searchBar(),
-        const SizedBox(width: 4),
-        msgBadge(_mainController),
-        const SizedBox(width: 8),
-        userAvatar(colorScheme: _colorScheme, mainController: _mainController),
+        if (!GlassCapabilities.isIOS) ...[
+          const SizedBox(width: 4),
+          msgBadge(_mainController),
+          const SizedBox(width: 8),
+          userAvatar(
+            colorScheme: _colorScheme,
+            mainController: _mainController,
+          ),
+        ],
       ],
     );
     if (_homeController.hideTopBar) {
@@ -125,10 +176,10 @@ class _HomePageState extends CommonPageState<HomePage>
           final showSearchBar = showTopBar.value;
           return AnimatedOpacity(
             opacity: showSearchBar ? 1 : 0,
-            duration: const Duration(milliseconds: 300),
+            duration: GlassCapabilities.duration(context, 300),
             child: AnimatedContainer(
               curve: Curves.easeInOutCubicEmphasized,
-              duration: const Duration(milliseconds: 500),
+              duration: GlassCapabilities.duration(context, 500),
               height: showSearchBar ? Style.topBarHeight : 0,
               padding: padding,
               child: child,
@@ -145,6 +196,67 @@ class _HomePageState extends CommonPageState<HomePage>
   }
 
   Widget searchBar() {
+    if (GlassCapabilities.isIOS) {
+      return Expanded(
+        child: Semantics(
+          container: true,
+          excludeSemantics: true,
+          button: true,
+          label: '搜索视频、UP主和番剧',
+          onTap: () => Get.toNamed(
+            '/search',
+            parameters: _homeController.enableSearchWord
+                ? {'hintText': _homeController.defaultSearch.value}
+                : null,
+          ),
+          child: GlassSurface(
+            child: Material(
+              type: MaterialType.transparency,
+              child: InkWell(
+                excludeFromSemantics: true,
+                borderRadius: BorderRadius.circular(28),
+                onTap: () => Get.toNamed(
+                  '/search',
+                  parameters: _homeController.enableSearchWord
+                      ? {'hintText': _homeController.defaultSearch.value}
+                      : null,
+                ),
+                child: SizedBox(
+                  height: 44,
+                  child: Row(
+                    children: [
+                      const SizedBox(width: 16),
+                      Icon(
+                        Icons.search_rounded,
+                        size: 22,
+                        color: _colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Obx(
+                          () => Text(
+                            _homeController.defaultSearch.value.isEmpty
+                                ? '搜索视频、UP主和番剧'
+                                : _homeController.defaultSearch.value,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: _colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
     const borderRadius = BorderRadius.all(Radius.circular(25));
     return Expanded(
       child: SizedBox(
@@ -197,6 +309,7 @@ Widget userAvatar({
   required MainController mainController,
 }) {
   return Semantics(
+    container: true,
     label: "我的",
     child: Obx(
       () {
@@ -206,8 +319,8 @@ Widget userAvatar({
             children: [
               NetworkImgLayer(
                 type: .avatar,
-                width: 34,
-                height: 34,
+                width: GlassCapabilities.isIOS ? 44 : 34,
+                height: GlassCapabilities.isIOS ? 44 : 34,
                 src: mainController.accountService.face.value,
               ),
               Positioned.fill(
@@ -248,8 +361,8 @@ Widget userAvatar({
           );
         }
         return SizedBox(
-          width: 38,
-          height: 38,
+          width: GlassCapabilities.isIOS ? 44 : 38,
+          height: GlassCapabilities.isIOS ? 44 : 38,
           child: IconButton(
             tooltip: '点击登录',
             style: IconButton.styleFrom(

@@ -4,6 +4,7 @@ import 'package:PiliPlus/build_config.dart';
 import 'package:PiliPlus/common/constants.dart';
 import 'package:PiliPlus/common/widgets/back_detector.dart';
 import 'package:PiliPlus/common/widgets/custom_toast.dart';
+import 'package:PiliPlus/common/widgets/liquid_glass/glass_platform.dart';
 import 'package:PiliPlus/common/widgets/route_aware_mixin.dart';
 import 'package:PiliPlus/common/widgets/scale_app.dart';
 import 'package:PiliPlus/common/widgets/scroll_behavior.dart';
@@ -320,7 +321,14 @@ class MyApp extends StatelessWidget {
   static Widget _builder(BuildContext context, Widget? child) {
     final uiScale = Pref.uiScale;
     final mediaQuery = MediaQuery.of(context);
-    final textScaler = TextScaler.linear(Pref.defaultTextScale);
+    // Preserve Dynamic Type on iOS while keeping the user's in-app multiplier.
+    final textScaler = TextScaler.linear(
+      Pref.defaultTextScale *
+          (GlassCapabilities.isIOS ? mediaQuery.textScaler.scale(14) / 14 : 1),
+    );
+    if (GlassCapabilities.isIOS) {
+      child = GlassPlatformScope(child: child!);
+    }
     if (uiScale != 1.0) {
       child = MediaQuery(
         data: mediaQuery.copyWith(

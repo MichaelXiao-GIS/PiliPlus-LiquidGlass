@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:PiliPlus/common/widgets/dialog/export_import.dart';
 import 'package:PiliPlus/common/widgets/disabled_icon.dart';
+import 'package:PiliPlus/common/widgets/liquid_glass/glass_platform.dart';
 import 'package:PiliPlus/common/widgets/loading_widget/http_error.dart';
 import 'package:PiliPlus/common/widgets/scaffold/simple_scaffold.dart';
 import 'package:PiliPlus/common/widgets/sliver_wrap.dart';
@@ -86,12 +87,14 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   PreferredSizeWidget get _buildAppBar => AppBar(
-    shape: Border(
-      bottom: BorderSide(
-        color: theme.dividerColor.withValues(alpha: 0.08),
-        width: 1,
-      ),
-    ),
+    shape: GlassCapabilities.isIOS
+        ? null
+        : Border(
+            bottom: BorderSide(
+              color: theme.dividerColor.withValues(alpha: 0.08),
+              width: 1,
+            ),
+          ),
     actions: [
       Obx(
         () => _searchController.showUidBtn.value
@@ -126,6 +129,9 @@ class _SearchPageState extends State<SearchPage> {
         visualDensity: .standard,
         hintText: _searchController.hintText ?? '搜索',
         border: InputBorder.none,
+        hintStyle: GlassCapabilities.isIOS
+            ? TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 16)
+            : null,
       ),
       onSubmitted: (value) => _searchController.submit(),
     ),

@@ -1,4 +1,6 @@
 import 'package:PiliPlus/common/style.dart';
+import 'package:PiliPlus/common/widgets/liquid_glass/glass_platform.dart';
+import 'package:PiliPlus/utils/ios/ios_theme.dart';
 import 'package:PiliPlus/utils/extension/theme_ext.dart';
 import 'package:PiliPlus/utils/font_utils.dart';
 import 'package:PiliPlus/utils/storage_pref.dart';
@@ -165,10 +167,10 @@ abstract final class ThemeUtils {
         },
       ),
     );
-    if (isDark && Pref.isPureBlackTheme) {
-      return darkenTheme(theme);
-    }
-    return theme;
+    final effective = isDark && Pref.isPureBlackTheme
+        ? darkenTheme(theme)
+        : theme;
+    return GlassCapabilities.isIOS ? IosTheme.apply(effective) : effective;
   }
 
   static ThemeData darkenTheme(ThemeData theme) {

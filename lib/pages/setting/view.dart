@@ -1,4 +1,5 @@
 import 'package:PiliPlus/common/widgets/custom_icon.dart';
+import 'package:PiliPlus/common/widgets/liquid_glass/glass_platform.dart';
 import 'package:PiliPlus/common/widgets/flutter/list_tile.dart';
 import 'package:PiliPlus/common/widgets/scaffold/simple_scaffold.dart';
 import 'package:PiliPlus/common/widgets/view_safe_area.dart';
@@ -173,6 +174,7 @@ class _SettingPageState extends State<SettingPage> {
   }
 
   Widget _buildList(ThemeData theme) {
+    if (GlassCapabilities.isIOS) return _buildIosList(theme);
     final padding = MediaQuery.viewPaddingOf(context);
     TextStyle titleStyle = theme.textTheme.titleMedium!;
     TextStyle subTitleStyle = theme.textTheme.labelMedium!.copyWith(
@@ -214,6 +216,140 @@ class _SettingPageState extends State<SettingPage> {
           onTap: () => _toPage(_items.last.type),
           leading: _items.last.icon,
           title: Text(_items.last.type.title, style: titleStyle),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildIosList(ThemeData theme) {
+    final colors = theme.colorScheme;
+    final bottom = MediaQuery.viewPaddingOf(context).bottom;
+    Widget heading(String title) => Padding(
+      padding: const EdgeInsets.fromLTRB(16, 22, 16, 8),
+      child: Semantics(
+        container: true,
+        header: true,
+        child: Text(
+          title,
+          style: TextStyle(fontSize: 13, color: colors.onSurfaceVariant),
+        ),
+      ),
+    );
+    Widget group(List<Widget> children) => Material(
+      color: colors.surface,
+      borderRadius: BorderRadius.circular(20),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        children: [
+          for (var i = 0; i < children.length; i++) ...[
+            if (i != 0)
+              Divider(
+                height: 0.5,
+                thickness: 0.5,
+                indent: 64,
+                color: colors.onSurface.withValues(alpha: 0.09),
+              ),
+            children[i],
+          ],
+        ],
+      ),
+    );
+    Widget row({
+      required String title,
+      required Widget icon,
+      required Color color,
+      required VoidCallback onTap,
+      String? subtitle,
+      bool selected = false,
+    }) => ListTile(
+      onTap: onTap,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 3),
+      horizontalTitleGap: 12,
+      minLeadingWidth: 36,
+      minTileHeight: 64,
+      tileColor: selected ? colors.primary.withValues(alpha: 0.08) : null,
+      leading: Container(
+        width: 34,
+        height: 34,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(9),
+        ),
+        child: IconTheme(
+          data: const IconThemeData(size: 20, color: Colors.white),
+          child: icon,
+        ),
+      ),
+      title: Text(
+        title,
+        style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w400),
+      ),
+      subtitle: subtitle == null
+          ? null
+          : Text(
+              subtitle,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 12, color: colors.onSurfaceVariant),
+            ),
+      trailing: Icon(
+        Icons.chevron_right_rounded,
+        size: 20,
+        color: colors.onSurfaceVariant.withValues(alpha: 0.6),
+      ),
+    );
+    const iconColors = [
+      Color(0xFF007AFF),
+      Color(0xFF32ADE6),
+      Color(0xFFFF2D55),
+      Color(0xFFAF52DE),
+      Color(0xFF34C759),
+      Color(0xFFFF9500),
+      Color(0xFF30B0C7),
+      Color(0xFF5856D6),
+      Color(0xFF8E8E93),
+      Color(0xFF007AFF),
+    ];
+    return ListView(
+      padding: EdgeInsets.fromLTRB(16, 4, 16, bottom + 32),
+      children: [
+        _buildSearchItem(theme),
+        heading('偏好设置'),
+        group([
+          for (var i = 0; i < _items.length - 1; i++)
+            row(
+              title: _items[i].type.title,
+              subtitle: _items[i].subtitle,
+              icon: _items[i].icon,
+              color: iconColors[i % iconColors.length],
+              selected: !_isPortrait && _type == _items[i].type,
+              onTap: () => _toPage(_items[i].type),
+            ),
+        ]),
+        heading('账户与应用'),
+        Obx(
+          () => group([
+            row(
+              title: '切换账号',
+              icon: const Icon(Icons.switch_account_outlined),
+              color: const Color(0xFF007AFF),
+              onTap: () => LoginPageController.switchAccountDialog(context),
+            ),
+            if (!_noAccount.value)
+              row(
+                title: '退出登录',
+                icon: const Icon(Icons.logout_outlined),
+                color: const Color(0xFFFF3B30),
+                onTap: () => _logoutDialog(context),
+              ),
+            row(
+              title: '关于',
+              icon: _items.last.icon,
+              color: const Color(0xFF8E8E93),
+              onTap: () => _toPage(_items.last.type),
+            ),
+          ]),
         ),
       ],
     );
@@ -301,9 +437,9 @@ class _SettingPageState extends State<SettingPage> {
   }
 
   Widget _buildSearchItem(ThemeData theme) => Padding(
-    padding: const EdgeInsets.only(
-      left: 16,
-      right: 16,
+    padding: EdgeInsets.only(
+      left: GlassCapabilities.isIOS ? 0 : 16,
+      right: GlassCapabilities.isIOS ? 0 : 16,
       bottom: 8,
     ),
     child: Material(
@@ -312,9 +448,11 @@ class _SettingPageState extends State<SettingPage> {
       child: InkWell(
         onTap: () => Get.toNamed('/settingsSearch'),
         borderRadius: const BorderRadius.all(Radius.circular(50)),
-        child: const Padding(
-          padding: EdgeInsets.symmetric(vertical: 8),
-          child: Center(
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            vertical: GlassCapabilities.isIOS ? 13 : 8,
+          ),
+          child: const Center(
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [

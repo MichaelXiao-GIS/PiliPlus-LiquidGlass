@@ -5,6 +5,8 @@ import 'package:PiliPlus/common/style.dart';
 import 'package:PiliPlus/common/widgets/flutter/list_tile.dart';
 import 'package:PiliPlus/common/widgets/flutter/refresh_indicator.dart';
 import 'package:PiliPlus/common/widgets/image/network_img_layer.dart';
+import 'package:PiliPlus/common/widgets/liquid_glass/glass_platform.dart';
+import 'package:PiliPlus/common/widgets/liquid_glass/glass_surface.dart';
 import 'package:PiliPlus/common/widgets/player_bar.dart';
 import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/models/common/mine_tab_type.dart';
@@ -147,6 +149,96 @@ class _MediaPageState extends CommonPageState<MinePage>
   }
 
   Widget get _buildHeaderActions {
+    if (GlassCapabilities.isIOS) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Row(
+          children: [
+            if (widget.showBackBtn) const BackButton(),
+            Expanded(
+              child: Semantics(
+                header: true,
+                child: const Text(
+                  '资料库',
+                  style: TextStyle(
+                    fontSize: 34,
+                    height: 1.2,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.8,
+                  ),
+                ),
+              ),
+            ),
+            GlassSurface(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  PopupMenuButton<String>(
+                    tooltip: '更多操作',
+                    icon: const Icon(Icons.more_horiz_rounded),
+                    onSelected: (value) {
+                      switch (value) {
+                        case 'search':
+                          Get.toNamed('/search');
+                        case 'messages':
+                          _mainController
+                            ..clearUnreadMsg()
+                            ..lastCheckUnreadAt =
+                                DateTime.now().millisecondsSinceEpoch;
+                          Get.toNamed('/whisper');
+                        case 'reply':
+                          Get.toNamed('/myReply');
+                        case 'private':
+                          MineController.onChangeAnonymity();
+                        case 'account':
+                          LoginPageController.switchAccountDialog(context);
+                        case 'theme':
+                          controller.onChangeTheme();
+                      }
+                    },
+                    itemBuilder: (_) => [
+                      if (!_mainController.hasHome) ...[
+                        const PopupMenuItem(value: 'search', child: Text('搜索')),
+                        if (_mainController.accountService.isLogin.value)
+                          const PopupMenuItem(
+                            value: 'messages',
+                            child: Text('消息'),
+                          ),
+                      ],
+                      if (GStorage.reply != null)
+                        const PopupMenuItem(
+                          value: 'reply',
+                          child: Text('评论记录'),
+                        ),
+                      PopupMenuItem(
+                        value: 'private',
+                        child: Text(
+                          '${MineController.anonymity.value ? '退出' : '进入'}无痕模式',
+                        ),
+                      ),
+                      const PopupMenuItem(
+                        value: 'account',
+                        child: Text('切换账号'),
+                      ),
+                      PopupMenuItem(
+                        value: 'theme',
+                        child: Text('切换至${controller.nextThemeType.label}主题'),
+                      ),
+                    ],
+                  ),
+                  IconButton(
+                    tooltip: '设置',
+                    icon: const Icon(Icons.settings_outlined),
+                    onPressed: () =>
+                        Get.toNamed('/setting', preventDuplicates: false),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
     const iconSize = 22.0;
     const padding = EdgeInsets.all(8);
     const style = ButtonStyle(tapTargetSize: .shrinkWrap);

@@ -29,6 +29,20 @@
 
 ## 适配平台
 
+[iOS Liquid Glass 界面改造与构建说明](docs/ios-liquid-glass.md)
+
+### iOS Liquid Glass 测试版
+
+此版本在 PiliPlus 上加入 iOS 原生 Liquid Glass 导航、悬浮搜索与页面栏、分组设置、深浅色及辅助功能适配。
+
+[下载 iPhone 测试版 IPA](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases) · [安装说明](docs/ios-testing.md)
+
+IPA 为真机 arm64 Release 包，最低支持 iOS 15，安装前需使用自己的 Apple 身份重新签名。原生 Liquid Glass 在 iOS 26 及以上启用。
+
+<img src="assets/screenshots/liquid_glass/home.png" width="32%" alt="iOS Liquid Glass 首页" />
+<img src="assets/screenshots/liquid_glass/settings.png" width="32%" alt="iOS 分组设置" />
+<img src="assets/screenshots/liquid_glass/dark.png" width="32%" alt="iOS 深色模式" />
+
 - [x] Android
 - [x] iOS
 - [x] Pad

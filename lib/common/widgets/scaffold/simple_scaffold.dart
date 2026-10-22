@@ -1,6 +1,8 @@
 import 'dart:math' as math;
 
 import 'package:PiliPlus/common/widgets/slotted_layout_helper.dart';
+import 'package:PiliPlus/common/widgets/liquid_glass/glass_page_bar.dart';
+import 'package:PiliPlus/common/widgets/liquid_glass/glass_platform.dart';
 import 'package:flutter/rendering.dart' show ChildLayoutHelper;
 import 'package:material_ui/material_ui.dart';
 
@@ -24,7 +26,9 @@ class SimpleScaffold extends StatelessWidget {
       color: backgroundColor,
       child: ScaffoldLayout(
         fab: fab,
-        appBar: appBar,
+        appBar: GlassCapabilities.isIOS && appBar is AppBar
+            ? GlassPageBar(child: appBar as AppBar)
+            : appBar,
         body: body,
       ),
     );

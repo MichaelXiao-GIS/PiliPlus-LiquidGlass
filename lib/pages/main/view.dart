@@ -5,6 +5,9 @@ import 'package:PiliPlus/common/widgets/floating_navigation_bar.dart';
 import 'package:PiliPlus/common/widgets/flutter/pop_scope.dart';
 import 'package:PiliPlus/common/widgets/image/network_img_layer.dart';
 import 'package:PiliPlus/common/widgets/main_layout.dart';
+import 'package:PiliPlus/common/widgets/liquid_glass/glass_navigation_bar.dart';
+import 'package:PiliPlus/common/widgets/liquid_glass/glass_platform.dart';
+import 'package:PiliPlus/common/widgets/liquid_glass/glass_surface.dart';
 import 'package:PiliPlus/common/widgets/route_aware_mixin.dart';
 import 'package:PiliPlus/models/common/nav_bar_config.dart';
 import 'package:PiliPlus/pages/home/view.dart';
@@ -74,7 +77,9 @@ class _MainAppState extends PopScopeState<MainApp>
       }
     }
     if (!_mainController.useSideBar) {
-      _mainController.useBottomNav = MediaQuery.sizeOf(context).isPortrait;
+      _mainController.useBottomNav = GlassCapabilities.isIOS
+          ? MediaQuery.sizeOf(context).width < 700
+          : MediaQuery.sizeOf(context).isPortrait;
     }
   }
 
@@ -153,7 +158,37 @@ class _MainAppState extends PopScopeState<MainApp>
   Widget? get _bottomNav {
     Widget? bottomNav;
     if (_mainController.navigationBars.length > 1) {
-      if (_mainController.floatingNavBar) {
+      if (GlassCapabilities.isIOS) {
+        bottomNav = Obx(
+          () => GlassNavigationBar(
+            selectedIndex: _mainController.selectedIndex.value,
+            onSelected: _mainController.setIndex,
+            destinations: [
+              for (final type in _mainController.navigationBars)
+                GlassDestination(
+                  label: type.label,
+                  symbol: switch (type) {
+                    .home => 'house',
+                    .dynamics => 'rectangle.stack',
+                    .mine => 'person.crop.circle',
+                  },
+                  icon: type.icon,
+                  selectedIcon: type.selectIcon,
+                  badge:
+                      type == NavigationBarType.dynamics &&
+                          _mainController.dynamicBadgeMode != .hidden &&
+                          _mainController.dynCount.value > 0
+                      ? _mainController.dynamicBadgeMode == .number
+                            ? (_mainController.dynCount.value > 99
+                                  ? '99+'
+                                  : '${_mainController.dynCount.value}')
+                            : ''
+                      : null,
+                ),
+            ],
+          ),
+        );
+      } else if (_mainController.floatingNavBar) {
         bottomNav = Obx(
           () => FloatingNavigationBar(
             onDestinationSelected: _mainController.setIndex,
@@ -224,7 +259,7 @@ class _MainAppState extends PopScopeState<MainApp>
           return Obx(
             () => AnimatedSlide(
               curve: Curves.easeInOutCubicEmphasized,
-              duration: const Duration(milliseconds: 500),
+              duration: GlassCapabilities.duration(context, 500),
               offset: Offset(0, showBottomBar.value ? 0 : 1),
               child: bottomNav,
             ),
@@ -345,6 +380,17 @@ class _MainAppState extends PopScopeState<MainApp>
         ),
         child: _sideBar(),
       );
+      if (GlassCapabilities.isIOS) {
+        sideBar = Padding(
+          padding: EdgeInsets.fromLTRB(
+            _padding.left + 12,
+            _padding.top + 12,
+            12,
+            _padding.bottom + 12,
+          ),
+          child: GlassSurface(radius: 28, child: _sideBar()),
+        );
+      }
       padding = .only(top: _padding.top, right: _padding.right);
     }
 

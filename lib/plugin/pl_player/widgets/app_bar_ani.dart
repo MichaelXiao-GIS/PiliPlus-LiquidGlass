@@ -1,4 +1,6 @@
 import 'package:PiliPlus/common/widgets/view_safe_area.dart';
+import 'package:PiliPlus/common/widgets/liquid_glass/glass_platform.dart';
+import 'package:PiliPlus/common/widgets/liquid_glass/glass_surface.dart';
 import 'package:material_ui/material_ui.dart';
 
 class AppBarAni extends StatelessWidget {
@@ -49,6 +51,33 @@ class AppBarAni extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (GlassCapabilities.isIOS && isFullScreen) {
+      final theme = Theme.of(context);
+      final controls = Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        child: Theme(
+          data: theme.copyWith(
+            colorScheme: theme.colorScheme.copyWith(
+              brightness: Brightness.dark,
+              surface: const Color(0xFF1C1C1E),
+              onSurface: Colors.white,
+            ),
+          ),
+          child: GlassSurface(
+            child: removeSafeArea
+                ? child
+                : ViewSafeArea(left: true, right: true, child: child),
+          ),
+        ),
+      );
+      if (GlassCapabilities.duration(context) == Duration.zero) {
+        return FadeTransition(opacity: controller, child: controls);
+      }
+      return SlideTransition(
+        position: controller.drive(isTop ? _topPos : _bottomPos),
+        child: controls,
+      );
+    }
     return SlideTransition(
       position: controller.drive(isTop ? _topPos : _bottomPos),
       child: DecoratedBox(
