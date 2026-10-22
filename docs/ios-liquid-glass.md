@@ -22,6 +22,8 @@
 
 共用组件位于 `lib/common/widgets/liquid_glass/`，iOS 主题位于 `lib/utils/ios/ios_theme.dart`。没有新增第三方 Flutter 依赖。项目继续使用 CocoaPods，避免现有插件混用 Swift Package Manager 时发生模块缺失。
 
+测试版 2 中，首页搜索栏使用固定内容高度和矩形裁切完成收起，避免搜索栏向上绘制到标题、消息和头像上；完全收起时不绘制，也不接收点击或辅助功能焦点。原生玻璃轮廓使用 UIKit 的 `cornerConfiguration`，移除玻璃外层重复的 Flutter 圆角遮罩及阴影，内容自身仍保留圆角裁切。参见 Apple 的 [自定义玻璃与圆角配置示例](https://developer.apple.com/videos/play/wwdc2025/284/)。
+
 辅助功能包括：系统字体大小乘以应用字号倍率、VoiceOver 标签及选中状态、至少 44pt 的主要导航触控区，以及对“减少透明度”“增强对比度”“减少动态效果”的响应。切换辅助功能设置或返回应用时会刷新原生状态。
 
 ## 构建与检查
@@ -34,11 +36,11 @@
 
 ```sh
 flutter analyze --no-pub
-flutter test --no-pub test/liquid_glass/navigation_test.dart test/utils
+flutter test --no-pub test/liquid_glass test/utils
 flutter build ios --simulator --debug --no-pub
 ```
 
-本次新增 14 项界面测试，覆盖点击、重复点击、未读语义、320/390/700pt 宽度、1/2/3 倍字体、安全区域、增强对比度和辅助功能设置刷新。连同现有工具测试，共 26 项通过。全项目静态分析无错误和警告，有 41 条原有 info 提示；新增原生桥接通过 iOS 14 最低部署目标的 Swift 类型检查。使用 Xcode 27.1 成功编译完整 iOS 模拟器应用，并在 iPhone 18 Pro / iOS 27.0 上检查了首页、原生底栏点击、搜索与键盘、资料库、分组设置、深色主题切换及首页独立的 VoiceOver 搜索标签。
+界面测试覆盖点击、重复点击、未读语义、320/390/700pt 宽度、1/2/3 倍字体、安全区域、增强对比度和辅助功能设置刷新。测试版 2 新增 6 项回归检查：搜索栏不同收起程度的像素边界、隐藏后的点击与 VoiceOver 焦点，以及原生玻璃不受重复遮罩和阴影影响。连同现有工具测试，共 32 项通过；修改文件的静态分析通过，原生桥接通过 iOS 15 最低部署目标的 Swift 类型检查。使用 Xcode 27.1 成功编译完整 iOS 模拟器应用，并在 iPhone 18 Pro / iOS 27.0 上检查首页、原生底栏、资料库玻璃控件及设置入口。
 
 若源码位于会自动附加 Finder 属性的桌面同步目录，iOS 框架签名可能报告 `resource fork, Finder information, or similar detritus not allowed`。将源码副本放在本地非同步目录构建即可；本次完整构建在临时目录完成。
 

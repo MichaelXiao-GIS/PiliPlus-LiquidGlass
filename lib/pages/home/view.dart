@@ -7,6 +7,7 @@ import 'package:PiliPlus/common/widgets/liquid_glass/glass_tab_bar.dart';
 import 'package:PiliPlus/common/widgets/scroll_physics.dart' show tabBarView;
 import 'package:PiliPlus/pages/common/common_page.dart';
 import 'package:PiliPlus/pages/home/controller.dart';
+import 'package:PiliPlus/pages/home/widgets/collapsing_search_bar.dart';
 import 'package:PiliPlus/pages/main/controller.dart';
 import 'package:PiliPlus/pages/mine/controller.dart';
 import 'package:PiliPlus/utils/extension/get_ext.dart';
@@ -155,6 +156,31 @@ class _HomePageState extends CommonPageState<HomePage>
         ],
       ],
     );
+    if (GlassCapabilities.isIOS && _homeController.hideTopBar) {
+      final search = Padding(padding: padding, child: child);
+      if (_mainController.barOffset case final barOffset?) {
+        return Obx(
+          () => CollapsingSearchBar(
+            fraction: 1 - barOffset.value / Style.topBarHeight,
+            child: search,
+          ),
+        );
+      }
+      if (_homeController.showTopBar case final showTopBar?) {
+        return Obx(
+          () => TweenAnimationBuilder<double>(
+            tween: Tween(end: showTopBar.value ? 1.0 : 0.0),
+            curve: Curves.easeInOutCubicEmphasized,
+            duration: GlassCapabilities.duration(context, 500),
+            child: search,
+            builder: (context, fraction, child) => CollapsingSearchBar(
+              fraction: fraction,
+              child: child!,
+            ),
+          ),
+        );
+      }
+    }
     if (_homeController.hideTopBar) {
       if (_mainController.barOffset case final barOffset?) {
         return Obx(

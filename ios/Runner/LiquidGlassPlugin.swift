@@ -205,9 +205,16 @@ private final class GlassControlView: UIView {
   override func layoutSubviews() {
     super.layoutSubviews()
     material.frame = bounds
-    material.layer.cornerRadius = isNavigation ? bounds.height / 2 : radius
-    material.layer.cornerCurve = .continuous
-    material.clipsToBounds = true
+    if #available(iOS 26.0, *) {
+      // Describe the shape to the glass renderer instead of masking the final
+      // effect. Its refraction and highlight must follow the same contour.
+      material.cornerConfiguration = isNavigation ? .capsule() : .capsule(maximumRadius: radius)
+      material.clipsToBounds = false
+    } else {
+      material.layer.cornerRadius = min(radius, bounds.height / 2)
+      material.layer.cornerCurve = .circular
+      material.clipsToBounds = true
+    }
     stack.frame = bounds.insetBy(dx: 5, dy: 5)
   }
 }

@@ -27,29 +27,45 @@ class GlassSurface extends StatelessWidget {
         capabilities.reduceTransparency || MediaQuery.highContrastOf(context);
     final shape = BorderRadius.circular(radius);
 
-    final Widget surface;
     if (capabilities.nativeGlass && !opaque) {
-      surface = _NativeGlassSurface(radius: radius, dark: dark);
-    } else {
-      surface = BackdropFilter(
-        enabled: !opaque,
-        filter: ui.ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: colors.surface.withValues(
-              alpha: opaque ? 1 : (dark ? 0.82 : 0.8),
-            ),
-            borderRadius: shape,
-            border: Border.all(
-              color: opaque
-                  ? colors.outline
-                  : Colors.white.withValues(alpha: dark ? 0.14 : 0.7),
-              width: opaque ? 1 : 0.5,
+      // UIKit owns the glass outline and shadow. A Flutter rounded mask around
+      // UIVisualEffectView clips its refraction and creates a second, fuzzy rim.
+      return Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned.fill(
+            child: ExcludeSemantics(
+              child: IgnorePointer(
+                child: _NativeGlassSurface(radius: radius, dark: dark),
+              ),
             ),
           ),
-        ),
+          ClipRRect(
+            borderRadius: shape,
+            child: Padding(padding: padding, child: child),
+          ),
+        ],
       );
     }
+
+    final surface = BackdropFilter(
+      enabled: !opaque,
+      filter: ui.ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: colors.surface.withValues(
+            alpha: opaque ? 1 : (dark ? 0.82 : 0.8),
+          ),
+          borderRadius: shape,
+          border: Border.all(
+            color: opaque
+                ? colors.outline
+                : Colors.white.withValues(alpha: dark ? 0.14 : 0.7),
+            width: opaque ? 1 : 0.5,
+          ),
+        ),
+      ),
+    );
 
     return DecoratedBox(
       decoration: BoxDecoration(
