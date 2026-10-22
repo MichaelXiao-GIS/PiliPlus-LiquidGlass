@@ -6,8 +6,8 @@ import 'package:PiliPlus/common/widgets/flutter/pop_scope.dart';
 import 'package:PiliPlus/common/widgets/image/network_img_layer.dart';
 import 'package:PiliPlus/common/widgets/main_layout.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_navigation_bar.dart';
+import 'package:PiliPlus/common/widgets/liquid_glass/glass_navigation_rail.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_platform.dart';
-import 'package:PiliPlus/common/widgets/liquid_glass/glass_surface.dart';
 import 'package:PiliPlus/common/widgets/route_aware_mixin.dart';
 import 'package:PiliPlus/models/common/nav_bar_config.dart';
 import 'package:PiliPlus/pages/home/view.dart';
@@ -155,6 +155,30 @@ class _MainAppState extends PopScopeState<MainApp>
     }
   }
 
+  List<GlassDestination> get _iosDestinations => [
+    for (final type in _mainController.navigationBars)
+      GlassDestination(
+        label: type.label,
+        symbol: switch (type) {
+          .home => 'house',
+          .dynamics => 'rectangle.stack',
+          .mine => 'person.crop.circle',
+        },
+        icon: type.icon,
+        selectedIcon: type.selectIcon,
+        badge:
+            type == NavigationBarType.dynamics &&
+                _mainController.dynamicBadgeMode != .hidden &&
+                _mainController.dynCount.value > 0
+            ? _mainController.dynamicBadgeMode == .number
+                  ? (_mainController.dynCount.value > 99
+                        ? '99+'
+                        : '${_mainController.dynCount.value}')
+                  : ''
+            : null,
+      ),
+  ];
+
   Widget? get _bottomNav {
     Widget? bottomNav;
     if (_mainController.navigationBars.length > 1) {
@@ -163,29 +187,7 @@ class _MainAppState extends PopScopeState<MainApp>
           () => GlassNavigationBar(
             selectedIndex: _mainController.selectedIndex.value,
             onSelected: _mainController.setIndex,
-            destinations: [
-              for (final type in _mainController.navigationBars)
-                GlassDestination(
-                  label: type.label,
-                  symbol: switch (type) {
-                    .home => 'house',
-                    .dynamics => 'rectangle.stack',
-                    .mine => 'person.crop.circle',
-                  },
-                  icon: type.icon,
-                  selectedIcon: type.selectIcon,
-                  badge:
-                      type == NavigationBarType.dynamics &&
-                          _mainController.dynamicBadgeMode != .hidden &&
-                          _mainController.dynCount.value > 0
-                      ? _mainController.dynamicBadgeMode == .number
-                            ? (_mainController.dynCount.value > 99
-                                  ? '99+'
-                                  : '${_mainController.dynCount.value}')
-                            : ''
-                      : null,
-                ),
-            ],
+            destinations: _iosDestinations,
           ),
         );
       } else if (_mainController.floatingNavBar) {
@@ -381,14 +383,13 @@ class _MainAppState extends PopScopeState<MainApp>
         child: _sideBar(),
       );
       if (GlassCapabilities.isIOS) {
-        sideBar = Padding(
-          padding: EdgeInsets.fromLTRB(
-            _padding.left + 12,
-            _padding.top + 12,
-            12,
-            _padding.bottom + 12,
+        sideBar = Obx(
+          () => GlassNavigationRail(
+            leading: userAndSearchVertical(),
+            selectedIndex: _mainController.selectedIndex.value,
+            onSelected: _mainController.setIndex,
+            destinations: _iosDestinations,
           ),
-          child: GlassSurface(radius: 28, child: _sideBar()),
         );
       }
       padding = .only(top: _padding.top, right: _padding.right);

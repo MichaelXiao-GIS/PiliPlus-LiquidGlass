@@ -312,7 +312,7 @@ class _SettingPageState extends State<SettingPage> {
       Color(0xFF007AFF),
     ];
     return ListView(
-      padding: EdgeInsets.fromLTRB(16, 4, 16, bottom + 32),
+      padding: EdgeInsets.fromLTRB(16, 20, 16, bottom + 32),
       children: [
         _buildSearchItem(theme),
         heading('偏好设置'),
@@ -443,6 +443,7 @@ class _SettingPageState extends State<SettingPage> {
       bottom: 8,
     ),
     child: Material(
+      key: const ValueKey('settings-search-entry'),
       color: theme.colorScheme.onInverseSurface,
       borderRadius: const BorderRadius.all(Radius.circular(50)),
       child: InkWell(

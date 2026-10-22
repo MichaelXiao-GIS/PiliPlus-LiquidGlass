@@ -1,0 +1,68 @@
+--- a/lib/get_navigation/src/routes/get_transition_mixin.dart
++++ b/lib/get_navigation/src/routes/get_transition_mixin.dart
+@@ -1,4 +1,6 @@
+ import 'dart:io' show Platform;
++
++import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform;
+ 
+ import 'package:cupertino_ui/cupertino_ui.dart'
+     show CupertinoRouteTransitionMixin, CupertinoPageTransition;
+@@ -14,7 +16,11 @@
+   Widget buildContent(BuildContext context);
+ 
+   @override
+-  Duration get transitionDuration => const Duration(milliseconds: 300);
++  // PiliPlus: use Cupertino timing for the default iOS transition.
++  Duration get transitionDuration => defaultTargetPlatform == TargetPlatform.iOS &&
++          Get.defaultTransition == Transition.native
++      ? CupertinoRouteTransitionMixin.kTransitionDuration
++      : const Duration(milliseconds: 300);
+ 
+   // The transitionDuration is used to create the AnimationController which is only
+   // built once, so when page transition builder is updated and transitionDuration
+@@ -44,7 +50,9 @@
+ 
+   @override
+   DelegatedTransitionBuilder? get delegatedTransition =>
+-      switch (Get.defaultTransition) {
++      defaultTargetPlatform == TargetPlatform.iOS && Get.defaultTransition == Transition.native
++      ? CupertinoPageTransition.delegatedTransition
++      : switch (Get.defaultTransition) {
+         Transition.native || Transition.zoom => null,
+         Transition.cupertino ||
+         Transition.cupertinoDialog =>
+@@ -78,7 +86,10 @@
+     // Otherwise if the next route has the same route transition mixin as this
+     // one, then this route will already be synced with its transition.
+     return nextRouteIsNotFullscreen &&
+-        ((nextRoute is MaterialRouteTransitionMixin) ||
++        ((defaultTargetPlatform == TargetPlatform.iOS &&
++            Get.defaultTransition == Transition.native &&
++            nextRoute is GetPageRouteTransitionMixin) ||
++            (nextRoute is MaterialRouteTransitionMixin) ||
+             nextRouteHasDelegatedTransition);
+   }
+ 
+@@ -128,6 +139,22 @@
+     Animation<double> secondaryAnimation,
+     Widget child,
+   ) {
++    if (defaultTargetPlatform == TargetPlatform.iOS &&
++        Get.defaultTransition == Transition.native) {
++      final reduced = MediaQuery.disableAnimationsOf(context) &&
++          !rawRoute.popGestureInProgress;
++      // The fade wrapper stays mounted during a back swipe, preserving page state.
++      return CupertinoRouteTransitionMixin.buildPageTransitions<T>(
++        rawRoute,
++        context,
++        reduced ? kAlwaysCompleteAnimation : animation,
++        reduced ? kAlwaysDismissedAnimation : secondaryAnimation,
++        FadeTransition(
++          opacity: reduced ? animation : kAlwaysCompleteAnimation,
++          child: child,
++        ),
++      );
++    }
+     switch (Get.defaultTransition) {
+       case Transition.native:
+         if (Platform.isIOS || Platform.isMacOS) {

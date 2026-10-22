@@ -315,3 +315,11 @@ foreach ($patch in $patches_cupertino) {
         throw "$LASTEXITCODE"
     }
 }
+
+if ($platform.ToLower() -eq "ios") {
+    Set-Location $env:GITHUB_WORKSPACE
+    dart tool/patch_ios_navigation.dart
+    if ($LASTEXITCODE -ne 0) {
+        throw "iOS navigation patch failed: $LASTEXITCODE"
+    }
+}

@@ -45,6 +45,10 @@ class _HomePageState extends CommonPageState<HomePage>
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    final iosBottomNav =
+        GlassCapabilities.isIOS &&
+        !_mainController.useSideBar &&
+        MediaQuery.sizeOf(context).width < 700;
     Widget tabBar;
     if (_homeController.tabs.length > 1) {
       tabBar = Padding(
@@ -92,7 +96,7 @@ class _HomePageState extends CommonPageState<HomePage>
     }
     return Column(
       children: [
-        if (GlassCapabilities.isIOS && _mainController.useBottomNav)
+        if (iosBottomNav)
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 8, 14, 4),
             child: Row(
@@ -124,7 +128,7 @@ class _HomePageState extends CommonPageState<HomePage>
           ),
         if (!_mainController.useSideBar &&
             (GlassCapabilities.isIOS
-                ? _mainController.useBottomNav
+                ? iosBottomNav
                 : MediaQuery.sizeOf(context).isPortrait))
           customAppBar(),
         tabBar,

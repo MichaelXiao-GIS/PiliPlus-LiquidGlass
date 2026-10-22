@@ -7,6 +7,7 @@ import 'package:PiliPlus/common/widgets/dialog/dialog.dart';
 import 'package:PiliPlus/common/widgets/emote_tooltip.dart'
     show enableEmoteTooltip;
 import 'package:PiliPlus/common/widgets/image/network_img_layer.dart';
+import 'package:PiliPlus/common/widgets/liquid_glass/glass_platform.dart';
 import 'package:PiliPlus/common/widgets/pendant_avatar.dart';
 import 'package:PiliPlus/common/widgets/scale_app.dart';
 import 'package:PiliPlus/common/widgets/scroll_physics.dart'
@@ -106,7 +107,9 @@ List<SettingsModel> get styleSettings => [
   NormalModel(
     title: '页面过渡动画',
     leading: const Icon(Icons.animation),
-    getSubtitle: () => '当前：${Pref.pageTransition.name}',
+    getSubtitle: () => GlassCapabilities.isIOS
+        ? '当前：${Pref.pageTransition == Transition.native ? 'iOS 默认（native）' : Pref.pageTransition.name}'
+        : '当前：${Pref.pageTransition.name}',
     onTap: _showTransitionDialog,
   ),
   const SwitchModel(
@@ -685,7 +688,14 @@ Future<void> _showTransitionDialog(
     builder: (context) => SelectDialog<Transition>(
       title: '页面过渡动画',
       value: Pref.pageTransition,
-      values: Transition.values.map((e) => (e, e.name)).toList(),
+      values: GlassCapabilities.isIOS
+          ? [
+              (Transition.native, 'iOS 默认（native）'),
+              ...Transition.values
+                  .where((e) => e != Transition.native)
+                  .map((e) => (e, e.name)),
+            ]
+          : Transition.values.map((e) => (e, e.name)).toList(),
     ),
   );
   if (res != null) {

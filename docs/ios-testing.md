@@ -4,9 +4,9 @@
 
 ## 安装包
 
-从本仓库的 [Releases](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases) 下载 `PiliPlus-LiquidGlass-2.1.6-test2-ios-arm64.ipa`。私有仓库需要登录有访问权限的 GitHub 账号。
+从本仓库的 [Releases](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases) 下载 `PiliPlus-LiquidGlass-2.1.6-test3-ios-arm64.ipa`。
 
-- 版本：2.1.6，Liquid Glass 测试版 2（构建号 2）。
+- 版本：2.1.6，Liquid Glass 测试版 3（构建号 3）。
 - 架构：真机 arm64，Release 构建。
 - 最低系统：iOS 15；原生 Liquid Glass 在 iOS 26 及以上启用。
 - 签名：仅有打包用的 ad-hoc 代码签名，没有 Apple 开发者证书及设备描述文件。安装前需用自己的 Apple 身份重新签名。
@@ -35,6 +35,8 @@ shasum -a 256 -c SHA256SUMS.txt
 - 减少透明度、增强对比度、减少动态效果。
 - 视频开始播放、横屏全屏控制、退出全屏、后台音频和画中画。
 
-测试版 2 修复首页搜索栏收起时覆盖上方标题和按钮，以及资料库右上角玻璃控件边缘出现毛边的问题。已通过 32 项自动测试（包含收起过程的像素、点击和辅助功能检查），并在 iOS 27.0 模拟器检查玻璃边缘与按钮操作。真实设备上的播放、画中画、登录及渲染性能仍以真机测试结果为准。
+测试版 3 将横屏玻璃导航缩窄为 72pt，并修复内部图标偏左的问题；设置标题栏与搜索框之间留出 28pt。外观设置中保留原来的完整动画列表，`native` 显示为“iOS 默认”，新安装默认选中；已保存的其他动画继续生效。iOS 默认效果包含前后页面联动、可取消的侧滑返回，并响应系统“减少动态效果”。
+
+已通过 45 项自动测试，覆盖横屏两种方向的安全区与居中、设置间距、动画选择保存、原有动画、iOS 推入返回和侧滑取消。iOS 27.0 模拟器已检查页面布局。真实设备上的播放、画中画、登录及渲染性能仍以真机测试结果为准。
 
 界面实现和构建环境说明见 [iOS Liquid Glass 适配](ios-liquid-glass.md)。

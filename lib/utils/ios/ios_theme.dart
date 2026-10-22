@@ -1,3 +1,5 @@
+import 'package:cupertino_ui/cupertino_ui.dart'
+    show CupertinoPageTransitionsBuilder;
 import 'package:material_ui/material_ui.dart';
 
 /// Neutral content surfaces keep Bilibili's accent on actions and selection.
@@ -22,6 +24,12 @@ abstract final class IosTheme {
           : const Color(0xFFD1D1D6),
     );
     return theme.copyWith(
+      pageTransitionsTheme: PageTransitionsTheme(
+        builders: {
+          ...theme.pageTransitionsTheme.builders,
+          TargetPlatform.iOS: const CupertinoPageTransitionsBuilder(),
+        },
+      ),
       colorScheme: colors,
       scaffoldBackgroundColor: dark ? Colors.black : const Color(0xFFF7F7FA),
       canvasColor: dark ? Colors.black : const Color(0xFFF7F7FA),

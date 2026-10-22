@@ -37,7 +37,7 @@
 
 [下载 iPhone 测试版 IPA](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases) · [安装说明](docs/ios-testing.md)
 
-测试版 2 修复首页顶栏收起时的遮挡，以及资料库右上角玻璃控件的边缘毛边。
+测试版 3 缩窄并居中横屏导航，增加设置标题栏与搜索框间距；完善 iOS 默认页面动画，同时保留原有动画选项及已保存的选择。
 
 IPA 为真机 arm64 Release 包，最低支持 iOS 15，安装前需使用自己的 Apple 身份重新签名。原生 Liquid Glass 在 iOS 26 及以上启用。
 
