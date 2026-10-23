@@ -116,11 +116,12 @@ void main() {
     (const Size(700, 250), const EdgeInsets.only(left: 59, bottom: 21)),
   ]) {
     testWidgets(
-      'landscape rail at $size keeps safe area outside its 72pt surface',
+      'landscape rail at $size uses compact trailing groups without a left gutter',
       (tester) async {
         await tester.binding.setSurfaceSize(size);
         addTearDown(() => tester.binding.setSurfaceSize(null));
         var selection = 0;
+        var contentTaps = 0;
         await tester.pumpWidget(
           MaterialApp(
             home: MediaQuery(
@@ -132,33 +133,67 @@ void main() {
               ),
               child: MainLayout(
                 bottomNav: null,
+                floatingSideBar: true,
                 sideBar: GlassNavigationRail(
                   destinations: _destinations,
                   selectedIndex: 0,
                   onSelected: (index) => selection = index,
-                  leading: const Column(
+                  compactLeading: const Center(
+                    child: Icon(Icons.more_horiz, key: ValueKey('rail-menu')),
+                  ),
+                  leadingHeight: 96,
+                  leading: Column(
                     children: [
-                      SizedBox(height: 44),
-                      SizedBox(height: 44),
-                      SizedBox(height: 44),
+                      const SizedBox(
+                        width: 44,
+                        height: 44,
+                        child: Icon(
+                          Icons.account_circle,
+                          key: ValueKey('rail-avatar'),
+                        ),
+                      ),
+                      IconButton(
+                        key: const ValueKey('rail-search'),
+                        onPressed: () {},
+                        icon: const Icon(Icons.search),
+                      ),
                     ],
                   ),
                 ),
-                body: const ColoredBox(
-                  key: ValueKey('content'),
-                  color: Colors.white,
+                body: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => contentTaps++,
+                  child: const ColoredBox(
+                    key: ValueKey('content'),
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ),
           ),
         );
-        expect(tester.getRect(find.byType(GlassSurface)).width, 72);
-        expect(tester.getRect(find.byType(GlassSurface)).left, safe.left + 8);
+        final bar = tester.getRect(find.byType(GlassSurface).last);
+        expect(bar.width, 60);
+        expect(bar.height, lessThanOrEqualTo(152));
+        expect(bar.right, lessThanOrEqualTo(size.width - 8));
+        expect(bar.left, greaterThan(size.width / 2));
+        expect(tester.getRect(find.byKey(const ValueKey('content'))).left, 0);
         expect(
-          tester.getRect(find.byKey(const ValueKey('content'))).left,
-          safe.left + 8 + 72 + 8,
+          tester.getRect(find.byKey(const ValueKey('content'))).size,
+          size,
         );
-        final bar = tester.getRect(find.byType(GlassSurface));
+        final toolbar = tester.getRect(find.byType(GlassSurface).first);
+        for (final key in ['rail-avatar', 'rail-search', 'rail-menu']) {
+          final control = find.byKey(ValueKey(key));
+          if (control.evaluate().isNotEmpty) {
+            expect(
+              tester.getCenter(control).dx,
+              closeTo(toolbar.center.dx, 0.001),
+            );
+          }
+        }
+        await tester.tapAt(const Offset(100, 100));
+        expect(contentTaps, 1);
         for (final label in ['首页', '动态', '我的']) {
           expect(
             tester.getCenter(find.byTooltip(label)).dx,

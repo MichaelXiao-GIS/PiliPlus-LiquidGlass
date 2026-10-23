@@ -412,18 +412,69 @@ class _MainAppState extends PopScopeState<MainApp>
       if (GlassCapabilities.isIOS) {
         sideBar = Obx(
           () => GlassNavigationRail(
-            leading: userAndSearchVertical(),
+            leading: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                userAvatar(
+                  colorScheme: _colorScheme,
+                  mainController: _mainController,
+                ),
+                if (_mainController.accountService.isLogin.value)
+                  msgBadge(_mainController),
+                IconButton(
+                  tooltip: '搜索',
+                  icon: const Icon(Icons.search_outlined),
+                  onPressed: () => Get.toNamed('/search'),
+                ),
+              ],
+            ),
+            leadingHeight: _mainController.accountService.isLogin.value
+                ? 144
+                : 96,
+            compactLeading: PopupMenuButton<int>(
+              tooltip: '搜索与账号',
+              icon: Badge(
+                isLabelVisible: _mainController.msgUnReadCount.value != null,
+                child: const Icon(Icons.more_horiz),
+              ),
+              onSelected: (value) {
+                if (value == 0) Get.toNamed('/search');
+                if (value == 1) _mainController.toMinePage();
+                if (value == 2) {
+                  _mainController
+                    ..clearUnreadMsg()
+                    ..lastCheckUnreadAt = DateTime.now().millisecondsSinceEpoch;
+                  Get.toNamed('/whisper');
+                }
+              },
+              itemBuilder: (_) => [
+                const PopupMenuItem(value: 0, child: Text('搜索')),
+                const PopupMenuItem(value: 1, child: Text('我的')),
+                if (_mainController.accountService.isLogin.value)
+                  PopupMenuItem(
+                    value: 2,
+                    child: Text(
+                      _mainController.msgUnReadCount.value == null
+                          ? '消息'
+                          : '消息（${_mainController.msgUnReadCount.value} 未读）',
+                    ),
+                  ),
+              ],
+            ),
             selectedIndex: _mainController.selectedIndex.value,
             onSelected: _mainController.setIndex,
             destinations: _iosDestinations,
           ),
         );
       }
-      padding = .only(top: _padding.top, right: _padding.right);
+      padding = GlassCapabilities.isIOS
+          ? GlassNavigationRail.contentInsetsOf(context)
+          : .only(top: _padding.top, right: _padding.right);
     }
 
     child = Material(
       child: MainLayout(
+        floatingSideBar: GlassCapabilities.isIOS,
         sideBar: sideBar,
         bottomNav: bottomNav,
         body: Padding(
@@ -431,9 +482,7 @@ class _MainAppState extends PopScopeState<MainApp>
           child: GlassCapabilities.isIOS
               ? GlassContentViewport(
                   origin: Offset(
-                    _mainController.useBottomNav
-                        ? padding.left
-                        : _padding.left + GlassNavigationRail.width + 16,
+                    padding.left,
                     padding.top,
                   ),
                   child: child,

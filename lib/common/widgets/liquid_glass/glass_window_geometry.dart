@@ -20,17 +20,27 @@ class GlassWindowGeometry {
     this.verticalSizeClass = 0,
     this.safeArea = EdgeInsets.zero,
     this.features = const [],
+    this.verticalBarEdge,
+    this.statusBarFrame = Rect.zero,
   });
 
   factory GlassWindowGeometry.fromMap(Map<dynamic, dynamic> map) {
     double number(dynamic value) =>
         value is num && value.isFinite ? value.toDouble() : 0;
     final safe = map['safeArea'] as Map? ?? const {};
+    final status = map['statusBarFrame'] as Map? ?? const {};
     return GlassWindowGeometry(
       size: Size(number(map['width']), number(map['height'])),
       scale: number(map['scale']),
       horizontalSizeClass: (map['horizontalSizeClass'] as num?)?.toInt() ?? 0,
       verticalSizeClass: (map['verticalSizeClass'] as num?)?.toInt() ?? 0,
+      verticalBarEdge: map['verticalBarEdge'] as String?,
+      statusBarFrame: Rect.fromLTWH(
+        number(status['x']),
+        number(status['y']),
+        number(status['width']),
+        number(status['height']),
+      ),
       safeArea: EdgeInsets.fromLTRB(
         number(safe['left']),
         number(safe['top']),
@@ -67,6 +77,16 @@ class GlassWindowGeometry {
   final EdgeInsets safeArea;
   final List<DisplayFeature> features;
 
+  /// Physical edge, resolved by UIKit so RTL never moves the hardware bar.
+  final String? verticalBarEdge;
+  final Rect statusBarFrame;
+
+  Rect statusBarBounds(MediaQueryData data) =>
+      matches(data) ? _scaleRect(statusBarFrame, _factor(data)) : Rect.zero;
+
+  bool railOnLeft(MediaQueryData data) =>
+      matches(data) && verticalBarEdge == 'left';
+
   double _factor(MediaQueryData data) => scale / data.devicePixelRatio;
 
   // Reject stale traits during a display/window change, until UIKit catches up.
@@ -77,6 +97,12 @@ class GlassWindowGeometry {
       (size.height * _factor(data) - data.size.height).abs() < 2;
 
   bool bottomNavigation(MediaQueryData data) {
+    if (matches(data) && verticalBarEdge != null) {
+      if (verticalBarEdge != 'none') return false;
+      // An open Duo in portrait returns to horizontal bars, even with a
+      // regular horizontal size class. The outer display reports an edge.
+      return data.size.height >= data.size.width && data.size.height >= 500;
+    }
     if (matches(data) && horizontalSizeClass != 0 && verticalSizeClass != 0) {
       return horizontalSizeClass == 1 && verticalSizeClass == 2;
     }

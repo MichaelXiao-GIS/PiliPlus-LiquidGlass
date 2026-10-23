@@ -111,7 +111,18 @@ private final class GlassGeometryView: UIView {
 
   func snapshot() -> [String: Any] {
     var regions: [[String: Any]] = []
+    var verticalBarEdge: String? = nil
+    var statusFrame = CGRect.zero
     if #available(iOS 27.1, *) {
+      let rtl = effectiveUserInterfaceLayoutDirection == .rightToLeft
+      switch traitCollection.verticalBarEdge {
+      case .leading: verticalBarEdge = rtl ? "right" : "left"
+      case .trailing: verticalBarEdge = rtl ? "left" : "right"
+      default: verticalBarEdge = "none"
+      }
+      if let scene = window?.windowScene, let manager = scene.statusBarManager {
+        statusFrame = convert(manager.statusBarFrame, from: scene.coordinateSpace)
+      }
       for (kind, name) in [(UIView.ReservedRegion.Kind.division, "division"), (.occlusion, "occlusion")] {
         for region in reservedRegions(kind: kind) where !region.frame.isEmpty {
           regions.append([
@@ -121,7 +132,7 @@ private final class GlassGeometryView: UIView {
         }
       }
     }
-    return [
+    var result: [String: Any] = [
       "width": bounds.width, "height": bounds.height,
       "scale": traitCollection.displayScale,
       "horizontalSizeClass": traitCollection.horizontalSizeClass.rawValue,
@@ -130,6 +141,10 @@ private final class GlassGeometryView: UIView {
                    "right": safeAreaInsets.right, "bottom": safeAreaInsets.bottom],
       "regions": regions,
     ]
+    if let edge = verticalBarEdge { result["verticalBarEdge"] = edge }
+    result["statusBarFrame"] = ["x": statusFrame.minX, "y": statusFrame.minY,
+                                "width": statusFrame.width, "height": statusFrame.height]
+    return result
   }
 
   private func publish() {

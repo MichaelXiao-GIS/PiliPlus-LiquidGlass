@@ -1,9 +1,13 @@
+import 'dart:math' as math;
+
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_navigation_bar.dart';
+import 'package:PiliPlus/common/widgets/liquid_glass/glass_platform.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_surface.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_window_geometry.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// A compact phone landscape rail. Safe-area padding stays outside the glass.
+/// Two content-sized control groups in the system's physical bar edge.
+/// The surrounding space stays transparent and does not intercept the feed.
 class GlassNavigationRail extends StatelessWidget {
   const GlassNavigationRail({
     super.key,
@@ -11,117 +15,140 @@ class GlassNavigationRail extends StatelessWidget {
     required this.selectedIndex,
     required this.onSelected,
     required this.leading,
+    required this.compactLeading,
+    this.leadingHeight = 144,
   });
 
-  static const width = 72.0;
+  static const width = 60.0;
+  static const gutter = width + 16;
   final List<GlassDestination> destinations;
   final int selectedIndex;
   final ValueChanged<int> onSelected;
   final Widget leading;
+  final Widget compactLeading;
+  final double leadingHeight;
+
+  static EdgeInsets contentInsetsOf(BuildContext context) {
+    final data = MediaQuery.of(context);
+    final safe = data.viewPadding;
+    return GlassCapabilities.of(context).window.railOnLeft(data)
+        ? safe.copyWith(left: math.max(safe.left, gutter))
+        : safe.copyWith(right: math.max(safe.right, gutter));
+  }
 
   @override
   Widget build(BuildContext context) {
-    final safe = MediaQuery.viewPaddingOf(context);
-    final colors = ColorScheme.of(context);
     final data = MediaQuery.of(context);
-    final region = glassControlRegion(
-      data,
-      Rect.fromLTWH(
-        safe.left + 8,
-        safe.top + 8,
-        width,
-        data.size.height - safe.vertical - 16,
-      ),
-      Axis.vertical,
+    final safe = data.viewPadding;
+    final window = GlassCapabilities.of(context).window;
+    final colors = ColorScheme.of(context);
+    final left = window.railOnLeft(data);
+    final inset = left ? safe.left : safe.right;
+    // Share the system edge gutter instead of reserving a second column.
+    final x = left
+        ? (inset >= gutter ? (inset - width) / 2 : inset + 8)
+        : data.size.width -
+              (inset >= gutter ? (inset + width) / 2 : inset + width + 8);
+    var band = Rect.fromLTRB(
+      x,
+      safe.top + 12,
+      x + width,
+      math.max(safe.top + 12, data.size.height - safe.bottom - 12),
     );
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        safe.left + 8,
-        region.top,
-        8,
-        data.size.height - region.bottom,
+    final status = window.statusBarBounds(data);
+    if (status.overlaps(band)) {
+      band = Rect.fromLTRB(
+        band.left,
+        math.max(band.top, status.bottom + 12),
+        band.right,
+        band.bottom,
+      );
+    }
+    final region = glassControlRegion(data, band, Axis.vertical);
+    final navHeight = destinations.length * 48.0 + 8;
+    final expanded = region.height >= navHeight + leadingHeight + 20;
+    final toolbarHeight = expanded ? leadingHeight : 48.0;
+    final available = math.max(0.0, region.height - toolbarHeight - 12);
+    final height = math.min(navHeight, available);
+    Widget surface(Widget child) => GlassSurface(
+      radius: width / 2,
+      child: MediaQuery.removePadding(
+        context: context,
+        removeLeft: true,
+        removeRight: true,
+        removeTop: true,
+        removeBottom: true,
+        // GlassSurface's stack loosens its foreground constraints. Fill the
+        // capsule before centering controls, rather than centering in their
+        // intrinsic (44/48pt) width at the capsule's leading edge.
+        child: SizedBox.expand(child: child),
       ),
-      child: SizedBox(
-        width: width,
-        child: GlassSurface(
-          child: MediaQuery.removePadding(
-            context: context,
-            removeLeft: true,
-            removeRight: true,
-            removeTop: true,
-            removeBottom: true,
-            child: SizedBox(
-              width: width,
-              child: LayoutBuilder(
-                builder: (context, constraints) => SingleChildScrollView(
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      minHeight: constraints.maxHeight,
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          leading,
-                          Column(
-                            mainAxisSize: MainAxisSize.min,
-                            spacing: 4,
-                            children: [
-                              for (var i = 0; i < destinations.length; i++)
-                                Semantics(
-                                  container: true,
-                                  selected: i == selectedIndex,
-                                  label: destinations[i].label,
-                                  value: destinations[i].badge == null
-                                      ? null
-                                      : destinations[i].badge!.isEmpty
-                                      ? '有未读动态'
-                                      : '${destinations[i].badge} 条未读动态',
-                                  button: true,
-                                  onTap: () => onSelected(i),
-                                  excludeSemantics: true,
-                                  child: IconButton(
-                                    tooltip: destinations[i].label,
-                                    onPressed: () => onSelected(i),
-                                    style: IconButton.styleFrom(
-                                      minimumSize: const Size(52, 48),
-                                      backgroundColor: i == selectedIndex
-                                          ? colors.primary.withValues(
-                                              alpha: 0.14,
-                                            )
-                                          : Colors.transparent,
-                                      foregroundColor: i == selectedIndex
-                                          ? colors.primary
-                                          : colors.onSurfaceVariant,
-                                    ),
-                                    icon: Badge(
-                                      isLabelVisible:
-                                          destinations[i].badge != null,
-                                      label:
-                                          destinations[i].badge?.isNotEmpty ==
-                                              true
-                                          ? Text(destinations[i].badge!)
-                                          : null,
-                                      child: i == selectedIndex
-                                          ? destinations[i].selectedIcon ??
-                                                destinations[i].icon
-                                          : destinations[i].icon,
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ],
+    );
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Positioned(
+          left: region.left,
+          top: region.top,
+          width: width,
+          height: toolbarHeight,
+          child: surface(expanded ? leading : compactLeading),
+        ),
+        Positioned(
+          left: region.left,
+          top: region.bottom - height,
+          width: width,
+          height: height,
+          child: surface(
+            SingleChildScrollView(
+              primary: false,
+              padding: const EdgeInsets.all(4),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (var i = 0; i < destinations.length; i++)
+                    Semantics(
+                      container: true,
+                      selected: i == selectedIndex,
+                      label: destinations[i].label,
+                      value: destinations[i].badge == null
+                          ? null
+                          : destinations[i].badge!.isEmpty
+                          ? '有未读动态'
+                          : '${destinations[i].badge} 条未读动态',
+                      button: true,
+                      onTap: () => onSelected(i),
+                      excludeSemantics: true,
+                      child: IconButton(
+                        tooltip: destinations[i].label,
+                        onPressed: () => onSelected(i),
+                        style: IconButton.styleFrom(
+                          fixedSize: const Size(52, 48),
+                          backgroundColor: i == selectedIndex
+                              ? colors.primary.withValues(alpha: 0.14)
+                              : Colors.transparent,
+                          foregroundColor: i == selectedIndex
+                              ? colors.primary
+                              : colors.onSurfaceVariant,
+                        ),
+                        icon: Badge(
+                          isLabelVisible: destinations[i].badge != null,
+                          label: destinations[i].badge?.isNotEmpty == true
+                              ? Text(destinations[i].badge!)
+                              : null,
+                          child: i == selectedIndex
+                              ? destinations[i].selectedIcon ??
+                                    destinations[i].icon
+                              : destinations[i].icon,
+                        ),
                       ),
                     ),
-                  ),
-                ),
+                ],
               ),
             ),
           ),
         ),
-      ),
+      ],
     );
   }
 }

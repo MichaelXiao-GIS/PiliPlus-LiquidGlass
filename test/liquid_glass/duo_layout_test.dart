@@ -5,6 +5,7 @@ import 'package:PiliPlus/common/widgets/liquid_glass/glass_navigation_rail.dart'
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_platform.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_surface.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_window_geometry.dart';
+import 'package:PiliPlus/common/widgets/main_layout.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -51,6 +52,32 @@ void main() {
         );
       },
     );
+  }
+
+  for (final (size, edge, bottom) in [
+    (const Size(466, 678), 'right', false),
+    (const Size(626, 890), 'none', true),
+    (const Size(890, 626), 'right', false),
+    (const Size(890, 626), 'left', false),
+  ]) {
+    test('system vertical edge overrides size classes at $size / $edge', () {
+      final geometry = GlassWindowGeometry.fromMap({
+        'width': size.width,
+        'height': size.height,
+        'scale': 3,
+        'horizontalSizeClass': 2,
+        'verticalSizeClass': 2,
+        'verticalBarEdge': edge,
+        'statusBarFrame': const {'x': 800, 'y': 0, 'width': 90, 'height': 140},
+      });
+      final data = MediaQueryData(size: size, devicePixelRatio: 3);
+      expect(geometry.bottomNavigation(data), bottom);
+      expect(geometry.railOnLeft(data), edge == 'left');
+      expect(
+        geometry.statusBarBounds(data),
+        const Rect.fromLTWH(800, 0, 90, 140),
+      );
+    });
   }
 
   test('stale inner-screen traits cannot override the new outer window', () {
@@ -238,18 +265,128 @@ void main() {
               selectedIndex: 0,
               onSelected: (_) {},
               leading: const SizedBox(height: 100),
+              leadingHeight: 100,
+              compactLeading: const SizedBox(height: 48),
             ),
           ),
         ),
       ),
     );
-    final rect = tester.getRect(find.byType(GlassSurface));
-    expect(rect.left, 18);
-    expect(rect.top, 455);
-    expect(rect.bottom, 862);
-    expect(rect.width, 72);
+    final rect = tester.getRect(find.byType(GlassSurface).last);
+    expect(rect.left, 546);
+    expect(rect.top, greaterThanOrEqualTo(455));
+    expect(rect.bottom, 858);
+    expect(rect.width, 60);
+    expect(rect.height, 152);
     expect(tester.takeException(), isNull);
   });
+
+  for (final direction in TextDirection.values) {
+    for (final folded in [false, true]) {
+      testWidgets(
+        'right system gutter is shared at $direction / folded=$folded',
+        (tester) async {
+          const channel = MethodChannel('piliplus/liquid_glass');
+          const size = Size(890, 626);
+          await tester.binding.setSurfaceSize(size);
+          addTearDown(() => tester.binding.setSurfaceSize(null));
+          tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+            channel,
+            (_) async => {
+              'window': {
+                'width': 890,
+                'height': 626,
+                'scale': 1,
+                'verticalBarEdge': 'right',
+                'safeArea': {'left': 20, 'top': 10, 'right': 90, 'bottom': 20},
+                'statusBarFrame': {
+                  'x': 800,
+                  'y': 0,
+                  'width': 90,
+                  'height': 150,
+                },
+                'regions': [
+                  if (folded)
+                    {
+                      'kind': 'division',
+                      'x': 0,
+                      'y': 300,
+                      'width': 890,
+                      'height': 20,
+                    },
+                ],
+              },
+            },
+          );
+          addTearDown(
+            () => tester.binding.defaultBinaryMessenger
+                .setMockMethodCallHandler(channel, null),
+          );
+          var selected = 0;
+          await tester.pumpWidget(
+            MaterialApp(
+              home: MediaQuery(
+                data: const MediaQueryData(size: size),
+                child: GlassPlatformScope(
+                  child: Builder(
+                    builder: (context) => Directionality(
+                      textDirection: direction,
+                      child: MainLayout(
+                        floatingSideBar: true,
+                        bottomNav: null,
+                        sideBar: GlassNavigationRail(
+                          destinations: _items,
+                          selectedIndex: 0,
+                          onSelected: (value) => selected = value,
+                          leadingHeight: 96,
+                          leading: const Column(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              Icon(Icons.account_circle),
+                              Icon(Icons.search),
+                            ],
+                          ),
+                          compactLeading: const Center(
+                            child: Icon(Icons.more_horiz),
+                          ),
+                        ),
+                        body: Padding(
+                          padding: GlassNavigationRail.contentInsetsOf(context),
+                          child: const ColoredBox(
+                            key: ValueKey('edge-content'),
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+          final content = tester.getRect(
+            find.byKey(const ValueKey('edge-content')),
+          );
+          expect(content.left, 20);
+          expect(
+            content.right,
+            800,
+          ); // Use the existing 90pt edge, not another 76pt column.
+          for (final surface in find.byType(GlassSurface).evaluate()) {
+            final rect = tester.getRect(find.byWidget(surface.widget));
+            expect(rect.center.dx, 845);
+            expect(rect.top, greaterThanOrEqualTo(folded ? 320 : 162));
+            expect(rect.bottom, lessThanOrEqualTo(594));
+          }
+          await tester.tap(find.byTooltip('我的'));
+          expect(selected, 2);
+          expect(tester.takeException(), isNull);
+        },
+        variant: TargetPlatformVariant.only(TargetPlatform.iOS),
+      );
+    }
+  }
 
   testWidgets(
     'native layout events update same-size posture without remounting content',

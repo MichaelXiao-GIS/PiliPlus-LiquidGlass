@@ -11,11 +11,13 @@ class MainLayout
     required this.sideBar,
     required this.bottomNav,
     required this.body,
+    this.floatingSideBar = false,
   });
 
   final Widget? sideBar;
   final Widget? bottomNav;
   final Widget body;
+  final bool floatingSideBar;
 
   @override
   Iterable<MainType> get slots => MainType.values;
@@ -31,7 +33,15 @@ class MainLayout
   SlottedContainerRenderObjectMixin<MainType, RenderBox> createRenderObject(
     BuildContext context,
   ) {
-    return _RenderMainLayout();
+    return _RenderMainLayout()..floatingSideBar = floatingSideBar;
+  }
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    covariant SlottedContainerRenderObjectMixin<MainType, RenderBox> renderObject,
+  ) {
+    (renderObject as _RenderMainLayout).floatingSideBar = floatingSideBar;
   }
 }
 
@@ -39,6 +49,13 @@ class _RenderMainLayout extends RenderBox
     with
         SlottedContainerRenderObjectMixin<MainType, RenderBox>,
         SlottedLayoutMixin {
+  bool _floatingSideBar = false;
+  set floatingSideBar(bool value) {
+    if (_floatingSideBar == value) return;
+    _floatingSideBar = value;
+    markNeedsLayout();
+  }
+
   RenderBox? get sideBar => childForSlot(.sideBar);
   RenderBox? get bottomNav => childForSlot(.bottomNav);
   RenderBox get body => childForSlot(.body)!;
@@ -56,6 +73,13 @@ class _RenderMainLayout extends RenderBox
 
     final sideBar = this.sideBar;
     if (sideBar != null) {
+      if (_floatingSideBar) {
+        sideBar.layout(BoxConstraints.tight(size));
+        setOffset(sideBar, .zero);
+        this.body.layout(BoxConstraints.tight(size));
+        setOffset(this.body, .zero);
+        return;
+      }
       final sideBarWidth = ChildLayoutHelper.layoutChild(
         sideBar,
         BoxConstraints.tightFor(height: constraints.maxHeight),
@@ -102,8 +126,9 @@ class _RenderMainLayout extends RenderBox
       }
     }
 
-    doPaint(sideBar);
+    if (!_floatingSideBar) doPaint(sideBar);
     doPaint(body);
+    if (_floatingSideBar) doPaint(sideBar);
     doPaint(bottomNav);
   }
 }
