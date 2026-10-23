@@ -264,8 +264,10 @@ void main() {
               destinations: _items,
               selectedIndex: 0,
               onSelected: (_) {},
-              leading: const SizedBox(height: 100),
-              leadingHeight: 100,
+              actions: const [
+                SizedBox.square(dimension: 44),
+                SizedBox.square(dimension: 44),
+              ],
               compactLeading: const SizedBox(height: 48),
             ),
           ),
@@ -277,7 +279,7 @@ void main() {
     expect(rect.top, greaterThanOrEqualTo(455));
     expect(rect.bottom, 858);
     expect(rect.width, 60);
-    expect(rect.height, 152);
+    expect(rect.height, 156);
     expect(tester.takeException(), isNull);
   });
 
@@ -338,14 +340,10 @@ void main() {
                           destinations: _items,
                           selectedIndex: 0,
                           onSelected: (value) => selected = value,
-                          leadingHeight: 96,
-                          leading: const Column(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
-                              Icon(Icons.account_circle),
-                              Icon(Icons.search),
-                            ],
-                          ),
+                          actions: const [
+                            Icon(Icons.account_circle),
+                            Icon(Icons.search),
+                          ],
                           compactLeading: const Center(
                             child: Icon(Icons.more_horiz),
                           ),

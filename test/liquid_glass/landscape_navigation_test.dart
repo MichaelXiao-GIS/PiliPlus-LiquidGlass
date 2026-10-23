@@ -141,24 +141,21 @@ void main() {
                   compactLeading: const Center(
                     child: Icon(Icons.more_horiz, key: ValueKey('rail-menu')),
                   ),
-                  leadingHeight: 96,
-                  leading: Column(
-                    children: [
-                      const SizedBox(
-                        width: 44,
-                        height: 44,
-                        child: Icon(
-                          Icons.account_circle,
-                          key: ValueKey('rail-avatar'),
-                        ),
+                  actions: [
+                    const SizedBox(
+                      width: 44,
+                      height: 44,
+                      child: Icon(
+                        Icons.account_circle,
+                        key: ValueKey('rail-avatar'),
                       ),
-                      IconButton(
-                        key: const ValueKey('rail-search'),
-                        onPressed: () {},
-                        icon: const Icon(Icons.search),
-                      ),
-                    ],
-                  ),
+                    ),
+                    IconButton(
+                      key: const ValueKey('rail-search'),
+                      onPressed: () {},
+                      icon: const Icon(Icons.search),
+                    ),
+                  ],
                 ),
                 body: GestureDetector(
                   behavior: HitTestBehavior.opaque,
@@ -174,7 +171,7 @@ void main() {
         );
         final bar = tester.getRect(find.byType(GlassSurface).last);
         expect(bar.width, 60);
-        expect(bar.height, lessThanOrEqualTo(152));
+        expect(bar.height, lessThanOrEqualTo(156));
         expect(bar.right, lessThanOrEqualTo(size.width - 8));
         expect(bar.left, greaterThan(size.width / 2));
         expect(tester.getRect(find.byKey(const ValueKey('content'))).left, 0);

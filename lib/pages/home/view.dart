@@ -409,6 +409,7 @@ class _HomePageState extends CommonPageState<HomePage>
 Widget userAvatar({
   required ColorScheme colorScheme,
   required MainController mainController,
+  bool showBackground = true,
 }) {
   return Semantics(
     container: true,
@@ -469,7 +470,9 @@ Widget userAvatar({
             tooltip: '点击登录',
             style: IconButton.styleFrom(
               padding: .zero,
-              backgroundColor: colorScheme.onInverseSurface,
+              backgroundColor: showBackground
+                  ? colorScheme.onInverseSurface
+                  : Colors.transparent,
             ),
             onPressed: mainController.toMinePage,
             icon: Icon(

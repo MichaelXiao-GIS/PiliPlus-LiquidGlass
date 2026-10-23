@@ -14,9 +14,8 @@ class GlassNavigationRail extends StatelessWidget {
     required this.destinations,
     required this.selectedIndex,
     required this.onSelected,
-    required this.leading,
+    required this.actions,
     required this.compactLeading,
-    this.leadingHeight = 144,
   });
 
   static const width = 60.0;
@@ -24,9 +23,10 @@ class GlassNavigationRail extends StatelessWidget {
   final List<GlassDestination> destinations;
   final int selectedIndex;
   final ValueChanged<int> onSelected;
-  final Widget leading;
+  final List<Widget> actions;
   final Widget compactLeading;
-  final double leadingHeight;
+  static const _inset = 6.0;
+  static const _buttonSize = 48.0;
 
   static EdgeInsets contentInsetsOf(BuildContext context) {
     final data = MediaQuery.of(context);
@@ -65,9 +65,10 @@ class GlassNavigationRail extends StatelessWidget {
       );
     }
     final region = glassControlRegion(data, band, Axis.vertical);
-    final navHeight = destinations.length * 48.0 + 8;
+    final navHeight = destinations.length * _buttonSize + _inset * 2;
+    final leadingHeight = actions.length * _buttonSize + _inset * 2;
     final expanded = region.height >= navHeight + leadingHeight + 20;
-    final toolbarHeight = expanded ? leadingHeight : 48.0;
+    final toolbarHeight = expanded ? leadingHeight : width;
     final available = math.max(0.0, region.height - toolbarHeight - 12);
     final height = math.min(navHeight, available);
     Widget surface(Widget child) => GlassSurface(
@@ -92,7 +93,22 @@ class GlassNavigationRail extends StatelessWidget {
           top: region.top,
           width: width,
           height: toolbarHeight,
-          child: surface(expanded ? leading : compactLeading),
+          child: surface(
+            Padding(
+              padding: const EdgeInsets.all(_inset),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (final action in expanded ? actions : [compactLeading])
+                    SizedBox(
+                      width: _buttonSize,
+                      height: _buttonSize,
+                      child: Center(child: action),
+                    ),
+                ],
+              ),
+            ),
+          ),
         ),
         Positioned(
           left: region.left,
@@ -102,7 +118,7 @@ class GlassNavigationRail extends StatelessWidget {
           child: surface(
             SingleChildScrollView(
               primary: false,
-              padding: const EdgeInsets.all(4),
+              padding: const EdgeInsets.all(_inset),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -123,7 +139,8 @@ class GlassNavigationRail extends StatelessWidget {
                         tooltip: destinations[i].label,
                         onPressed: () => onSelected(i),
                         style: IconButton.styleFrom(
-                          fixedSize: const Size(52, 48),
+                          fixedSize: const Size.square(_buttonSize),
+                          shape: const CircleBorder(),
                           backgroundColor: i == selectedIndex
                               ? colors.primary.withValues(alpha: 0.14)
                               : Colors.transparent,

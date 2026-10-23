@@ -412,25 +412,20 @@ class _MainAppState extends PopScopeState<MainApp>
       if (GlassCapabilities.isIOS) {
         sideBar = Obx(
           () => GlassNavigationRail(
-            leading: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                userAvatar(
-                  colorScheme: _colorScheme,
-                  mainController: _mainController,
-                ),
-                if (_mainController.accountService.isLogin.value)
-                  msgBadge(_mainController),
-                IconButton(
-                  tooltip: '搜索',
-                  icon: const Icon(Icons.search_outlined),
-                  onPressed: () => Get.toNamed('/search'),
-                ),
-              ],
-            ),
-            leadingHeight: _mainController.accountService.isLogin.value
-                ? 144
-                : 96,
+            actions: [
+              userAvatar(
+                colorScheme: _colorScheme,
+                mainController: _mainController,
+                showBackground: false,
+              ),
+              if (_mainController.accountService.isLogin.value)
+                msgBadge(_mainController),
+              IconButton(
+                tooltip: '搜索',
+                icon: const Icon(Icons.search_outlined),
+                onPressed: () => Get.toNamed('/search'),
+              ),
+            ],
             compactLeading: PopupMenuButton<int>(
               tooltip: '搜索与账号',
               icon: Badge(
