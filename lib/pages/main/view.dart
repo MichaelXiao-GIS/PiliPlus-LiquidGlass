@@ -9,6 +9,7 @@ import 'package:PiliPlus/common/widgets/liquid_glass/glass_navigation_bar.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_navigation_rail.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_platform.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_scroll_chrome.dart';
+import 'package:PiliPlus/common/widgets/liquid_glass/glass_window_geometry.dart';
 import 'package:PiliPlus/common/widgets/route_aware_mixin.dart';
 import 'package:PiliPlus/models/common/nav_bar_config.dart';
 import 'package:PiliPlus/pages/home/view.dart';
@@ -79,7 +80,7 @@ class _MainAppState extends PopScopeState<MainApp>
     }
     if (!_mainController.useSideBar) {
       _mainController.useBottomNav = GlassCapabilities.isIOS
-          ? MediaQuery.sizeOf(context).width < 700
+          ? GlassCapabilities.bottomNavigation(context)
           : MediaQuery.sizeOf(context).isPortrait;
     }
   }
@@ -355,10 +356,11 @@ class _MainAppState extends PopScopeState<MainApp>
   Widget build(BuildContext context) {
     final pages = _mainController.navigationBars
         .map(
-          (type) => GlassCapabilities.isIOS && _mainController.useBottomNav
+          (type) => GlassCapabilities.isIOS
               ? GlassScrollScope(
                   key: ValueKey(type),
                   controller: _mainController.scrollChrome[type]!,
+                  compact: _mainController.useBottomNav,
                   child: type.page,
                 )
               : type.page,
@@ -424,7 +426,20 @@ class _MainAppState extends PopScopeState<MainApp>
       child: MainLayout(
         sideBar: sideBar,
         bottomNav: bottomNav,
-        body: Padding(padding: padding, child: child),
+        body: Padding(
+          padding: padding,
+          child: GlassCapabilities.isIOS
+              ? GlassContentViewport(
+                  origin: Offset(
+                    _mainController.useBottomNav
+                        ? padding.left
+                        : _padding.left + GlassNavigationRail.width + 16,
+                    padding.top,
+                  ),
+                  child: child,
+                )
+              : child,
+        ),
       ),
     );
 

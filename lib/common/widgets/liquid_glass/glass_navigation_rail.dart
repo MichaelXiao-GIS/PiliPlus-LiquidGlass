@@ -1,5 +1,6 @@
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_navigation_bar.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_surface.dart';
+import 'package:PiliPlus/common/widgets/liquid_glass/glass_window_geometry.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// A compact phone landscape rail. Safe-area padding stays outside the glass.
@@ -22,12 +23,23 @@ class GlassNavigationRail extends StatelessWidget {
   Widget build(BuildContext context) {
     final safe = MediaQuery.viewPaddingOf(context);
     final colors = ColorScheme.of(context);
+    final data = MediaQuery.of(context);
+    final region = glassControlRegion(
+      data,
+      Rect.fromLTWH(
+        safe.left + 8,
+        safe.top + 8,
+        width,
+        data.size.height - safe.vertical - 16,
+      ),
+      Axis.vertical,
+    );
     return Padding(
       padding: EdgeInsets.fromLTRB(
         safe.left + 8,
-        safe.top + 8,
+        region.top,
         8,
-        safe.bottom + 8,
+        data.size.height - region.bottom,
       ),
       child: SizedBox(
         width: width,

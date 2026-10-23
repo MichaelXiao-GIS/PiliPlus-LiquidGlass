@@ -5,6 +5,7 @@ import 'package:PiliPlus/common/widgets/liquid_glass/glass_platform.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_scroll_chrome.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_surface.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_tab_bar.dart';
+import 'package:PiliPlus/common/widgets/liquid_glass/glass_window_geometry.dart';
 import 'package:PiliPlus/common/widgets/scroll_physics.dart' show tabBarView;
 import 'package:PiliPlus/pages/common/common_page.dart';
 import 'package:PiliPlus/pages/home/controller.dart';
@@ -31,6 +32,7 @@ class _HomePageState extends CommonPageState<HomePage>
   late ColorScheme _colorScheme;
   final _homeController = Get.putOrFind(HomeController.new);
   final _mainController = Get.find<MainController>();
+  final _bodyKey = GlobalKey();
 
   @override
   bool get needsCorrection => _homeController.hideTopBar;
@@ -50,7 +52,7 @@ class _HomePageState extends CommonPageState<HomePage>
     final iosBottomNav =
         GlassCapabilities.isIOS &&
         !_mainController.useSideBar &&
-        MediaQuery.sizeOf(context).width < 700;
+        _mainController.useBottomNav;
     Widget tabBar;
     if (_homeController.tabs.length > 1) {
       tabBar = Padding(
@@ -137,6 +139,7 @@ class _HomePageState extends CommonPageState<HomePage>
       ],
     );
     final pages = AnimatedBuilder(
+      key: _bodyKey,
       animation: _homeController.tabController,
       builder: (context, _) => tabBarView(
         controller: _homeController.tabController,
@@ -198,7 +201,14 @@ class _HomePageState extends CommonPageState<HomePage>
     }
     return Column(
       children: [
-        header,
+        GlassCapabilities.isIOS
+            ? GlassControlBand(
+                height: _homeController.tabs.length > 1
+                    ? GlassTabBar.heightOf(context)
+                    : 6,
+                child: header,
+              )
+            : header,
         Expanded(child: onBuild(pages)),
       ],
     );

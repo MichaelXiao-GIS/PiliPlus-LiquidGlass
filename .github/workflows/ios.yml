@@ -26,6 +26,17 @@ jobs:
           channel: stable
           flutter-version-file: pubspec.yaml
 
+      - name: Verify iOS 27.1 SDK
+        run: |
+          xcodebuild -version
+          sdk_version="$(xcrun --sdk iphoneos --show-sdk-version)"
+          python3 - "$sdk_version" <<'PY'
+          import sys
+          version = tuple(map(int, sys.argv[1].split('.')[:2]))
+          if version < (27, 1):
+              raise SystemExit('Select Xcode 27.1 or newer: Duo reserved regions require iOS 27.1 SDK.')
+          PY
+
       - name: Set and Extract version
         shell: pwsh
         run: lib/scripts/build.ps1

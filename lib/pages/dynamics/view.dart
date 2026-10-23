@@ -3,6 +3,7 @@ import 'package:PiliPlus/common/widgets/liquid_glass/glass_platform.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_scroll_chrome.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_surface.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_tab_bar.dart';
+import 'package:PiliPlus/common/widgets/liquid_glass/glass_window_geometry.dart';
 import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/models/common/dynamic/dynamics_type.dart';
 import 'package:PiliPlus/models/common/dynamic/up_panel_position.dart';
@@ -29,6 +30,7 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
   final _dynamicsController = Get.putOrFind(DynamicsController.new);
   UpPanelPosition get upPanelPosition => _dynamicsController.upPanelPosition;
   late final MainController _mainController = Get.find<MainController>();
+  final _bodyKey = GlobalKey();
 
   @override
   bool get wantKeepAlive => true;
@@ -147,6 +149,7 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
 
     final immersive = GlassScrollPage.enabled(context);
     Widget child = AnimatedBuilder(
+      key: _bodyKey,
       animation: _dynamicsController.tabController,
       builder: (context, _) => tabBarView(
         controller: _dynamicsController.tabController,
@@ -252,28 +255,31 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
               preferredSize: Size.fromHeight(
                 GlassTabBar.heightOf(context) + 14,
               ),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(12, 6, 12, 8),
-                child: Row(
-                  children: [
-                    ?leading,
-                    Expanded(
-                      child: GlassTabBar(
-                        controller: _dynamicsController.tabController,
-                        labels: DynamicsTabType.values
-                            .map((e) => e.label)
-                            .toList(),
-                        onTap: (_) {
-                          if (!_dynamicsController
-                              .tabController
-                              .indexIsChanging) {
-                            _dynamicsController.animateToTop();
-                          }
-                        },
+              child: GlassControlBand(
+                height: GlassTabBar.heightOf(context) + 14,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 6, 12, 8),
+                  child: Row(
+                    children: [
+                      ?leading,
+                      Expanded(
+                        child: GlassTabBar(
+                          controller: _dynamicsController.tabController,
+                          labels: DynamicsTabType.values
+                              .map((e) => e.label)
+                              .toList(),
+                          onTap: (_) {
+                            if (!_dynamicsController
+                                .tabController
+                                .indexIsChanging) {
+                              _dynamicsController.animateToTop();
+                            }
+                          },
+                        ),
                       ),
-                    ),
-                    GlassSurface(child: actions),
-                  ],
+                      GlassSurface(child: actions),
+                    ],
+                  ),
                 ),
               ),
             )

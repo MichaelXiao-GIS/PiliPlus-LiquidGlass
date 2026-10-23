@@ -4,26 +4,45 @@ import UIKit
 /// Small, local bridge: Flutter owns routing; UIKit owns the glass material.
 final class LiquidGlassPlugin: NSObject, FlutterPlugin {
   private let channel: FlutterMethodChannel
+  private let geometry = GlassGeometryView()
+  private let hostProvider: () -> UIView?
 
   static func register(with registrar: FlutterPluginRegistrar) {
     let channel = FlutterMethodChannel(
       name: "piliplus/liquid_glass", binaryMessenger: registrar.messenger()
     )
-    let plugin = LiquidGlassPlugin(channel: channel)
+    // The implicit engine registers plugins before its view controller exists.
+    let plugin = LiquidGlassPlugin(channel: channel) { [weak registrar] in
+      registrar?.viewController?.view
+    }
     registrar.addMethodCallDelegate(plugin, channel: channel)
     registrar.register(
-      GlassViewFactory(messenger: registrar.messenger(), navigation: false),
+      GlassViewFactory(messenger: registrar.messenger(), navigation: false,
+                       onCreate: { plugin.attachGeometry() }),
       withId: "piliplus/glass_surface"
     )
     registrar.register(
-      GlassViewFactory(messenger: registrar.messenger(), navigation: true),
+      GlassViewFactory(messenger: registrar.messenger(), navigation: true,
+                       onCreate: { plugin.attachGeometry() }),
       withId: "piliplus/glass_navigation"
     )
   }
 
-  private init(channel: FlutterMethodChannel) {
+  private init(channel: FlutterMethodChannel, hostProvider: @escaping () -> UIView?) {
     self.channel = channel
+    self.hostProvider = hostProvider
     super.init()
+    geometry.isUserInteractionEnabled = false
+    geometry.accessibilityElementsHidden = true
+    geometry.backgroundColor = .clear
+    geometry.onChange = { [weak self] snapshot in
+      self?.channel.invokeMethod("layoutChanged", arguments: snapshot)
+    }
+    attachGeometry()
+    NotificationCenter.default.addObserver(
+      self, selector: #selector(attachGeometry),
+      name: UIApplication.didBecomeActiveNotification, object: nil
+    )
     for name in [
       UIAccessibility.reduceTransparencyStatusDidChangeNotification,
       UIAccessibility.reduceMotionStatusDidChangeNotification,
@@ -37,6 +56,15 @@ final class LiquidGlassPlugin: NSObject, FlutterPlugin {
 
   deinit { NotificationCenter.default.removeObserver(self) }
 
+  @objc private func attachGeometry() {
+    guard let host = hostProvider() else { return }
+    if geometry.superview !== host {
+      geometry.frame = host.bounds
+      geometry.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+      host.addSubview(geometry)
+    }
+  }
+
   @objc private func accessibilityChanged() {
     channel.invokeMethod("accessibilityChanged", arguments: nil)
   }
@@ -46,23 +74,83 @@ final class LiquidGlassPlugin: NSObject, FlutterPlugin {
       result(FlutterMethodNotImplemented)
       return
     }
+    attachGeometry()
     let nativeGlass: Bool
     if #available(iOS 26.0, *) { nativeGlass = true } else { nativeGlass = false }
     result([
       "nativeGlass": nativeGlass,
       "reduceTransparency": UIAccessibility.isReduceTransparencyEnabled,
       "reduceMotion": UIAccessibility.isReduceMotionEnabled,
+      "window": geometry.snapshot(),
     ])
+  }
+}
+
+/// Uses the Flutter view's window, never a global screen or device model name.
+private final class GlassGeometryView: UIView {
+  var onChange: (([String: Any]) -> Void)?
+  private var previous: NSDictionary?
+
+  override init(frame: CGRect) {
+    super.init(frame: frame)
+    if #available(iOS 17.0, *) {
+      registerForTraitChanges([UITraitHorizontalSizeClass.self, UITraitVerticalSizeClass.self]) {
+        (view: GlassGeometryView, _: UITraitCollection) in view.publish()
+      }
+    }
+  }
+
+  required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+  override func didMoveToWindow() { super.didMoveToWindow(); publish() }
+  override func safeAreaInsetsDidChange() { super.safeAreaInsetsDidChange(); publish() }
+  override func layoutSubviews() { super.layoutSubviews(); publish() }
+
+  @available(iOS 26.0, *)
+  override func updateProperties() { super.updateProperties(); publish() }
+
+  func snapshot() -> [String: Any] {
+    var regions: [[String: Any]] = []
+    if #available(iOS 27.1, *) {
+      for (kind, name) in [(UIView.ReservedRegion.Kind.division, "division"), (.occlusion, "occlusion")] {
+        for region in reservedRegions(kind: kind) where !region.frame.isEmpty {
+          regions.append([
+            "kind": name, "x": region.frame.minX, "y": region.frame.minY,
+            "width": region.frame.width, "height": region.frame.height,
+          ])
+        }
+      }
+    }
+    return [
+      "width": bounds.width, "height": bounds.height,
+      "scale": traitCollection.displayScale,
+      "horizontalSizeClass": traitCollection.horizontalSizeClass.rawValue,
+      "verticalSizeClass": traitCollection.verticalSizeClass.rawValue,
+      "safeArea": ["left": safeAreaInsets.left, "top": safeAreaInsets.top,
+                   "right": safeAreaInsets.right, "bottom": safeAreaInsets.bottom],
+      "regions": regions,
+    ]
+  }
+
+  private func publish() {
+    guard window != nil else { return }
+    let data = snapshot()
+    let dictionary = data as NSDictionary
+    guard previous != dictionary else { return }
+    previous = dictionary
+    DispatchQueue.main.async { [weak self] in self?.onChange?(data) }
   }
 }
 
 private final class GlassViewFactory: NSObject, FlutterPlatformViewFactory {
   private let messenger: FlutterBinaryMessenger
   private let navigation: Bool
+  private let onCreate: () -> Void
 
-  init(messenger: FlutterBinaryMessenger, navigation: Bool) {
+  init(messenger: FlutterBinaryMessenger, navigation: Bool, onCreate: @escaping () -> Void) {
     self.messenger = messenger
     self.navigation = navigation
+    self.onCreate = onCreate
     super.init()
   }
 
@@ -73,7 +161,8 @@ private final class GlassViewFactory: NSObject, FlutterPlatformViewFactory {
   func create(
     withFrame frame: CGRect, viewIdentifier viewId: Int64, arguments args: Any?
   ) -> FlutterPlatformView {
-    GlassPlatformView(
+    onCreate()
+    return GlassPlatformView(
       frame: frame, id: viewId, args: args as? [String: Any] ?? [:],
       messenger: messenger, navigation: navigation
     )

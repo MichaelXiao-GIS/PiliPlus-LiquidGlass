@@ -8,6 +8,7 @@ import 'package:PiliPlus/common/widgets/image/network_img_layer.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_platform.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_scroll_chrome.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_surface.dart';
+import 'package:PiliPlus/common/widgets/liquid_glass/glass_window_geometry.dart';
 import 'package:PiliPlus/common/widgets/player_bar.dart';
 import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/models/common/mine_tab_type.dart';
@@ -46,6 +47,7 @@ class _MediaPageState extends CommonPageState<MinePage>
   final MineController controller = Get.putOrFind(MineController.new);
   late final MainController _mainController = Get.find<MainController>();
   late ThemeData theme;
+  final _bodyKey = GlobalKey();
 
   @override
   bool get wantKeepAlive => true;
@@ -85,6 +87,7 @@ class _MediaPageState extends CommonPageState<MinePage>
       child: _buildHeaderActions,
     );
     final body = Material(
+      key: _bodyKey,
       type: MaterialType.transparency,
       child: Builder(
         builder: (context) => refreshIndicator(
@@ -125,7 +128,18 @@ class _MediaPageState extends CommonPageState<MinePage>
     }
     return Column(
       children: [
-        header,
+        if (GlassCapabilities.isIOS)
+          GlassControlBand(
+            height:
+                (MediaQuery.textScalerOf(context).scale(34) * 1.2).clamp(
+                  48.0,
+                  double.infinity,
+                ) +
+                20,
+            child: header,
+          )
+        else
+          header,
         Expanded(child: body),
       ],
     );

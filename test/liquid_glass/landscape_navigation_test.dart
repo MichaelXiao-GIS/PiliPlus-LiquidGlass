@@ -194,6 +194,31 @@ void main() {
     expect(tester.takeException(), isNull);
   }, variant: TargetPlatformVariant.only(TargetPlatform.iOS));
 
+  for (final (size, safe, split) in [
+    (const Size(669, 951), EdgeInsets.zero, true),
+    (const Size(550, 350), EdgeInsets.zero, false),
+    (const Size(650, 430), const EdgeInsets.only(left: 70), false),
+  ]) {
+    testWidgets('settings panes follow usable width at $size', (tester) async {
+      await tester.binding.setSurfaceSize(size);
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: IosTheme.apply(ThemeData()),
+          home: MediaQuery(
+            data: MediaQueryData(size: size, viewPadding: safe, padding: safe),
+            child: const SettingPage(),
+          ),
+        ),
+      );
+      expect(
+        find.byType(VerticalDivider),
+        split ? findsOneWidget : findsNothing,
+      );
+      expect(tester.takeException(), isNull);
+    }, variant: TargetPlatformVariant.only(TargetPlatform.iOS));
+  }
+
   testWidgets(
     'iOS defaults to native and restores each supported saved choice',
     (tester) async {

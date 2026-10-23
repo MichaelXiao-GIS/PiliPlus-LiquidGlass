@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_platform.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_surface.dart';
+import 'package:PiliPlus/common/widgets/liquid_glass/glass_window_geometry.dart';
 import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -128,45 +129,62 @@ class _GlassNavigationBarState extends State<GlassNavigationBar>
               (64.0 + expanded * (20 + math.max(0.0, textScale - 1) * 16)),
     );
     final native = capabilities.nativeGlass;
+    final data = MediaQuery.of(context);
+    final left = math.max(data.padding.left, 16.0);
+    final right = math.max(data.padding.right, 16.0);
+    final band = Rect.fromLTWH(
+      left,
+      data.size.height - math.max(data.padding.bottom, 8.0) - height,
+      data.size.width - left - right,
+      height,
+    );
+    final region = glassControlRegion(data, band, Axis.horizontal);
 
     return SafeArea(
       top: false,
       minimum: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-      child: Center(
-        widthFactor: 1,
-        heightFactor: 1,
-        child: SizedBox(
-          width: width,
-          height: height,
-          child: native
-              ? UiKitView(
-                  viewType: 'piliplus/glass_navigation',
-                  creationParams: _arguments(context),
-                  creationParamsCodec: const StandardMessageCodec(),
-                  onPlatformViewCreated: (id) {
-                    if (!mounted) return;
-                    _channel = MethodChannel('piliplus/glass_navigation/$id');
-                    _channel!.setMethodCallHandler((call) async {
-                      if (call.method == 'select' && mounted) {
-                        final index = call.arguments as int;
-                        if (index >= 0 && index < widget.destinations.length) {
-                          widget.onSelected(index);
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: region.left - band.left,
+          right: band.right - region.right,
+        ),
+        child: Center(
+          widthFactor: 1,
+          heightFactor: 1,
+          child: SizedBox(
+            width: width,
+            height: height,
+            child: native
+                ? UiKitView(
+                    viewType: 'piliplus/glass_navigation',
+                    creationParams: _arguments(context),
+                    creationParamsCodec: const StandardMessageCodec(),
+                    onPlatformViewCreated: (id) {
+                      if (!mounted) return;
+                      _channel = MethodChannel('piliplus/glass_navigation/$id');
+                      _channel!.setMethodCallHandler((call) async {
+                        if (call.method == 'select' && mounted) {
+                          final index = call.arguments as int;
+                          if (index >= 0 &&
+                              index < widget.destinations.length) {
+                            widget.onSelected(index);
+                          }
                         }
-                      }
-                    });
-                    _update();
-                  },
-                )
-              : GlassSurface(
-                  radius: height / 2,
-                  padding: const EdgeInsets.all(5),
-                  child: Row(
-                    children: [
-                      for (var i = 0; i < widget.destinations.length; i++)
-                        Expanded(child: _destination(context, i)),
-                    ],
+                      });
+                      _update();
+                    },
+                  )
+                : GlassSurface(
+                    radius: height / 2,
+                    padding: const EdgeInsets.all(5),
+                    child: Row(
+                      children: [
+                        for (var i = 0; i < widget.destinations.length; i++)
+                          Expanded(child: _destination(context, i)),
+                      ],
+                    ),
                   ),
-                ),
+          ),
         ),
       ),
     );

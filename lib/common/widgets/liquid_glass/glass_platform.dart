@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
+import 'package:PiliPlus/common/widgets/liquid_glass/glass_window_geometry.dart';
 
 /// Native capabilities are negotiated once, rather than assuming an OS version.
 @immutable
@@ -9,11 +10,16 @@ class GlassCapabilities {
     this.nativeGlass = false,
     this.reduceTransparency = false,
     this.reduceMotion = false,
+    this.window = const GlassWindowGeometry(),
   });
 
   final bool nativeGlass;
   final bool reduceTransparency;
   final bool reduceMotion;
+  final GlassWindowGeometry window;
+
+  static bool bottomNavigation(BuildContext context) =>
+      of(context).window.bottomNavigation(MediaQuery.of(context));
 
   static bool get isIOS =>
       !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
@@ -49,6 +55,18 @@ class _GlassPlatformScopeState extends State<GlassPlatformScope>
       WidgetsBinding.instance.addObserver(this);
       _channel.setMethodCallHandler((call) async {
         if (call.method == 'accessibilityChanged') await _refresh();
+        if (call.method == 'layoutChanged' &&
+            call.arguments is Map &&
+            mounted) {
+          setState(
+            () => _value = GlassCapabilities(
+              nativeGlass: _value.nativeGlass,
+              reduceTransparency: _value.reduceTransparency,
+              reduceMotion: _value.reduceMotion,
+              window: GlassWindowGeometry.fromMap(call.arguments as Map),
+            ),
+          );
+        }
       });
       _refresh();
     }
@@ -65,6 +83,9 @@ class _GlassPlatformScopeState extends State<GlassPlatformScope>
           nativeGlass: data['nativeGlass'] == true,
           reduceTransparency: data['reduceTransparency'] == true,
           reduceMotion: data['reduceMotion'] == true,
+          window: GlassWindowGeometry.fromMap(
+            data['window'] as Map? ?? const {},
+          ),
         );
       });
     } on MissingPluginException {
@@ -91,7 +112,10 @@ class _GlassPlatformScopeState extends State<GlassPlatformScope>
   @override
   Widget build(BuildContext context) => _GlassInherited(
     value: _value,
-    child: widget.child,
+    child: MediaQuery(
+      data: _value.window.apply(MediaQuery.of(context)),
+      child: widget.child,
+    ),
   );
 }
 

@@ -1,6 +1,7 @@
 import 'dart:ui' show ImageFilter;
 
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_platform.dart';
+import 'package:PiliPlus/common/widgets/liquid_glass/glass_window_geometry.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// A separate instance belongs to each main destination. Scroll direction does
@@ -26,10 +27,16 @@ class GlassScrollScope extends InheritedWidget {
   const GlassScrollScope({
     super.key,
     required this.controller,
+    this.compact = true,
     required super.child,
   });
 
   final GlassScrollController controller;
+  final bool compact;
+
+  static bool compactOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<GlassScrollScope>()?.compact ??
+      false;
 
   static GlassScrollController? maybeOf(BuildContext context) => context
       .dependOnInheritedWidgetOfExactType<GlassScrollScope>()
@@ -37,7 +44,7 @@ class GlassScrollScope extends InheritedWidget {
 
   @override
   bool updateShouldNotify(GlassScrollScope oldWidget) =>
-      controller != oldWidget.controller;
+      controller != oldWidget.controller || compact != oldWidget.compact;
 }
 
 /// The inset is part of the scroll content, so it scrolls away while the
@@ -171,15 +178,19 @@ class GlassScrollPage extends StatelessWidget {
   final Widget body;
 
   static bool enabled(BuildContext context) =>
-      GlassCapabilities.isIOS &&
-      MediaQuery.sizeOf(context).width < 700 &&
-      GlassScrollScope.maybeOf(context) != null;
+      GlassCapabilities.isIOS && GlassScrollScope.compactOf(context);
 
   @override
   Widget build(BuildContext context) {
     final controller = GlassScrollScope.maybeOf(context)!;
     final top = MediaQuery.viewPaddingOf(context).top;
     final extent = top + headerExtent;
+    final width = MediaQuery.sizeOf(context).width;
+    final region = glassControlRegion(
+      MediaQuery.of(context),
+      Rect.fromLTWH(0, top, width, headerExtent),
+      Axis.horizontal,
+    );
     final colors = ColorScheme.of(context);
     final opaque =
         GlassCapabilities.of(context).reduceTransparency ||
@@ -200,7 +211,12 @@ class GlassScrollPage extends StatelessWidget {
           child: AnimatedBuilder(
             animation: controller,
             child: Padding(
-              padding: EdgeInsets.only(top: top),
+              padding: EdgeInsets.fromLTRB(
+                region.left,
+                top,
+                width - region.right,
+                0,
+              ),
               child: SizedBox(height: headerExtent, child: header),
             ),
             builder: (context, child) => Stack(

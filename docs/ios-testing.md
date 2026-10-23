@@ -4,9 +4,9 @@
 
 ## 安装包
 
-从本仓库的 [Releases](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases) 下载 `PiliPlus-LiquidGlass-2.1.6-test5-ios-arm64.ipa`。
+从本仓库的 [Releases](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases) 下载 `PiliPlus-LiquidGlass-2.1.6-test6-ios-arm64.ipa`。
 
-- 版本：2.1.6，Liquid Glass 测试版 5（构建号 5）。
+- 版本：2.1.6，Liquid Glass 测试版 6（构建号 6）。
 - 架构：真机 arm64，Release 构建。
 - 最低系统：iOS 15；原生 Liquid Glass 在 iOS 26 及以上启用。
 - 签名：仅有打包用的 ad-hoc 代码签名，没有 Apple 开发者证书及设备描述文件。安装前需用自己的 Apple 身份重新签名。
@@ -41,6 +41,8 @@ shasum -a 256 -c SHA256SUMS.txt
 
 此前的改进包括：横屏玻璃导航宽 72pt，内部图标居中；设置标题栏与搜索框净间距 28pt；原有完整动画列表和保存值保留，`native` 显示为“iOS 默认”。
 
-已通过 71 项自动测试，覆盖顶栏搜索框移动及居中、分类胶囊边缘、滚动联动、横屏安全区与居中、设置间距、动画选择保存和侧滑取消。iOS 27.0 模拟器已检查页面布局。真实设备上的播放、画中画、登录及渲染性能仍以真机测试结果为准。
+测试版 6 适配 iOS 27.1 与 iPhone Duo：按当前窗口尺寸类别切换底栏和侧栏，处理活动折叠区域、摄像头和不对称安全区，保留内容与滚动状态；设置页按可用宽度切换单栏与双栏。请分别检查合上、展开、半展开、旋转和分屏后的布局。原来的“横屏适配”开关保留；如需自动旋转，请在外观设置中开启。
+
+已通过 87 项自动测试，覆盖此前界面行为以及 Duo 的窗口信息、折叠区域和缩放。已在 iPhone Duo / iOS 27.1 模拟器检查内外屏、旋转和半展开布局。真实设备上的播放、画中画、登录及渲染性能仍以真机测试结果为准。
 
 界面实现和构建环境说明见 [iOS Liquid Glass 适配](ios-liquid-glass.md)。
