@@ -31,9 +31,11 @@ class GlassNavigationRail extends StatelessWidget {
   static EdgeInsets contentInsetsOf(BuildContext context) {
     final data = MediaQuery.of(context);
     final safe = data.viewPadding;
+    // Reserve the bar's horizontal lane, but let scrolling content paint
+    // through the bottom safe area. Controls still use the full safe insets.
     return GlassCapabilities.of(context).window.railOnLeft(data)
-        ? safe.copyWith(left: math.max(safe.left, gutter))
-        : safe.copyWith(right: math.max(safe.right, gutter));
+        ? safe.copyWith(left: math.max(safe.left, gutter), bottom: 0)
+        : safe.copyWith(right: math.max(safe.right, gutter), bottom: 0);
   }
 
   @override

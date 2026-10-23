@@ -283,76 +283,98 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  for (final direction in TextDirection.values) {
-    for (final folded in [false, true]) {
-      testWidgets(
-        'right system gutter is shared at $direction / folded=$folded',
-        (tester) async {
-          const channel = MethodChannel('piliplus/liquid_glass');
-          const size = Size(890, 626);
-          await tester.binding.setSurfaceSize(size);
-          addTearDown(() => tester.binding.setSurfaceSize(null));
-          tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-            channel,
-            (_) async => {
-              'window': {
-                'width': 890,
-                'height': 626,
-                'scale': 1,
-                'verticalBarEdge': 'right',
-                'safeArea': {'left': 20, 'top': 10, 'right': 90, 'bottom': 20},
-                'statusBarFrame': {
-                  'x': 800,
-                  'y': 0,
-                  'width': 90,
-                  'height': 150,
+  for (final edge in ['left', 'right']) {
+    for (final direction in TextDirection.values) {
+      for (final folded in [false, true]) {
+        testWidgets(
+          '$edge gutter keeps content edge-to-edge at $direction / folded=$folded',
+          (tester) async {
+            const channel = MethodChannel('piliplus/liquid_glass');
+            const size = Size(890, 626);
+            await tester.binding.setSurfaceSize(size);
+            addTearDown(() => tester.binding.setSurfaceSize(null));
+            tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+              channel,
+              (_) async => {
+                'window': {
+                  'width': 890,
+                  'height': 626,
+                  'scale': 1,
+                  'verticalBarEdge': edge,
+                  'safeArea': {
+                    'left': edge == 'left' ? 90 : 20,
+                    'top': 10,
+                    'right': edge == 'right' ? 90 : 20,
+                    'bottom': 20,
+                  },
+                  'statusBarFrame': {
+                    'x': edge == 'left' ? 0 : 800,
+                    'y': 0,
+                    'width': 90,
+                    'height': 150,
+                  },
+                  'regions': [
+                    if (folded)
+                      {
+                        'kind': 'division',
+                        'x': 0,
+                        'y': 300,
+                        'width': 890,
+                        'height': 20,
+                      },
+                  ],
                 },
-                'regions': [
-                  if (folded)
-                    {
-                      'kind': 'division',
-                      'x': 0,
-                      'y': 300,
-                      'width': 890,
-                      'height': 20,
-                    },
-                ],
               },
-            },
-          );
-          addTearDown(
-            () => tester.binding.defaultBinaryMessenger
-                .setMockMethodCallHandler(channel, null),
-          );
-          var selected = 0;
-          await tester.pumpWidget(
-            MaterialApp(
-              home: MediaQuery(
-                data: const MediaQueryData(size: size),
-                child: GlassPlatformScope(
-                  child: Builder(
-                    builder: (context) => Directionality(
-                      textDirection: direction,
-                      child: MainLayout(
-                        floatingSideBar: true,
-                        bottomNav: null,
-                        sideBar: GlassNavigationRail(
-                          destinations: _items,
-                          selectedIndex: 0,
-                          onSelected: (value) => selected = value,
-                          actions: const [
-                            Icon(Icons.account_circle),
-                            Icon(Icons.search),
-                          ],
-                          compactLeading: const Center(
-                            child: Icon(Icons.more_horiz),
+            );
+            addTearDown(
+              () => tester.binding.defaultBinaryMessenger
+                  .setMockMethodCallHandler(channel, null),
+            );
+            var selected = 0;
+            late MediaQueryData local;
+            await tester.pumpWidget(
+              MaterialApp(
+                home: MediaQuery(
+                  data: const MediaQueryData(size: size),
+                  child: GlassPlatformScope(
+                    child: Builder(
+                      builder: (context) => Directionality(
+                        textDirection: direction,
+                        child: MainLayout(
+                          floatingSideBar: true,
+                          bottomNav: null,
+                          sideBar: GlassNavigationRail(
+                            destinations: _items,
+                            selectedIndex: 0,
+                            onSelected: (value) => selected = value,
+                            actions: const [
+                              Icon(Icons.account_circle),
+                              Icon(Icons.search),
+                            ],
+                            compactLeading: const Center(
+                              child: Icon(Icons.more_horiz),
+                            ),
                           ),
-                        ),
-                        body: Padding(
-                          padding: GlassNavigationRail.contentInsetsOf(context),
-                          child: const ColoredBox(
-                            key: ValueKey('edge-content'),
-                            color: Colors.white,
+                          body: Builder(
+                            builder: (context) {
+                              final insets =
+                                  GlassNavigationRail.contentInsetsOf(context);
+                              return Padding(
+                                padding: insets,
+                                child: GlassContentViewport(
+                                  origin: Offset(insets.left, insets.top),
+                                  child: Builder(
+                                    builder: (context) {
+                                      local = MediaQuery.of(context);
+                                      return const ColoredBox(
+                                        key: ValueKey('edge-content'),
+                                        color: Colors.white,
+                                      );
+                                    },
+                                  ),
+                                ),
+                              );
+                            },
                           ),
                         ),
                       ),
@@ -360,29 +382,38 @@ void main() {
                   ),
                 ),
               ),
-            ),
-          );
-          await tester.pumpAndSettle();
-          final content = tester.getRect(
-            find.byKey(const ValueKey('edge-content')),
-          );
-          expect(content.left, 20);
-          expect(
-            content.right,
-            800,
-          ); // Use the existing 90pt edge, not another 76pt column.
-          for (final surface in find.byType(GlassSurface).evaluate()) {
-            final rect = tester.getRect(find.byWidget(surface.widget));
-            expect(rect.center.dx, 845);
-            expect(rect.top, greaterThanOrEqualTo(folded ? 320 : 162));
-            expect(rect.bottom, lessThanOrEqualTo(594));
-          }
-          await tester.tap(find.byTooltip('我的'));
-          expect(selected, 2);
-          expect(tester.takeException(), isNull);
-        },
-        variant: TargetPlatformVariant.only(TargetPlatform.iOS),
-      );
+            );
+            await tester.pumpAndSettle();
+            final content = tester.getRect(
+              find.byKey(const ValueKey('edge-content')),
+            );
+            expect(content.left, edge == 'left' ? 90 : 20);
+            expect(
+              content.right,
+              edge == 'right' ? 800 : 870,
+            ); // Reuse the existing system edge gutter.
+            expect(
+              content.bottom,
+              size.height,
+            ); // No fixed strip clips the feed.
+            expect(
+              local.viewPadding.bottom,
+              20,
+            ); // Safe-area metrics remain for content controls.
+            expect(local.padding.bottom, 20);
+            for (final surface in find.byType(GlassSurface).evaluate()) {
+              final rect = tester.getRect(find.byWidget(surface.widget));
+              expect(rect.center.dx, edge == 'right' ? 845 : 45);
+              expect(rect.top, greaterThanOrEqualTo(folded ? 320 : 162));
+              expect(rect.bottom, lessThanOrEqualTo(594));
+            }
+            await tester.tap(find.byTooltip('我的'));
+            expect(selected, 2);
+            expect(tester.takeException(), isNull);
+          },
+          variant: TargetPlatformVariant.only(TargetPlatform.iOS),
+        );
+      }
     }
   }
 

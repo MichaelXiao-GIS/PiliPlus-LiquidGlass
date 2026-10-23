@@ -4,9 +4,9 @@
 
 ## 安装包
 
-从本仓库的 [Releases](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases) 下载 `PiliPlus-LiquidGlass-2.1.6-test9-ios-arm64.ipa`。
+从本仓库的 [Releases](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases) 下载 `PiliPlus-LiquidGlass-2.1.6-test10-ios-arm64.ipa`。
 
-- 版本：2.1.6，Liquid Glass 测试版 9（构建号 9）。
+- 版本：2.1.6，Liquid Glass 测试版 10（构建号 10）。
 - 架构：真机 arm64，Release 构建。
 - 最低系统：iOS 15；原生 Liquid Glass 在 iOS 26 及以上启用。
 - 签名：仅有打包用的 ad-hoc 代码签名，没有 Apple 开发者证书及设备描述文件。安装前需用自己的 Apple 身份重新签名。
@@ -54,5 +54,7 @@ shasum -a 256 -c SHA256SUMS.txt
 测试版 8 共 120 项自动检查通过，新增检查覆盖系统侧栏位置、内屏竖屏切换、图案居中、侧栏空白点击穿透、折叠避让和双向语言下的固定物理边缘。模拟器检查记录与效果图随 Release 提供；真机性能仍需设备验证。
 
 测试版 9 修复侧栏椭圆轮廓叠在一起的问题：移除胶囊内未登录头像的重复圆形底色，按钮统一为 48pt 槽位、四周保留 6pt 内边距，选中背景改为圆形。胶囊弧形端部与按钮中心对齐，上方高度按实际操作数量计算。新增轮廓检查覆盖首尾选中状态、两/三个操作和大字体，共 128 项自动检查通过；模拟器对照资料库页面确认修复并验证导航切换。
+
+测试版 10 移除侧栏布局下固定在底部的安全区空白，列表内容可延伸至窗口底边。侧栏仍按完整安全区定位，内容子树也保留底部安全区信息。132 项自动检查通过，覆盖左右侧栏、双向语言和折叠状态下的内容高度及按钮避让；Duo / iOS 27.1 模拟器检查首页与上滑后的底部显示，对照图随 Release 提供。
 
 界面实现和构建环境说明见 [iOS Liquid Glass 适配](ios-liquid-glass.md)。
