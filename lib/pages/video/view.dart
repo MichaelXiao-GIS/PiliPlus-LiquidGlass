@@ -49,6 +49,8 @@ import 'package:PiliPlus/pages/video/view_point/view.dart';
 import 'package:PiliPlus/pages/video/widgets/header_control.dart';
 import 'package:PiliPlus/pages/video/widgets/intro_layout.dart';
 import 'package:PiliPlus/pages/video/widgets/player_focus.dart';
+import 'package:PiliPlus/pages/video/widgets/video_detail_layout.dart';
+import 'package:PiliPlus/pages/video/widgets/video_detail_tabs.dart';
 import 'package:PiliPlus/plugin/pl_player/controller.dart';
 import 'package:PiliPlus/plugin/pl_player/models/fullscreen_mode.dart';
 import 'package:PiliPlus/plugin/pl_player/models/play_repeat.dart';
@@ -72,7 +74,7 @@ import 'package:PiliPlus/utils/storage.dart';
 import 'package:PiliPlus/utils/storage_key.dart';
 import 'package:PiliPlus/utils/theme_utils.dart';
 import 'package:extended_nested_scroll_view/extended_nested_scroll_view.dart';
-import 'package:flutter/foundation.dart' show kDebugMode, clampDouble;
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get/get.dart';
@@ -771,21 +773,26 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
                 height: padding.top,
                 brightness: colorScheme.brightness,
               ),
-        body: Padding(
-          padding: isFullScreen
+        body: VideoDetailViewport(
+          insets: isFullScreen
               ? EdgeInsets.zero
               : padding.copyWith(top: 0, bottom: 0),
-          child: childWhenDisabledLandscapeInner(isFullScreen),
+          origin: Offset(0, removeAppBar(isFullScreen) ? 0 : padding.top),
+          builder: (context, viewport) => Obx(
+            () => childWhenDisabledLandscapeInner(this.isFullScreen, viewport),
+          ),
         ),
       );
     },
   );
 
-  Widget childSplit(double ratio) {
-    final double videoHeight = maxHeight - padding.vertical;
-    final double width = videoHeight * ratio;
+  Widget childSplit(double ratio, Size viewport) {
+    final maxWidth = viewport.width;
+    final maxHeight = viewport.height;
+    final double videoHeight = maxHeight;
+    final width = VideoPaneWidth.heightFitted(viewport, ratio);
     final videoWidth = isFullScreen ? maxWidth : width;
-    final introWidth = maxWidth - width - padding.horizontal;
+    final introWidth = maxWidth - width;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -801,7 +808,7 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
           offstage: isFullScreen,
           child: SizedBox(
             width: introWidth,
-            height: maxHeight - padding.top,
+            height: maxHeight,
             child: MiniScaffold(
               key: videoDetailController.childKey,
               body: Column(
@@ -830,15 +837,18 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
     );
   }
 
-  Widget childWhenDisabledLandscapeInner(bool isFullScreen) {
+  Widget childWhenDisabledLandscapeInner(bool isFullScreen, Size viewport) {
+    final maxWidth = viewport.width;
+    final maxHeight = viewport.height;
     if (enableVerticalExpand) {
       return Obx(() {
         if (videoDetailController.isVertical.value && !isPortrait) {
-          final double videoHeight = maxHeight - padding.vertical;
+          final double videoHeight = maxHeight;
           final double width = videoHeight / Style.aspectRatio16x9;
           final videoWidth = isFullScreen ? maxWidth : width;
-          final introWidth = (maxWidth - padding.horizontal - width) / 2;
-          final introHeight = maxHeight - padding.top;
+          final introWidth = (maxWidth - width) / 2;
+          if (introWidth < 280) return childSplit(9 / 16, viewport);
+          final introHeight = maxHeight;
           return Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -890,27 +900,23 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
           );
         }
 
-        return _childWhenDisabledLandscapeInner(isFullScreen);
+        return _childWhenDisabledLandscapeInner(isFullScreen, viewport);
       });
     }
-    return _childWhenDisabledLandscapeInner(isFullScreen);
+    return _childWhenDisabledLandscapeInner(isFullScreen, viewport);
   }
 
-  Widget _childWhenDisabledLandscapeInner(bool isFullScreen) {
-    double width =
-        clampDouble(maxHeight / maxWidth * 1.08, 0.5, 0.7) * maxWidth;
-    if (maxWidth >= 560) {
-      width = maxWidth - clampDouble(maxWidth - width, 280, 425);
-    }
+  Widget _childWhenDisabledLandscapeInner(bool isFullScreen, Size viewport) {
+    final maxWidth = viewport.width;
+    final maxHeight = viewport.height;
+    final width = VideoPaneWidth.landscape(viewport);
     final videoWidth = isFullScreen ? maxWidth : width;
     final double height = width / Style.aspectRatio16x9;
-    final videoHeight = isFullScreen
-        ? maxHeight - (isWindowMode && !isPortrait ? 0 : padding.top)
-        : height;
+    final videoHeight = isFullScreen ? maxHeight : height;
     if (height > maxHeight) {
-      return childSplit(Style.aspectRatio16x9);
+      return childSplit(Style.aspectRatio16x9, viewport);
     }
-    final introHeight = maxHeight - height - padding.top;
+    final introHeight = maxHeight - height;
     final showIntro =
         videoDetailController.isUgc && videoDetailController.showRelatedVideo;
     return Row(
@@ -946,8 +952,8 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
         Offstage(
           offstage: isFullScreen,
           child: SizedBox(
-            width: maxWidth - width - padding.horizontal,
-            height: maxHeight - padding.top,
+            width: maxWidth - width,
+            height: maxHeight,
             child: MiniScaffold(
               key: videoDetailController.childKey,
               body: Column(
@@ -1002,38 +1008,41 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
               height: padding.top,
               brightness: colorScheme.brightness,
             ),
-      body: Padding(
-        padding: isFullScreen
+      body: VideoDetailViewport(
+        insets: isFullScreen
             ? EdgeInsets.zero
             : padding.copyWith(top: 0, bottom: 0),
-        child: childWhenDisabledAlmostSquareInner(isFullScreen),
+        origin: Offset(0, removeAppBar(isFullScreen) ? 0 : padding.top),
+        builder: (context, viewport) => Obx(
+          () => childWhenDisabledAlmostSquareInner(this.isFullScreen, viewport),
+        ),
       ),
     );
   });
 
-  Widget childWhenDisabledAlmostSquareInner(bool isFullScreen) {
+  Widget childWhenDisabledAlmostSquareInner(bool isFullScreen, Size viewport) {
     if (enableVerticalExpand) {
       return Obx(
         () {
           if (videoDetailController.isVertical.value && !isPortrait) {
-            return childSplit(9 / 16);
+            return childSplit(9 / 16, viewport);
           }
 
-          return _childWhenDisabledAlmostSquareInner(isFullScreen);
+          return _childWhenDisabledAlmostSquareInner(isFullScreen, viewport);
         },
       );
     }
 
-    return _childWhenDisabledAlmostSquareInner(isFullScreen);
+    return _childWhenDisabledAlmostSquareInner(isFullScreen, viewport);
   }
 
-  Widget _childWhenDisabledAlmostSquareInner(bool isFullScreen) {
+  Widget _childWhenDisabledAlmostSquareInner(bool isFullScreen, Size viewport) {
+    final maxWidth = viewport.width;
+    final maxHeight = viewport.height;
     final shouldShowSeasonPanel = _shouldShowSeasonPanel;
     final double height = maxHeight / 2.5;
-    final videoHeight = isFullScreen
-        ? maxHeight - (isWindowMode && !isPortrait ? 0 : padding.top)
-        : height;
-    final bottomHeight = maxHeight - height - padding.top;
+    final videoHeight = isFullScreen ? maxHeight : height;
+    final bottomHeight = maxHeight - height;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1048,7 +1057,7 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
         Offstage(
           offstage: isFullScreen,
           child: SizedBox(
-            width: maxWidth - padding.horizontal,
+            width: maxWidth,
             height: bottomHeight,
             child: MiniScaffold(
               key: videoDetailController.childKey,
@@ -1322,91 +1331,47 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
       );
     }
 
-    Widget tabBar() {
-      final flag = !needIndicator || tabs.length == 1;
-      return TabBar(
-        padding: .zero,
-        dividerHeight: 0,
-        labelPadding: .zero,
-        dividerColor: Colors.transparent,
-        controller: videoDetailController.tabCtr,
-        indicator: flag ? const BoxDecoration() : null,
-        labelColor: flag ? colorScheme.onSurface : null,
-        labelStyle:
-            TabBarTheme.of(context).labelStyle?.copyWith(fontSize: 13) ??
-            const TextStyle(fontSize: 13),
-        onTap: (value) {
-          void animToTop() {
-            if (onTap != null) {
-              onTap();
-              return;
-            }
-            String text = tabs[value];
-            if (videoDetailController.isFileSource ||
-                text == '简介' ||
-                text == '相关视频') {
-              videoDetailController.introScrollCtr?.animToTop();
-            } else if (text.startsWith('评论')) {
-              _videoReplyController.animateToTop();
-            }
-          }
-
-          if (flag) {
-            animToTop();
-          } else if (!videoDetailController.tabCtr.indexIsChanging) {
-            animToTop();
-          }
-        },
-        tabs: tabs.map((text) {
-          if (text == '评论') {
-            return Obx(() {
-              final count = _videoReplyController.count.value;
-              return Tab(
-                child: Text(
-                  '评论${count == -1 ? '' : ' ${NumUtils.numFormat(count)}'}',
-                  softWrap: false,
-                  overflow: .visible,
-                ),
-              );
-            });
-          } else {
-            return Tab(
-              child: Text(text, softWrap: false, overflow: .visible),
-            );
-          }
-        }).toList(),
-      );
+    final flag = !needIndicator || tabs.length == 1;
+    void onTabTap(int value) {
+      if (!flag && videoDetailController.tabCtr.indexIsChanging) return;
+      if (onTap != null) {
+        onTap();
+        return;
+      }
+      final text = tabs[value];
+      if (videoDetailController.isFileSource ||
+          text == '简介' ||
+          text == '相关视频') {
+        videoDetailController.introScrollCtr?.animToTop();
+      } else if (text == '评论') {
+        _videoReplyController.animateToTop();
+      }
     }
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(
-            color: theme.dividerColor.withValues(alpha: 0.1),
-          ),
-        ),
-      ),
-      child: SizedBox(
-        height: 45,
-        child: Row(
+    Widget buildTabs() {
+      final count = videoDetailController.showReply
+          ? _videoReplyController.count.value
+          : -1;
+      return VideoDetailTabs(
+        controller: videoDetailController.tabCtr,
+        labels: [
+          for (final text in tabs)
+            text == '评论' && count != -1
+                ? '评论 ${NumUtils.numFormat(count)}'
+                : text,
+        ],
+        showIndicator: !flag,
+        onTap: onTabTap,
+        actions: Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            if (tabs.isEmpty)
-              const Spacer()
-            else
-              Expanded(
-                child: Align(
-                  alignment: .centerLeft,
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(maxWidth: 96.0 * tabs.length),
-                    child: tabBar(),
-                  ),
-                ),
-              ),
             SizedBox(
-              height: 32,
+              height: double.infinity,
               child: TextButton(
                 style: const ButtonStyle(
                   padding: WidgetStatePropertyAll(.zero),
+                  minimumSize: WidgetStatePropertyAll(Size(64, 44)),
                 ),
                 onPressed: videoDetailController.showShootDanmakuSheet,
                 child: Text(
@@ -1419,7 +1384,7 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
               ),
             ),
             SizedBox.square(
-              dimension: 38,
+              dimension: 44,
               child: Obx(
                 () {
                   final ctr = videoDetailController.plPlayerController;
@@ -1448,11 +1413,13 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
                 },
               ),
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: 6),
           ],
         ),
-      ),
-    );
+      );
+    }
+
+    return videoDetailController.showReply ? Obx(buildTabs) : buildTabs();
   }
 
   Widget videoPlayer({required double width, required double height}) {

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:PiliPlus/common/style.dart';
 import 'package:PiliPlus/common/widgets/badge.dart';
 import 'package:PiliPlus/common/widgets/image/image_save.dart';
@@ -22,11 +24,15 @@ class VideoCardH extends StatelessWidget {
     this.onTap,
     this.onViewLater,
     this.onRemove,
+    this.adaptive = false,
   });
   final HorizontalVideoModel videoItem;
   final VoidCallback? onTap;
   final ValueChanged<int>? onViewLater;
   final VoidCallback? onRemove;
+
+  /// Related-video sidebars may be narrower than a full-width list.
+  final bool adaptive;
 
   void onLongPress() => imageSaveDialog(
     bvid: videoItem.bvid,
@@ -51,10 +57,9 @@ class VideoCardH extends StatelessWidget {
                 horizontal: Style.safeSpace,
                 vertical: 5,
               ),
-              child: Row(
-                crossAxisAlignment: .start,
-                children: [
-                  AspectRatio(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final cover = AspectRatio(
                     aspectRatio: Style.aspectRatio,
                     child: LayoutBuilder(
                       builder: (context, boxConstraints) {
@@ -116,10 +121,25 @@ class VideoCardH extends StatelessWidget {
                         );
                       },
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  content(theme),
-                ],
+                  );
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (adaptive)
+                        SizedBox(
+                          width: math.min(
+                            constraints.maxHeight * Style.aspectRatio,
+                            constraints.maxWidth * 0.45,
+                          ),
+                          child: cover,
+                        )
+                      else
+                        cover,
+                      const SizedBox(width: 10),
+                      content(theme),
+                    ],
+                  );
+                },
               ),
             ),
           ),
@@ -142,6 +162,10 @@ class VideoCardH extends StatelessWidget {
   Widget content(ThemeData theme) {
     String pubdate = DateFormatUtils.dateFormat(videoItem.pubdate!);
     if (pubdate != '') pubdate += '  ';
+    final statistics = [
+      StatWidget(type: .play, value: videoItem.stat.view),
+      StatWidget(type: .danmaku, value: videoItem.stat.danmu),
+    ];
     return Expanded(
       child: Column(
         crossAxisAlignment: .start,
@@ -191,24 +215,26 @@ class VideoCardH extends StatelessWidget {
               fontSize: 12,
               height: 1,
               color: theme.colorScheme.outline,
-              overflow: .clip,
+              overflow: adaptive ? .ellipsis : .clip,
             ),
           ),
           if (videoItem.isLive != true) ...[
             const SizedBox(height: 3),
-            Row(
-              spacing: 8,
-              children: [
-                StatWidget(
-                  type: .play,
-                  value: videoItem.stat.view,
-                ),
-                StatWidget(
-                  type: .danmaku,
-                  value: videoItem.stat.danmu,
-                ),
-              ],
-            ),
+            if (adaptive)
+              Wrap(
+                spacing: 8,
+                runSpacing: 2,
+                children: [
+                  for (final statistic in statistics)
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: statistic,
+                    ),
+                ],
+              )
+            else
+              Row(spacing: 8, children: statistics),
           ],
         ],
       ),

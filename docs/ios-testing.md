@@ -4,9 +4,9 @@
 
 ## 安装包
 
-从本仓库的 [Releases](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases) 下载 `PiliPlus-LiquidGlass-2.1.6-test6-ios-arm64.ipa`。
+从本仓库的 [Releases](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases) 下载 `PiliPlus-LiquidGlass-2.1.6-test7-ios-arm64.ipa`。
 
-- 版本：2.1.6，Liquid Glass 测试版 6（构建号 6）。
+- 版本：2.1.6，Liquid Glass 测试版 7（构建号 7）。
 - 架构：真机 arm64，Release 构建。
 - 最低系统：iOS 15；原生 Liquid Glass 在 iOS 26 及以上启用。
 - 签名：仅有打包用的 ad-hoc 代码签名，没有 Apple 开发者证书及设备描述文件。安装前需用自己的 Apple 身份重新签名。
@@ -43,6 +43,10 @@ shasum -a 256 -c SHA256SUMS.txt
 
 测试版 6 适配 iOS 27.1 与 iPhone Duo：按当前窗口尺寸类别切换底栏和侧栏，处理活动折叠区域、摄像头和不对称安全区，保留内容与滚动状态；设置页按可用宽度切换单栏与双栏。请分别检查合上、展开、半展开、旋转和分屏后的布局。原来的“横屏适配”开关保留；如需自动旋转，请在外观设置中开启。
 
-已通过 87 项自动测试，覆盖此前界面行为以及 Duo 的窗口信息、折叠区域和缩放。已在 iPhone Duo / iOS 27.1 模拟器检查内外屏、旋转和半展开布局。真实设备上的播放、画中画、登录及渲染性能仍以真机测试结果为准。
+测试版 6 的 87 项自动测试覆盖此前界面行为以及 Duo 的窗口信息、折叠区域和缩放，并在 iPhone Duo / iOS 27.1 模拟器检查内外屏、旋转和半展开布局。真实设备上的播放、画中画、登录及渲染性能仍以真机测试结果为准。
+
+测试版 7 修复横屏播放页的顶部选项卡拥挤、右侧推荐栏被挤压的问题。选项卡可横向滚动，空间不足时弹幕操作单独一行；分栏按扣除安全区后的内容尺寸计算，推荐封面同步适应栏宽。请检查普通视频、竖向视频、评论、播放列表、发送弹幕、弹幕开关、全屏及旋转后的状态。
+
+当前共 112 项自动检查通过，新增检查覆盖实际横屏安全区、200–900pt 选项卡宽度、1–3 倍字号、选项卡点击、200–425pt 推荐卡片及全屏宽度。
 
 界面实现和构建环境说明见 [iOS Liquid Glass 适配](ios-liquid-glass.md)。
