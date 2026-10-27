@@ -1,6 +1,7 @@
 import 'dart:ui' as ui;
 
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_platform.dart';
+import 'package:PiliPlus/common/widgets/liquid_glass/glass_route_transition.dart';
 import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -27,27 +28,6 @@ class GlassSurface extends StatelessWidget {
         capabilities.reduceTransparency || MediaQuery.highContrastOf(context);
     final shape = BorderRadius.circular(radius);
 
-    if (capabilities.nativeGlass && !opaque) {
-      // UIKit owns the glass outline and shadow. A Flutter rounded mask around
-      // UIVisualEffectView clips its refraction and creates a second, fuzzy rim.
-      return Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Positioned.fill(
-            child: ExcludeSemantics(
-              child: IgnorePointer(
-                child: _NativeGlassSurface(radius: radius, dark: dark),
-              ),
-            ),
-          ),
-          ClipRRect(
-            borderRadius: shape,
-            child: Padding(padding: padding, child: child),
-          ),
-        ],
-      );
-    }
-
     final surface = BackdropFilter(
       enabled: !opaque,
       filter: ui.ImageFilter.blur(sigmaX: 20, sigmaY: 20),
@@ -67,7 +47,7 @@ class GlassSurface extends StatelessWidget {
       ),
     );
 
-    return DecoratedBox(
+    final fallback = DecoratedBox(
       decoration: BoxDecoration(
         borderRadius: shape,
         boxShadow: [
@@ -80,17 +60,32 @@ class GlassSurface extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: shape,
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: ExcludeSemantics(
-                child: IgnorePointer(child: surface),
+        child: surface,
+      ),
+    );
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Positioned.fill(
+          child: ExcludeSemantics(
+            child: IgnorePointer(
+              child: GlassRouteTransition(
+                builder: (context, transitioning) =>
+                    capabilities.nativeGlass && !opaque && !transitioning
+                    // UIKit owns the resting outline; do not clip its refraction.
+                    ? _NativeGlassSurface(radius: radius, dark: dark)
+                    : fallback,
               ),
             ),
-            Padding(padding: padding, child: child),
-          ],
+          ),
         ),
-      ),
+        // Keep interactive content mounted when the material changes renderer.
+        ClipRRect(
+          borderRadius: shape,
+          child: Padding(padding: padding, child: child),
+        ),
+      ],
     );
   }
 }
@@ -124,6 +119,8 @@ class _NativeGlassSurfaceState extends State<_NativeGlassSurface> {
       await _channel?.invokeMethod<void>('update', _arguments);
     } on PlatformException {
       // The platform view can disappear while a route transition is running.
+    } on MissingPluginException {
+      // Its channel may already be gone when UIKit hands off to Flutter.
     }
   }
 

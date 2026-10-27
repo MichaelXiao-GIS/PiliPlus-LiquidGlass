@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_platform.dart';
+import 'package:PiliPlus/common/widgets/liquid_glass/glass_route_transition.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_surface.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_window_geometry.dart';
 import 'package:flutter/services.dart';
@@ -77,6 +78,8 @@ class _GlassNavigationBarState extends State<GlassNavigationBar>
       await _channel?.invokeMethod<void>('update', _arguments(context));
     } on PlatformException {
       // Route disposal may race with a theme or badge update.
+    } on MissingPluginException {
+      // A route transition can dispose the native view before this update.
     }
   }
 
@@ -114,10 +117,12 @@ class _GlassNavigationBarState extends State<GlassNavigationBar>
   @override
   Widget build(BuildContext context) => AnimatedBuilder(
     animation: _progress,
-    builder: (context, _) => _buildBar(context),
+    builder: (context, _) => GlassRouteTransition(
+      builder: _buildBar,
+    ),
   );
 
-  Widget _buildBar(BuildContext context) {
+  Widget _buildBar(BuildContext context, bool transitioning) {
     final capabilities = GlassCapabilities.of(context);
     final textScale = MediaQuery.textScalerOf(context).scale(12) / 12;
     final expanded = 1 - _progress.value;
@@ -128,7 +133,11 @@ class _GlassNavigationBarState extends State<GlassNavigationBar>
           widget.destinations.length *
               (64.0 + expanded * (20 + math.max(0.0, textScale - 1) * 16)),
     );
-    final native = capabilities.nativeGlass;
+    final native = capabilities.nativeGlass && !transitioning;
+    if (!native && _channel != null) {
+      _channel!.setMethodCallHandler(null);
+      _channel = null;
+    }
     final data = MediaQuery.of(context);
     final left = math.max(data.padding.left, 16.0);
     final right = math.max(data.padding.right, 16.0);

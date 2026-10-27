@@ -7,6 +7,7 @@ import 'package:PiliPlus/common/widgets/flutter/dyn_tab_bar.dart';
 import 'package:PiliPlus/common/widgets/flutter/refresh_indicator.dart';
 import 'package:PiliPlus/common/widgets/flutter/text_field/controller.dart';
 import 'package:PiliPlus/common/widgets/gesture/horizontal_drag_gesture_recognizer.dart';
+import 'package:PiliPlus/common/widgets/liquid_glass/glass_platform.dart';
 import 'package:PiliPlus/common/widgets/pair.dart';
 import 'package:PiliPlus/common/widgets/refresh_indicator.dart';
 import 'package:PiliPlus/common/widgets/scaffold/mini_scaffold.dart';
@@ -32,6 +33,7 @@ import 'package:PiliPlus/pages/dynamics/widgets/author_panel.dart';
 import 'package:PiliPlus/pages/dynamics/widgets/dynamic_panel.dart';
 import 'package:PiliPlus/pages/dynamics_create/view.dart';
 import 'package:PiliPlus/pages/dynamics_detail/controller.dart';
+import 'package:PiliPlus/pages/dynamics_detail/widgets/detail_title.dart';
 import 'package:PiliPlus/pages/dynamics_repost/view.dart';
 import 'package:PiliPlus/utils/extension/get_ext.dart';
 import 'package:PiliPlus/utils/grid.dart';
@@ -260,17 +262,11 @@ class _DynamicDetailPageState extends CommonDynPageMultiState<DynamicDetailPage>
   }
 
   PreferredSizeWidget _buildAppBar() => AppBar(
-    title: Padding(
-      padding: const EdgeInsets.only(right: 12),
-      child: Obx(
-        () {
-          final showTitle = controller.showTitle.value;
-          return AnimatedOpacity(
-            opacity: showTitle ? 1 : 0,
-            duration: const Duration(milliseconds: 300),
-            child: IgnorePointer(
-              ignoring: !showTitle,
-              child: AuthorPanel(
+    title: GlassCapabilities.isIOS
+        ? Obx(
+            () => DynamicDetailTitle(
+              showAuthor: controller.showTitle.value,
+              author: AuthorPanel(
                 item: controller.dynItem,
                 isDetail: true,
                 onSetPubSetting: controller.onSetPubSetting,
@@ -278,10 +274,29 @@ class _DynamicDetailPageState extends CommonDynPageMultiState<DynamicDetailPage>
                 onSetReplySubject: controller.onSetReplySubject,
               ),
             ),
-          );
-        },
-      ),
-    ),
+          )
+        : Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: Obx(
+              () {
+                final showTitle = controller.showTitle.value;
+                return AnimatedOpacity(
+                  opacity: showTitle ? 1 : 0,
+                  duration: const Duration(milliseconds: 300),
+                  child: IgnorePointer(
+                    ignoring: !showTitle,
+                    child: AuthorPanel(
+                      item: controller.dynItem,
+                      isDetail: true,
+                      onSetPubSetting: controller.onSetPubSetting,
+                      onEdit: _onEdit,
+                      onSetReplySubject: controller.onSetReplySubject,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
     actions: isPortrait
         ? null
         : [ratioWidget(maxWidth), const SizedBox(width: 16)],
