@@ -51,6 +51,7 @@ import 'package:PiliPlus/pages/video/widgets/intro_layout.dart';
 import 'package:PiliPlus/pages/video/widgets/player_focus.dart';
 import 'package:PiliPlus/pages/video/widgets/video_detail_layout.dart';
 import 'package:PiliPlus/pages/video/widgets/video_detail_tabs.dart';
+import 'package:PiliPlus/pages/video/widgets/video_status_bar_scope.dart';
 import 'package:PiliPlus/plugin/pl_player/controller.dart';
 import 'package:PiliPlus/plugin/pl_player/models/fullscreen_mode.dart';
 import 'package:PiliPlus/plugin/pl_player/models/play_repeat.dart';
@@ -381,7 +382,7 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
   // 离开当前页面时
   void didPushNext() {
     super.didPushNext();
-    isShowing = false;
+    setState(() => isShowing = false);
 
     removeObserverMobile(this);
 
@@ -414,7 +415,7 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
       return;
     }
 
-    isShowing = true;
+    setState(() => isShowing = true);
 
     addObserverMobile(this);
 
@@ -1303,9 +1304,12 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
         child: child,
       );
     }
-    return videoDetailController.plPlayerController.darkVideoPage
-        ? Theme(data: theme, child: child)
-        : child;
+    return VideoStatusBarScope(
+      active: isShowing,
+      child: videoDetailController.plPlayerController.darkVideoPage
+          ? Theme(data: theme, child: child)
+          : child,
+    );
   }
 
   Widget buildTabBar({

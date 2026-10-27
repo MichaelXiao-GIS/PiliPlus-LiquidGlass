@@ -1,7 +1,6 @@
 import 'dart:math' as math;
 
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_platform.dart';
-import 'package:PiliPlus/common/widgets/liquid_glass/glass_route_transition.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_surface.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_tab_scrubber.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_window_geometry.dart';
@@ -119,12 +118,10 @@ class _GlassNavigationBarState extends State<GlassNavigationBar>
   @override
   Widget build(BuildContext context) => AnimatedBuilder(
     animation: _progress,
-    builder: (context, _) => GlassRouteTransition(
-      builder: _buildBar,
-    ),
+    builder: (context, _) => _buildBar(context),
   );
 
-  Widget _buildBar(BuildContext context, bool transitioning) {
+  Widget _buildBar(BuildContext context) {
     final capabilities = GlassCapabilities.of(context);
     final textScale = MediaQuery.textScalerOf(context).scale(12) / 12;
     final expanded = 1 - _progress.value;
@@ -135,7 +132,9 @@ class _GlassNavigationBarState extends State<GlassNavigationBar>
           widget.destinations.length *
               (64.0 + expanded * (20 + math.max(0.0, textScale - 1) * 16)),
     );
-    final native = capabilities.nativeGlass && !transitioning;
+    // Keep the original native view alive under a pushed route. Replacing it
+    // with Flutter's more opaque fallback causes a visible flash on swipe-back.
+    final native = capabilities.nativeGlass;
     if (!native && _channel != null) {
       _channel!.setMethodCallHandler(null);
       _channel = null;

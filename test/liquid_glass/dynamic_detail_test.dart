@@ -111,10 +111,11 @@ void main() {
 
   for (final dark in [false, true]) {
     testWidgets(
-      'native glass yields both routes during push and cancelled/completed swipe, dark=$dark',
+      'bottom glass stays native while detail surfaces yield during push and swipe, dark=$dark',
       (tester) async {
         await tester.binding.setSurfaceSize(const Size(402, 874));
         addTearDown(() => tester.binding.setSurfaceSize(null));
+        var navigationCreates = 0;
         final messenger = tester.binding.defaultBinaryMessenger
           ..setMockMethodCallHandler(
             const MethodChannel('piliplus/liquid_glass'),
@@ -122,7 +123,14 @@ void main() {
           )
           ..setMockMethodCallHandler(
             SystemChannels.platform_views,
-            (_) async => null,
+            (call) async {
+              if (call.method == 'create' &&
+                  (call.arguments as Map)['viewType'] ==
+                      'piliplus/glass_navigation') {
+                navigationCreates++;
+              }
+              return null;
+            },
           );
         addTearDown(() {
           messenger
@@ -164,10 +172,18 @@ void main() {
         );
         await tester.pumpAndSettle();
         expect(find.byType(UiKitView), findsNWidgets(2));
+        final navigation = find.byWidgetPredicate(
+          (widget) =>
+              widget is UiKitView &&
+              widget.viewType == 'piliplus/glass_navigation',
+          skipOffstage: false,
+        );
+        final nativeState = tester.state(navigation);
         await tester.tap(find.text('打开'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 100));
-        expect(find.byType(UiKitView), findsNothing);
+        expect(find.byType(UiKitView), findsOneWidget);
+        expect(identical(tester.state(navigation), nativeState), isTrue);
         await tester.pumpAndSettle();
         expect(find.byType(UiKitView), findsNWidgets(2));
         final detail = tester.state<_DetailState>(find.byType(_Detail));
@@ -178,17 +194,20 @@ void main() {
         await gesture.moveBy(const Offset(120, 0));
         await gesture.moveBy(const Offset(40, 0));
         await tester.pump(const Duration(milliseconds: 100));
-        expect(find.byType(UiKitView), findsNothing);
+        expect(find.byType(UiKitView), findsOneWidget);
+        expect(identical(tester.state(navigation), nativeState), isTrue);
         expect(tester.getRect(find.byType(_Detail)).left, greaterThan(0));
         // A stationary finger must not bring native overlay surfaces back early.
         await tester.pump(const Duration(seconds: 1));
-        expect(find.byType(UiKitView), findsNothing);
+        expect(find.byType(UiKitView), findsOneWidget);
         await gesture.up();
         await tester.pumpAndSettle();
         expect(identical(tester.state(find.byType(_Detail)), detail), isTrue);
         expect(detail.scroll.offset, 180);
         expect(find.text('计数 1'), findsOneWidget);
         expect(find.byType(UiKitView), findsNWidgets(2));
+        expect(identical(tester.state(navigation), nativeState), isTrue);
+        expect(navigationCreates, 1);
         await tester.timedDragFrom(
           const Offset(1, 300),
           const Offset(360, 0),

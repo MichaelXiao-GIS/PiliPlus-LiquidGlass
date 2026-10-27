@@ -1,10 +1,11 @@
 import 'dart:async';
 import 'dart:io' show Platform;
 
+import 'package:PiliPlus/plugin/pl_player/utils/system_bar_visibility.dart';
 import 'package:PiliPlus/utils/desktop/window_controller.dart';
 import 'package:PiliPlus/utils/device_utils.dart';
 import 'package:flutter/services.dart'
-    show SystemChrome, SystemUiOverlay, DeviceOrientation;
+    show SystemChrome, SystemUiMode, DeviceOrientation;
 
 bool _isDesktopFullScreen = false;
 
@@ -53,24 +54,14 @@ Future<void>? fullMode() {
   );
 }
 
-bool _showSystemBar = true;
-bool get showSystemBar_ => _showSystemBar;
-Future<void>? hideSystemBar() {
-  if (!_showSystemBar) {
-    return null;
-  }
-  _showSystemBar = false;
-  return SystemChrome.setEnabledSystemUIMode(.immersiveSticky);
-}
+final systemBarVisibility = SystemBarVisibility(
+  visibleMode: Platform.isAndroid && DeviceUtils.sdkInt < 29
+      ? SystemUiMode.manual
+      : SystemUiMode.edgeToEdge,
+);
+
+bool get showSystemBar_ => systemBarVisibility.barsVisible;
+Future<void>? hideSystemBar() => systemBarVisibility.setBarsVisible(false);
 
 //退出全屏显示
-Future<void>? showSystemBar() {
-  if (_showSystemBar) {
-    return null;
-  }
-  _showSystemBar = true;
-  return SystemChrome.setEnabledSystemUIMode(
-    Platform.isAndroid && DeviceUtils.sdkInt < 29 ? .manual : .edgeToEdge,
-    overlays: SystemUiOverlay.values,
-  );
-}
+Future<void>? showSystemBar() => systemBarVisibility.setBarsVisible(true);
