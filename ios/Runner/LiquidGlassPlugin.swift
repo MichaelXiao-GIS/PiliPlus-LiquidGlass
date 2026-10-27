@@ -218,24 +218,38 @@ private final class GlassPlatformView: NSObject, FlutterPlatformView {
   func view() -> UIView { root }
 }
 
-private final class GlassControlView: UIView {
+private final class GlassControlView: UIView, UIGestureRecognizerDelegate {
   var isNavigation = false
   var onSelect: ((Int) -> Void)?
   private let material = UIVisualEffectView()
   private let stack = UIStackView()
+  private let lens = UIVisualEffectView()
+  private lazy var scrub = UIPanGestureRecognizer(target: self, action: #selector(scrubTabs(_:)))
   private var buttons: [GlassTabButton] = []
   private var arguments: [String: Any] = [:]
   private var radius: CGFloat = 28
   private var materialStyle: String?
+  private var previewIndex: Int?
+  private var scrubOrigin = 0
+  private var settleGeneration = 0
+  private var previousSize = CGSize.zero
+
+  private var selectedIndex: Int { arguments["selectedIndex"] as? Int ?? 0 }
 
   override init(frame: CGRect) {
     super.init(frame: frame)
     backgroundColor = .clear
     addSubview(material)
+    lens.isUserInteractionEnabled = false
+    lens.isHidden = true
+    addSubview(lens)
     stack.axis = .horizontal
     stack.distribution = .fillEqually
     stack.spacing = 4
-    material.contentView.addSubview(stack)
+    addSubview(stack)
+    scrub.maximumNumberOfTouches = 1
+    scrub.delegate = self
+    addGestureRecognizer(scrub)
     NotificationCenter.default.addObserver(
       self, selector: #selector(refreshAccessibility),
       name: UIAccessibility.reduceTransparencyStatusDidChangeNotification, object: nil
@@ -253,15 +267,22 @@ private final class GlassControlView: UIView {
   required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
   deinit { NotificationCenter.default.removeObserver(self) }
 
-  @objc private func refreshAccessibility() { update(arguments) }
+  @objc private func refreshAccessibility() {
+    cancelScrub()
+    update(arguments)
+  }
 
   func update(_ args: [String: Any]) {
+    if previewIndex != nil && selectedIndex != (args["selectedIndex"] as? Int ?? 0) {
+      cancelScrub()
+    }
     arguments = args
     overrideUserInterfaceStyle = args["dark"] as? Bool == true ? .dark : .light
     radius = (args["radius"] as? NSNumber)?.doubleValue ?? 32
     let opaque = UIAccessibility.isReduceTransparencyEnabled ||
       UIAccessibility.isDarkerSystemColorsEnabled
-    let interactive = isNavigation && !UIAccessibility.isReduceMotionEnabled
+    // Only the moving selection deforms; the outer bar stays anchored.
+    let interactive = false
     let style = "\(opaque)-\(interactive)"
     if materialStyle != style {
       materialStyle = style
@@ -270,23 +291,40 @@ private final class GlassControlView: UIView {
         material.backgroundColor = .secondarySystemBackground
         material.layer.borderWidth = 1
         material.layer.borderColor = UIColor.separator.cgColor
+        lens.effect = nil
+        lens.backgroundColor = .tertiarySystemFill
+        lens.layer.borderWidth = 2
+        lens.layer.borderColor = UIColor.label.cgColor
       } else {
         material.backgroundColor = .clear
         material.layer.borderWidth = 0
+        lens.backgroundColor = .clear
+        lens.layer.borderWidth = 0
         if #available(iOS 26.0, *) {
           let glass = UIGlassEffect(style: .regular)
           glass.isInteractive = interactive
           material.effect = glass
+          let selectionGlass = UIGlassEffect(style: .clear)
+          selectionGlass.tintColor = UIColor.white.withAlphaComponent(0.12)
+          lens.effect = selectionGlass
         } else {
           material.effect = UIBlurEffect(style: .systemMaterial)
+          lens.effect = UIBlurEffect(style: .systemThinMaterial)
         }
       }
     }
     guard isNavigation, let items = args["destinations"] as? [[String: Any]] else {
+      scrub.isEnabled = false
       setNeedsLayout()
       return
     }
+    scrub.isEnabled = items.count > 1
+    let direction: UISemanticContentAttribute = args["rtl"] as? Bool == true ?
+      .forceRightToLeft : .forceLeftToRight
+    if stack.semanticContentAttribute != direction { cancelScrub() }
+    stack.semanticContentAttribute = direction
     if buttons.count != items.count {
+      cancelScrub()
       for button in buttons { stack.removeArrangedSubview(button); button.removeFromSuperview() }
       buttons = items.indices.map { index in
         let button = GlassTabButton()
@@ -296,36 +334,141 @@ private final class GlassControlView: UIView {
         return button
       }
     }
-    let selected = args["selectedIndex"] as? Int ?? 0
-    let tint = UIColor(argb: (args["tint"] as? NSNumber)?.uint32Value ?? 0xFFFB7299)
-    let scale = (args["textScale"] as? NSNumber)?.doubleValue ?? 1
-    let compact = (args["compactProgress"] as? NSNumber)?.doubleValue ?? 0
+    configureButtons()
+    setNeedsLayout()
+  }
+
+  private func configureButtons() {
+    guard let items = arguments["destinations"] as? [[String: Any]],
+      items.count == buttons.count else { return }
+    let tint = UIColor(argb: (arguments["tint"] as? NSNumber)?.uint32Value ?? 0xFFFB7299)
+    let scale = (arguments["textScale"] as? NSNumber)?.doubleValue ?? 1
+    let compact = (arguments["compactProgress"] as? NSNumber)?.doubleValue ?? 0
     for (index, item) in items.enumerated() {
       buttons[index].configure(
         title: item["label"] as? String ?? "",
         symbol: item["symbol"] as? String ?? "circle",
         badge: item["badge"] as? String,
-        selected: index == selected, tint: tint, textScale: scale,
-        compactProgress: compact
+        selected: index == (previewIndex ?? selectedIndex), tint: tint, textScale: scale,
+        compactProgress: compact, showSelection: previewIndex == nil,
+        committed: index == selectedIndex
       )
+      let slot = selectionFrame(index)
+      let proximity = previewIndex != nil && !UIAccessibility.isReduceMotionEnabled && slot.width > 0 ?
+        max(0, 1 - abs(slot.midX - lens.frame.midX) / slot.width) : 0
+      buttons[index].setLensProximity(proximity)
     }
-    setNeedsLayout()
   }
 
-  @objc private func selectTab(_ sender: UIControl) { onSelect?(sender.tag) }
+  @objc private func selectTab(_ sender: UIControl) {
+    cancelScrub()
+    onSelect?(sender.tag)
+  }
+
+  override func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+    guard gestureRecognizer === scrub else {
+      return super.gestureRecognizerShouldBegin(gestureRecognizer)
+    }
+    let velocity = scrub.velocity(in: self)
+    return isNavigation && buttons.count > 1 && abs(velocity.x) > abs(velocity.y)
+  }
+
+  private func selectionFrame(_ index: Int) -> CGRect {
+    buttons[index].convert(buttons[index].bounds, to: self)
+  }
+
+  private func nearestTab(_ x: CGFloat) -> Int {
+    buttons.indices.min { abs(selectionFrame($0).midX - x) < abs(selectionFrame($1).midX - x) } ?? 0
+  }
+
+  @objc private func scrubTabs(_ recognizer: UIPanGestureRecognizer) {
+    let point = recognizer.location(in: self)
+    switch recognizer.state {
+    case .began:
+      cancelScrub()
+      scrubOrigin = selectedIndex
+      previewIndex = scrubOrigin
+      lens.frame = selectionFrame(scrubOrigin)
+      lens.isHidden = false
+      fallthrough
+    case .changed:
+      guard previewIndex != nil else { return }
+      let inside = point.y >= -36 && point.y <= bounds.height + 36
+      let index = inside ? nearestTab(point.x) : scrubOrigin
+      previewIndex = index
+      let slot = selectionFrame(index)
+      let stretch = UIAccessibility.isReduceMotionEnabled || !inside ? 0 :
+        min(18, abs(recognizer.velocity(in: self).x) * 0.012)
+      let width = min(bounds.width - 4, slot.width + stretch)
+      let height = min(bounds.height - 2, slot.height + (stretch > 0 ? 4 : 0))
+      let center = inside ? min(bounds.width - width / 2 - 2, max(width / 2 + 2, point.x)) : slot.midX
+      lens.frame = CGRect(x: center - width / 2, y: (bounds.height - height) / 2,
+                          width: width, height: height)
+      configureButtons()
+    case .ended:
+      guard previewIndex != nil else { return }
+      let inside = point.y >= -36 && point.y <= bounds.height + 36
+      settle(at: inside ? nearestTab(point.x) : scrubOrigin, commit: inside)
+    case .cancelled, .failed:
+      if previewIndex != nil { settle(at: scrubOrigin, commit: false) }
+    default: break
+    }
+  }
+
+  private func settle(at index: Int, commit: Bool) {
+    previewIndex = index
+    configureButtons()
+    settleGeneration += 1
+    let generation = settleGeneration
+    let origin = scrubOrigin
+    UIView.animate(
+      withDuration: UIAccessibility.isReduceMotionEnabled ? 0 : 0.32,
+      delay: 0, usingSpringWithDamping: 0.78, initialSpringVelocity: 0,
+      options: [.beginFromCurrentState, .allowUserInteraction],
+      animations: { self.lens.frame = self.selectionFrame(index) },
+      completion: { [weak self] finished in
+        guard let self, finished, generation == self.settleGeneration else { return }
+        if commit { self.arguments["selectedIndex"] = index }
+        self.cancelScrub()
+        // Dragging back onto the current tab must not trigger its refresh action.
+        if commit && index != origin { self.onSelect?(index) }
+      }
+    )
+  }
+
+  private func cancelScrub() {
+    settleGeneration += 1
+    lens.layer.removeAllAnimations()
+    lens.isHidden = true
+    previewIndex = nil
+    configureButtons()
+  }
+
+  override func didMoveToWindow() {
+    super.didMoveToWindow()
+    if window == nil { cancelScrub() }
+  }
 
   override func layoutSubviews() {
     super.layoutSubviews()
+    if previousSize != bounds.size {
+      if previewIndex != nil { cancelScrub() }
+      previousSize = bounds.size
+    }
     material.frame = bounds
     if #available(iOS 26.0, *) {
       // Describe the shape to the glass renderer instead of masking the final
       // effect. Its refraction and highlight must follow the same contour.
       material.cornerConfiguration = isNavigation ? .capsule() : .capsule(maximumRadius: radius)
       material.clipsToBounds = false
+      lens.cornerConfiguration = .capsule()
+      lens.clipsToBounds = false
     } else {
       material.layer.cornerRadius = min(radius, bounds.height / 2)
       material.layer.cornerCurve = .circular
       material.clipsToBounds = true
+      lens.layer.cornerRadius = lens.bounds.height / 2
+      lens.clipsToBounds = true
     }
     stack.frame = bounds.insetBy(dx: 5, dy: 5)
   }
@@ -336,6 +479,7 @@ private final class GlassTabButton: UIControl {
   private let label = UILabel()
   private let badgeLabel = UILabel()
   private var compactProgress: CGFloat = 0
+  private var lensProximity: CGFloat = 0
 
   override init(frame: CGRect) {
     super.init(frame: frame)
@@ -359,11 +503,12 @@ private final class GlassTabButton: UIControl {
 
   func configure(
     title: String, symbol: String, badge: String?, selected: Bool,
-    tint: UIColor, textScale: Double, compactProgress: Double
+    tint: UIColor, textScale: Double, compactProgress: Double,
+    showSelection: Bool, committed: Bool
   ) {
     isSelected = selected
     accessibilityLabel = title
-    accessibilityTraits = selected ? [.button, .selected] : [.button]
+    accessibilityTraits = committed ? [.button, .selected] : [.button]
     accessibilityValue = badge.map { $0.isEmpty ? "有未读动态" : "\($0) 条未读动态" }
     label.text = title
     label.font = .systemFont(ofSize: 11 * textScale, weight: .semibold)
@@ -375,7 +520,7 @@ private final class GlassTabButton: UIControl {
     let selectedSymbol = "\(symbol).fill"
     imageView.image = (selected ? UIImage(systemName: selectedSymbol) : nil) ??
       UIImage(systemName: symbol)
-    backgroundColor = selected ? .tertiarySystemFill : .clear
+    backgroundColor = selected && showSelection ? .tertiarySystemFill : .clear
     badgeLabel.isHidden = badge == nil
     badgeLabel.text = badge
     setNeedsLayout()
@@ -387,8 +532,16 @@ private final class GlassTabButton: UIControl {
     }
   }
 
+  func setLensProximity(_ proximity: CGFloat) {
+    lensProximity = proximity
+    imageView.transform = CGAffineTransform(scaleX: 1 + 0.12 * proximity, y: 1 + 0.12 * proximity)
+    label.transform = CGAffineTransform(scaleX: 1 + 0.04 * proximity, y: 1 + 0.04 * proximity)
+  }
+
   override func layoutSubviews() {
     super.layoutSubviews()
+    imageView.transform = .identity
+    label.transform = .identity
     layer.cornerRadius = bounds.height / 2
     let labelHeight = ceil(label.font.lineHeight)
     let total = 23 + (2 + labelHeight) * (1 - compactProgress)
@@ -402,6 +555,7 @@ private final class GlassTabButton: UIControl {
       x: bounds.midX + 8, y: max(0, top - 3), width: badgeWidth, height: badgeHeight
     )
     badgeLabel.layer.cornerRadius = badgeHeight / 2
+    setLensProximity(lensProximity)
   }
 }
 

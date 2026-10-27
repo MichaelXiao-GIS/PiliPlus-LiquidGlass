@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_platform.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_route_transition.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_surface.dart';
+import 'package:PiliPlus/common/widgets/liquid_glass/glass_tab_scrubber.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_window_geometry.dart';
 import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
@@ -59,6 +60,7 @@ class _GlassNavigationBarState extends State<GlassNavigationBar>
 
   Map<String, Object?> _arguments(BuildContext context) => {
     'selectedIndex': widget.selectedIndex,
+    'rtl': Directionality.of(context) == TextDirection.rtl,
     'dark': Theme.of(context).brightness == Brightness.dark,
     'tint': ColorScheme.of(context).primary.toARGB32(),
     'textScale': MediaQuery.textScalerOf(context).scale(12) / 12,
@@ -186,11 +188,12 @@ class _GlassNavigationBarState extends State<GlassNavigationBar>
                 : GlassSurface(
                     radius: height / 2,
                     padding: const EdgeInsets.all(5),
-                    child: Row(
-                      children: [
-                        for (var i = 0; i < widget.destinations.length; i++)
-                          Expanded(child: _destination(context, i)),
-                      ],
+                    child: GlassTabScrubber(
+                      count: widget.destinations.length,
+                      selectedIndex: widget.selectedIndex,
+                      onSelected: widget.onSelected,
+                      itemBuilder: (index, preview, showBackground) =>
+                          _destination(context, index, preview, showBackground),
                     ),
                   ),
           ),
@@ -199,13 +202,17 @@ class _GlassNavigationBarState extends State<GlassNavigationBar>
     );
   }
 
-  Widget _destination(BuildContext context, int index) {
+  Widget _destination(
+    BuildContext context,
+    int index,
+    bool selected,
+    bool showBackground,
+  ) {
     final destination = widget.destinations[index];
-    final selected = index == widget.selectedIndex;
     final colors = ColorScheme.of(context);
     final foreground = selected ? colors.primary : colors.onSurface;
     return Semantics(
-      selected: selected,
+      selected: index == widget.selectedIndex,
       button: true,
       label: destination.label,
       onTap: () => widget.onSelected(index),
@@ -218,9 +225,11 @@ class _GlassNavigationBarState extends State<GlassNavigationBar>
         message: destination.label,
         excludeFromSemantics: true,
         child: AnimatedContainer(
-          duration: GlassCapabilities.duration(context),
+          duration: showBackground
+              ? GlassCapabilities.duration(context)
+              : Duration.zero,
           decoration: BoxDecoration(
-            color: selected
+            color: selected && showBackground
                 ? colors.onSurface.withValues(alpha: 0.08)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(32),
