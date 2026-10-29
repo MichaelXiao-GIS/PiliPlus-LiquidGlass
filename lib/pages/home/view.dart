@@ -138,15 +138,15 @@ class _HomePageState extends CommonPageState<HomePage>
         tabBar,
       ],
     );
-    final pages = AnimatedBuilder(
+    final pages = KeyedSubtree(
       key: _bodyKey,
-      animation: _homeController.tabController,
-      builder: (context, _) => tabBarView(
+      child: tabBarView(
         controller: _homeController.tabController,
         children: [
           for (var i = 0; i < _homeController.tabs.length; i++)
-            GlassScrollBody(
-              active: _homeController.tabController.index == i,
+            GlassScrollBody.tab(
+              controller: _homeController.tabController,
+              index: i,
               child: _homeController.tabs[i].page,
             ),
         ],

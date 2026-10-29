@@ -80,9 +80,23 @@ class GlassScrollBody extends StatefulWidget {
     super.key,
     this.active = true,
     required this.child,
-  });
+  }) : tabController = null,
+       tabIndex = null;
+
+  /// Listen inside the retained tab: TabBarView can cache its children while
+  /// animating, so rebuilding the parent is not a reliable activity signal.
+  const GlassScrollBody.tab({
+    super.key,
+    required TabController controller,
+    required int index,
+    required this.child,
+  }) : tabController = controller,
+       tabIndex = index,
+       active = true;
 
   final bool active;
+  final TabController? tabController;
+  final int? tabIndex;
   final Widget child;
 
   @override
@@ -91,9 +105,27 @@ class GlassScrollBody extends StatefulWidget {
 
 class _GlassScrollBodyState extends State<GlassScrollBody> {
   GlassScrollController? _controller;
-  double _offset = 0;
+  ScrollableState? _scrollable;
+  double? _offset;
   bool _parentActive = true;
-  bool get _active => widget.active && _parentActive;
+  bool _wasSelected = true;
+  bool get _selected =>
+      widget.tabController == null ||
+      widget.tabController!.index == widget.tabIndex;
+  bool get _active => widget.active && _parentActive && _selected;
+
+  @override
+  void initState() {
+    super.initState();
+    _wasSelected = _selected;
+    widget.tabController?.addListener(_onTabChanged);
+  }
+
+  void _onTabChanged() {
+    if (_wasSelected == _selected) return;
+    setState(() => _wasSelected = _selected);
+    if (_selected) _restore();
+  }
 
   @override
   void didChangeDependencies() {
@@ -108,13 +140,37 @@ class _GlassScrollBodyState extends State<GlassScrollBody> {
   @override
   void didUpdateWidget(GlassScrollBody oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (widget.tabController != oldWidget.tabController) {
+      oldWidget.tabController?.removeListener(_onTabChanged);
+      widget.tabController?.addListener(_onTabChanged);
+    }
+    if (_wasSelected != _selected) {
+      _wasSelected = _selected;
+      if (_selected) _restore();
+    }
     if (widget.active && !oldWidget.active) _restore();
   }
 
   void _restore() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && _active) _controller?.update(_offset);
+      if (!mounted || !_active) return;
+      // A kept-alive viewport can restore/correct its position without a new
+      // user scroll. Read the live metrics instead of replaying an old offset.
+      final scrollable = _scrollable;
+      if (scrollable != null &&
+          scrollable.mounted &&
+          scrollable.position.hasContentDimensions) {
+        _updateMetrics(scrollable.position);
+      } else if (_offset case final offset?) {
+        _controller?.update(offset);
+      }
     });
+  }
+
+  @override
+  void dispose() {
+    widget.tabController?.removeListener(_onTabChanged);
+    super.dispose();
   }
 
   bool _onScroll(ScrollNotification notification) {
@@ -122,8 +178,15 @@ class _GlassScrollBodyState extends State<GlassScrollBody> {
     if (notification.depth != 0 || notification.metrics.axis != Axis.vertical) {
       return false;
     }
+    _rememberScrollable(notification.context);
     _updateMetrics(notification.metrics);
     return false;
+  }
+
+  void _rememberScrollable(BuildContext? context) {
+    if (context != null) {
+      _scrollable = Scrollable.maybeOf(context, axis: Axis.vertical);
+    }
   }
 
   void _updateMetrics(ScrollMetrics metrics) {
@@ -131,7 +194,7 @@ class _GlassScrollBodyState extends State<GlassScrollBody> {
     _offset = extent <= 0
         ? 0
         : (metrics.pixels - metrics.minScrollExtent).clamp(0.0, extent);
-    if (_active) _controller?.update(_offset);
+    if (_active) _controller?.update(_offset!);
   }
 
   @override
@@ -142,6 +205,7 @@ class _GlassScrollBodyState extends State<GlassScrollBody> {
           onNotification: (notification) {
             if (notification.depth == 0 &&
                 notification.metrics.axis == Axis.vertical) {
+              _rememberScrollable(notification.context);
               _updateMetrics(notification.metrics);
             }
             return false;
@@ -272,8 +336,8 @@ class _FeatheredScrollMaterial extends StatelessWidget {
           BlendMode.modulate,
         ),
         inner: ImageFilter.blur(
-          sigmaX: 20 * blur * opacity,
-          sigmaY: 20 * blur * opacity,
+          sigmaX: 14 * blur * opacity,
+          sigmaY: 14 * blur * opacity,
         ),
       ),
       child: const SizedBox.expand(),
@@ -306,8 +370,8 @@ class _FeatheredScrollMaterial extends StatelessWidget {
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [
-                color.withValues(alpha: opaque ? 1 : 0.78 * blur),
-                color.withValues(alpha: opaque ? 1 : 0.78 * blur),
+                color.withValues(alpha: opaque ? 1 : 0.62 * blur),
+                color.withValues(alpha: opaque ? 1 : 0.62 * blur),
                 color.withValues(alpha: 0),
               ],
               stops: [0, solidExtent / (solidExtent + feather), 1],

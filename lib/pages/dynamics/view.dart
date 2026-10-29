@@ -148,15 +148,15 @@ class _DynamicsPageState extends CommonPageState<DynamicsPage>
     Widget actions;
 
     final immersive = GlassScrollPage.enabled(context);
-    Widget child = AnimatedBuilder(
+    Widget child = KeyedSubtree(
       key: _bodyKey,
-      animation: _dynamicsController.tabController,
-      builder: (context, _) => tabBarView(
+      child: tabBarView(
         controller: _dynamicsController.tabController,
         children: [
           for (final type in DynamicsTabType.values)
-            GlassScrollBody(
-              active: _dynamicsController.tabController.index == type.index,
+            GlassScrollBody.tab(
+              controller: _dynamicsController.tabController,
+              index: type.index,
               child: DynamicsTabPage(dynamicsType: type),
             ),
         ],

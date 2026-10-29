@@ -42,14 +42,12 @@ class _RankPageState extends State<RankPage>
             controller: _rankController.tabController,
             children: RankType.values
                 .map(
-                  (item) => AnimatedBuilder(
-                    animation: _rankController.tabController,
-                    builder: (context, _) => GlassScrollBody(
-                      active: _rankController.tabController.index == item.index,
-                      child: ZonePage(
-                        rid: item.rid,
-                        seasonType: item.seasonType,
-                      ),
+                  (item) => GlassScrollBody.tab(
+                    controller: _rankController.tabController,
+                    index: item.index,
+                    child: ZonePage(
+                      rid: item.rid,
+                      seasonType: item.seasonType,
                     ),
                   ),
                 )

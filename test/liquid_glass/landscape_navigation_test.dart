@@ -157,12 +157,17 @@ void main() {
                     ),
                   ],
                 ),
-                body: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () => contentTaps++,
-                  child: const ColoredBox(
-                    key: ValueKey('content'),
-                    color: Colors.white,
+                body: Builder(
+                  builder: (context) => Padding(
+                    padding: GlassNavigationRail.contentInsetsOf(context),
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () => contentTaps++,
+                      child: const ColoredBox(
+                        key: ValueKey('content'),
+                        color: Colors.white,
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -174,11 +179,10 @@ void main() {
         expect(bar.height, lessThanOrEqualTo(156));
         expect(bar.right, lessThanOrEqualTo(size.width - 8));
         expect(bar.left, greaterThan(size.width / 2));
-        expect(tester.getRect(find.byKey(const ValueKey('content'))).left, 0);
-        expect(
-          tester.getRect(find.byKey(const ValueKey('content'))).size,
-          size,
-        );
+        final content = tester.getRect(find.byKey(const ValueKey('content')));
+        expect(content.left, safe.left);
+        expect(content.right, lessThanOrEqualTo(bar.left - 8));
+        expect(content.bottom, size.height);
         final toolbar = tester.getRect(find.byType(GlassSurface).first);
         for (final key in ['rail-avatar', 'rail-search', 'rail-menu']) {
           final control = find.byKey(ValueKey(key));

@@ -204,9 +204,91 @@ void main() {
       first.jumpTo(300); // Off-screen retained feed must not affect this page.
       await tester.pumpAndSettle();
       expect(chrome.compact, isFalse);
+      // A retained viewport may be corrected without dispatching a scroll.
+      first.position.correctPixels(32);
       update(() => active = 0);
       await tester.pumpAndSettle();
+      expect(chrome.blur, 0.5);
+      expect(chrome.compact, isFalse);
+      first.jumpTo(300);
+      await tester.pumpAndSettle();
       expect(chrome.compact, isTrue);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'swiping from a topmost tab restores the retained scrolled feed',
+    (
+      tester,
+    ) async {
+      final chrome = GlassScrollController();
+      final first = ScrollController();
+      final second = ScrollController();
+      final tabs = TabController(length: 2, vsync: tester);
+      addTearDown(chrome.dispose);
+      addTearDown(first.dispose);
+      addTearDown(second.dispose);
+      addTearDown(tabs.dispose);
+      final pages = TabBarView(
+        key: GlobalKey(),
+        controller: tabs,
+        children: [
+          for (var i = 0; i < 2; i++)
+            GlassScrollBody.tab(
+              controller: tabs,
+              index: i,
+              child: _KeptFeed(controller: i == 0 ? first : second),
+            ),
+        ],
+      );
+      await tester.pumpWidget(
+        app(
+          GlassScrollScope(
+            controller: chrome,
+            child: ListenableBuilder(
+              listenable: chrome,
+              child: pages,
+              builder: (context, body) => TweenAnimationBuilder<double>(
+                tween: Tween(end: chrome.compact ? 1 : 0),
+                duration: const Duration(milliseconds: 280),
+                builder: (context, progress, _) => GlassScrollPage(
+                  headerExtent: 160 - progress * 60,
+                  contentHeaderExtent: 160,
+                  header: const Text('浏览'),
+                  body: body!,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      first.jumpTo(400);
+      await tester.pumpAndSettle();
+      expect(chrome.blur, 1);
+      for (var i = 0; i < 3; i++) {
+        await tester.drag(find.byType(TabBarView), const Offset(-650, 0));
+        await tester.pumpAndSettle();
+        expect(tabs.index, 1);
+        expect(chrome.blur, 0);
+        await tester.drag(find.byType(TabBarView), const Offset(650, 0));
+        await tester.pumpAndSettle();
+        expect(tabs.index, 0);
+        expect(first.offset, 400);
+        expect(chrome.blur, 1);
+        expect(chrome.compact, isTrue);
+      }
+      // Tap animation and off-screen notifications must also leave the current
+      // tab in charge, even though TabBarView retains its child widgets.
+      tabs.animateTo(1);
+      first.jumpTo(500);
+      await tester.pumpAndSettle();
+      expect(chrome.blur, 0);
+      tabs.animateTo(0);
+      second.jumpTo(20);
+      await tester.pumpAndSettle();
+      expect(chrome.blur, 1);
       expect(tester.takeException(), isNull);
     },
   );
@@ -465,7 +547,10 @@ void main() {
         });
         int red(int x, int y) => pixels!.getUint8((y * 300 + x) * 4);
         // The old lower edge was y=160: brightness must now fade smoothly across it.
-        expect(red(40, 155), greaterThan(150));
+        expect(
+          red(40, 155),
+          opaque ? greaterThan(230) : inInclusiveRange(145, 170),
+        );
         expect((red(40, 159) - red(40, 160)).abs(), lessThan(15));
         expect(red(40, 170), greaterThan(red(40, 182)));
         expect(red(40, 189), 0);
@@ -592,4 +677,28 @@ void main() {
     expect(tester.getSize(find.byType(GlassSurface)), const Size(202, 54));
     expect(tester.binding.hasScheduledFrame, isFalse);
   });
+}
+
+class _KeptFeed extends StatefulWidget {
+  const _KeptFeed({required this.controller});
+  final ScrollController controller;
+  @override
+  State<_KeptFeed> createState() => _KeptFeedState();
+}
+
+class _KeptFeedState extends State<_KeptFeed>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return CustomScrollView(
+      controller: widget.controller,
+      slivers: const [
+        GlassScrollSpacer(),
+        SliverToBoxAdapter(child: SizedBox(height: 3000)),
+      ],
+    );
+  }
 }
