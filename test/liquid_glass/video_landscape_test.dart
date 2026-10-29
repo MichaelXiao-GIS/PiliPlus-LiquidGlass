@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui' show DisplayFeature, DisplayFeatureType, DisplayFeatureState;
 
 import 'package:PiliPlus/common/widgets/image/network_img_layer.dart';
 import 'package:PiliPlus/common/widgets/video_card/video_card_h.dart';
@@ -57,6 +58,91 @@ void main() {
     await Hive.close();
     await temp.delete(recursive: true);
   });
+
+  testWidgets(
+    'fold replaces animated tabs without reusing a disposed animation',
+    (tester) async {
+      var controller = TabController(length: 3, vsync: tester);
+      Widget page() => MaterialApp(
+        home: Align(
+          alignment: Alignment.topLeft,
+          child: VideoDetailTabs(
+            controller: controller,
+            labels: _labels.take(controller.length).toList(),
+            actions: _actions(),
+            onTap: (_) {},
+          ),
+        ),
+      );
+      await tester.pumpWidget(page());
+      controller.animateTo(2);
+      await tester.pump(const Duration(milliseconds: 80));
+      controller.dispose();
+      controller = TabController(length: 2, vsync: tester);
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(page());
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      await tester.tap(find.text('评论 12.3万'));
+      await tester.pumpAndSettle();
+      expect(controller.index, 1);
+    },
+  );
+
+  for (final cameraOnLeft in [true, false]) {
+    testWidgets(
+      'corner camera does not reserve a full-height content strip: $cameraOnLeft',
+      (tester) async {
+        const size = Size(951, 669);
+        await tester.binding.setSurfaceSize(size);
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+        final safe = EdgeInsets.only(
+          left: cameraOnLeft ? 92 : 0,
+          right: cameraOnLeft ? 0 : 92,
+        );
+        late Size viewport;
+        await tester.pumpWidget(
+          MaterialApp(
+            home: MediaQuery(
+              data: MediaQueryData(
+                size: size,
+                viewPadding: safe,
+                padding: safe,
+                displayFeatures: [
+                  DisplayFeature(
+                    bounds: Rect.fromLTWH(
+                      cameraOnLeft ? 16 : 887,
+                      cameraOnLeft ? 12 : 595,
+                      48,
+                      54,
+                    ),
+                    type: DisplayFeatureType.cutout,
+                    state: DisplayFeatureState.unknown,
+                  ),
+                ],
+              ),
+              child: VideoDetailViewport(
+                insets: safe,
+                origin: Offset.zero,
+                builder: (_, value) {
+                  viewport = value;
+                  return const SizedBox.expand(
+                    key: ValueKey('edge-to-edge-video'),
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+        expect(viewport, size);
+        expect(
+          tester.getRect(find.byKey(const ValueKey('edge-to-edge-video'))),
+          Offset.zero & size,
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
 
   for (final (size, safe) in [
     (const Size(844, 390), const EdgeInsets.only(left: 59, bottom: 21)),

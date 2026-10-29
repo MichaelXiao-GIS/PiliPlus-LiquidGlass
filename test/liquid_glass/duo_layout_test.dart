@@ -208,6 +208,37 @@ void main() {
     },
   );
 
+  testWidgets('display resize tolerates one frame of old scene metrics', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(951, 669));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    late MediaQueryData local;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: MediaQuery(
+          data: const MediaQueryData(
+            size: Size(466, 678),
+            viewPadding: EdgeInsets.only(right: 64, bottom: 20),
+          ),
+          child: GlassContentViewport(
+            origin: Offset.zero,
+            child: Builder(
+              builder: (context) {
+                local = MediaQuery.of(context);
+                return const SizedBox.expand();
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+    expect(tester.takeException(), isNull);
+    expect(local.size, const Size(951, 669));
+    expect(local.viewPadding.right, 64); // No artificial 485pt inset.
+    expect(local.viewPadding.bottom, 11);
+  });
+
   testWidgets('bottom capsule stays in one region and remains tappable', (
     tester,
   ) async {

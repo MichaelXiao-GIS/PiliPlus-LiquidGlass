@@ -2,6 +2,7 @@ import 'dart:io' show Platform;
 import 'dart:math';
 
 import 'package:PiliPlus/common/assets.dart';
+import 'package:PiliPlus/plugin/pl_player/widgets/glass_player_controls.dart';
 import 'package:PiliPlus/common/style.dart';
 import 'package:PiliPlus/common/widgets/custom_icon.dart';
 import 'package:PiliPlus/common/widgets/flutter/pop_scope.dart';
@@ -1098,73 +1099,78 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
 
   Widget manualPlayerWidget(double height) => Obx(() {
     if (!videoDetailController.autoPlay) {
-      return Stack(
-        children: [
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            height: kToolbarHeight,
-            child: Row(
-              children: [
-                SizedBox(
-                  width: 42,
-                  height: 34,
-                  child: IconButton(
-                    tooltip: '返回',
-                    icon: const Icon(
-                      FontAwesomeIcons.arrowLeft,
-                      size: 15,
-                      color: Colors.white,
-                      shadows: [
-                        Shadow(
-                          blurRadius: 1.5,
-                          color: Colors.black,
+      return InlinePlayerBackControl(
+        onBack: Get.back,
+        child: Stack(
+          children: [
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              height: kToolbarHeight,
+              child: Row(
+                children: [
+                  InlinePlayerBackSlot(
+                    child: SizedBox(
+                      width: 42,
+                      height: 34,
+                      child: IconButton(
+                        tooltip: '返回',
+                        icon: const Icon(
+                          FontAwesomeIcons.arrowLeft,
+                          size: 15,
+                          color: Colors.white,
+                          shadows: [
+                            Shadow(
+                              blurRadius: 1.5,
+                              color: Colors.black,
+                            ),
+                          ],
                         ),
-                      ],
+                        onPressed: Get.back,
+                      ),
                     ),
-                    onPressed: Get.back,
                   ),
-                ),
-                SizedBox(
-                  width: 42,
-                  height: 34,
-                  child: IconButton(
-                    tooltip: '返回主页',
-                    icon: const Icon(
-                      FontAwesomeIcons.house,
-                      size: 15,
-                      color: Colors.white,
-                      shadows: [
-                        Shadow(
-                          blurRadius: 1.5,
-                          color: Colors.black,
-                        ),
-                      ],
+                  SizedBox(
+                    width: 42,
+                    height: 34,
+                    child: IconButton(
+                      tooltip: '返回主页',
+                      icon: const Icon(
+                        FontAwesomeIcons.house,
+                        size: 15,
+                        color: Colors.white,
+                        shadows: [
+                          Shadow(
+                            blurRadius: 1.5,
+                            color: Colors.black,
+                          ),
+                        ],
+                      ),
+                      onPressed:
+                          videoDetailController.plPlayerController.onCloseAll,
                     ),
-                    onPressed:
-                        videoDetailController.plPlayerController.onCloseAll,
                   ),
-                ),
-                const Spacer(),
-                _moreBtn(
-                  Colors.white,
-                  shadows: const [
-                    Shadow(
-                      blurRadius: 1.5,
-                      color: Colors.black,
-                    ),
-                  ],
-                ),
-              ],
+                  const Spacer(),
+                  _moreBtn(
+                    Colors.white,
+                    shadows: const [
+                      Shadow(
+                        blurRadius: 1.5,
+                        color: Colors.black,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-          Positioned(
-            right: 12,
-            top: height - 70,
-            child: const PlayIcon(),
-          ),
-        ],
+            Positioned(
+              right: 12,
+              top: height - 70,
+              child: const PlayIcon(),
+            ),
+          ],
+        ),
       );
     }
     return const SizedBox.shrink();
@@ -1325,14 +1331,17 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
       if (_shouldShowSeasonPanel) '播放列表',
     ];
     if (videoDetailController.tabCtr.length != tabs.length) {
-      videoDetailController.tabCtr.dispose();
+      final previous = videoDetailController.tabCtr;
       videoDetailController.tabCtr = TabController(
         vsync: videoDetailController,
         length: tabs.length,
         initialIndex: tabs.isEmpty
             ? 0
-            : videoDetailController.tabCtr.index.clamp(0, tabs.length - 1),
+            : previous.index.clamp(0, tabs.length - 1),
       );
+      // Fold/rotation replaces the tabs during layout. Let the old tab bar
+      // detach its animation listeners before disposing their controller.
+      WidgetsBinding.instance.addPostFrameCallback((_) => previous.dispose());
     }
 
     final flag = !needIndicator || tabs.length == 1;
@@ -1631,7 +1640,15 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
             showEpisodes: showEpisodes,
             onShowMemberPage: onShowMemberPage,
             isPortrait: isPortrait,
-            isHorizontal: isHorizontal ?? width! / height! >= kScreenRatio,
+            balanceHeight: !needRelated && !isPortrait
+                ? max(0, (height ?? 0) - 10 - Style.safeSpace - padding.bottom)
+                : 0,
+            // A short panel can have a landscape aspect ratio while still
+            // being too narrow for owner + follow + seven action buttons.
+            isHorizontal:
+                (isHorizontal ?? width! / height! >= kScreenRatio) &&
+                (width ?? maxWidth) >=
+                    700 * MediaQuery.textScalerOf(context).scale(12) / 12,
           ),
           if (needRelated && videoDetailController.showRelatedVideo) ...[
             SliverToBoxAdapter(

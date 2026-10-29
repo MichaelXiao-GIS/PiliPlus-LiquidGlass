@@ -89,6 +89,7 @@ class AppBarAni extends StatelessWidget {
             : ViewSafeArea(
                 left: isFullScreen,
                 right: isFullScreen,
+                // Inline playback uses its full, already-small viewport.
                 child: child,
               ),
       ),

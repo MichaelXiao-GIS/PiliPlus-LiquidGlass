@@ -5,6 +5,9 @@ import 'dart:ui' as ui;
 
 import 'package:PiliPlus/common/assets.dart';
 import 'package:PiliPlus/common/constants.dart';
+import 'package:PiliPlus/common/widgets/liquid_glass/glass_platform.dart';
+import 'package:PiliPlus/common/widgets/liquid_glass/glass_surface.dart';
+import 'package:PiliPlus/plugin/pl_player/widgets/glass_player_controls.dart';
 import 'package:PiliPlus/common/style.dart';
 import 'package:PiliPlus/common/widgets/cropped_image.dart';
 import 'package:PiliPlus/common/widgets/custom_icon.dart';
@@ -231,7 +234,9 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
     if (widget.videoDetailController case final controller?) {
       if (controller.vttSubtitlesIndex.value != 0) {
         if (visible) {
-          const int minPadding = 70;
+          final int minPadding = GlassCapabilities.isIOS && isFullScreen
+              ? 160 + MediaQuery.viewPaddingOf(context).bottom.ceil()
+              : 70;
           if (plPlayerController.subtitlePaddingB < minPadding) {
             tmpSubtitlePaddingB = plPlayerController.subtitlePaddingB;
             plPlayerController
@@ -396,8 +401,9 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
   // 动态构建底部控制条
   Widget buildBottomControl(
     VideoDetailController videoDetailController,
-    bool isLandscape,
-  ) {
+    bool isLandscape, {
+    bool extrasOnly = false,
+  }) {
     final videoDetail = introController.videoDetail.value;
     final isSeason = videoDetail.ugcSeason != null;
     final isPart = videoDetail.hasParts;
@@ -405,7 +411,10 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
     final isPlayAll = videoDetailController.isPlayAll;
     final anySeason = isSeason || isPart || isPgc || isPlayAll;
     final isFullScreen = this.isFullScreen;
-    final double widgetWidth = isLandscape && isFullScreen ? 42 : 35;
+    final grouped = GlassCapabilities.isIOS && isFullScreen;
+    final double widgetWidth = grouped
+        ? 44
+        : (isLandscape && isFullScreen ? 42 : 35);
 
     Widget progressWidget(
       BottomControlType bottomControl,
@@ -626,9 +635,12 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
             },
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Text(
-                fit.desc,
-                style: const TextStyle(color: Colors.white, fontSize: 13),
+              child: Center(
+                widthFactor: 1,
+                child: Text(
+                  fit.desc,
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                ),
               ),
             ),
           );
@@ -683,6 +695,17 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
       /// 字幕
       BottomControlType.subtitle => Obx(
         () {
+          final index = videoDetailController.vttSubtitlesIndex.value;
+          if (grouped) {
+            return PlayerSubtitleButton(
+              labels: [
+                for (final sub in videoDetailController.subtitles)
+                  sub.lanDoc ?? sub.lan,
+              ],
+              selectedIndex: index,
+              onSelected: videoDetailController.setSubtitle,
+            );
+          }
           if (videoDetailController.subtitles.isNotEmpty) {
             final val = videoDetailController.vttSubtitlesIndex.value;
             return PopupMenuButton<int>(
@@ -766,10 +789,13 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
           },
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Text(
-              "${plPlayerController.playbackSpeed}X",
-              style: const TextStyle(color: Colors.white, fontSize: 13),
-              semanticsLabel: "${plPlayerController.playbackSpeed}倍速",
+            child: Center(
+              widthFactor: 1,
+              child: Text(
+                "${plPlayerController.playbackSpeed}X",
+                style: const TextStyle(color: Colors.white, fontSize: 13),
+                semanticsLabel: "${plPlayerController.playbackSpeed}倍速",
+              ),
             ),
           ),
         ),
@@ -842,9 +868,12 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
             },
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Text(
-                currentVideoQa.shortDesc,
-                style: const TextStyle(color: Colors.white, fontSize: 13),
+              child: Center(
+                widthFactor: 1,
+                child: Text(
+                  currentVideoQa.shortDesc,
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                ),
               ),
             ),
           );
@@ -867,6 +896,85 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
         ),
       ),
     };
+
+    if (grouped) {
+      Widget control(BottomControlType type) => SizedBox(
+        height: 44,
+        child: Center(child: progressWidget(type)),
+      );
+      if (extrasOnly) {
+        final extras = <(BottomControlType, String)>[
+          if (plPlayerController.isFileSource || anySeason) ...[
+            (.pre, '上一集'),
+            (.next, '下一集'),
+          ],
+          if (!plPlayerController.isFileSource && anySeason) (.episode, '选集'),
+          (.fit, '画面比例'),
+          if (plPlayerController.isAnim) (.superResolution, '超分辨率'),
+          if (plPlayerController.showViewPoints &&
+              videoDetailController.viewPointList.isNotEmpty)
+            (.viewPoints, '分段信息'),
+          if (plPlayerController.showDmChart &&
+              (videoDetailController.dmTrend.value?.dataOrNull?.isNotEmpty ??
+                  false))
+            (.dmChart, '高能进度条'),
+          if (videoDetailController.languages.value?.isNotEmpty ?? false)
+            (.aiTranslate, '翻译'),
+        ];
+        return Wrap(
+          spacing: 8,
+          runSpacing: 12,
+          children: [
+            for (final (type, label) in extras)
+              SizedBox(
+                width: 88,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    control(type),
+                    Text(
+                      label,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.white70,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        );
+      }
+      return GlassPlayerTransportRow(
+        play: SizedBox.square(
+          dimension: 44,
+          child: progressWidget(.playOrPause),
+        ),
+        time: Obx(
+          () => Text(
+            '${DurationUtils.formatDuration(plPlayerController.position.value)} / '
+            '${DurationUtils.formatDuration(plPlayerController.duration.value)}',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 13,
+              fontFeatures: [FontFeature.tabularFigures()],
+            ),
+          ),
+        ),
+        actions: [
+          for (final type in [
+            BottomControlType.subtitle,
+            BottomControlType.speed,
+            BottomControlType.qa,
+            BottomControlType.fullscreen,
+          ])
+            ConstrainedBox(
+              constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+              child: progressWidget(type),
+            ),
+        ],
+      );
+    }
 
     final isNotFileSource = !plPlayerController.isFileSource;
 
@@ -1574,52 +1682,87 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
           ),
         ),
 
-        // 头部、底部控制条
-        Positioned.fill(
-          top: -1,
-          bottom: -1,
-          child: ClipRect(
-            child: RepaintBoundary(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  AppBarAni(
-                    isTop: true,
-                    controller: _animationController,
-                    isFullScreen: isFullScreen,
-                    removeSafeArea: plPlayerController.removeSafeArea,
-                    child: plPlayerController.isDesktopPip
-                        ? GestureDetector(
-                            behavior: HitTestBehavior.translucent,
-                            onPanStart: (_) => WindowController.instance.window
-                                ?.startDragging(),
-                            child: widget.headerControl,
-                          )
-                        : widget.headerControl,
+        // iOS fullscreen controls use separate floating groups. The safe area
+        // surrounds those groups instead of becoming blank space inside glass.
+        if (GlassCapabilities.isIOS && isFullScreen && !isLive)
+          Positioned.fill(
+            child: GlassPlayerChrome(
+              animation: _animationController,
+              header: GlassPlayerExtraControls(
+                builder: (_) => buildBottomControl(
+                  videoDetailController,
+                  maxWidth > maxHeight,
+                  extrasOnly: true,
+                ),
+                child: widget.headerControl,
+              ),
+              footer: BottomControl(
+                maxWidth: maxWidth,
+                isFullScreen: true,
+                controller: plPlayerController,
+                videoDetailController: videoDetailController,
+                buildBottomControl: () => buildBottomControl(
+                  videoDetailController,
+                  maxWidth > maxHeight,
+                ),
+              ),
+            ),
+          )
+        else
+          // 头部、底部控制条
+          Positioned.fill(
+            top: -1,
+            bottom: -1,
+            child: InlinePlayerBackControl(
+              enabled: !isFullScreen && !isLive,
+              animation: _animationController,
+              onBack: () =>
+                  plPlayerController.onPopInvokedWithResult(false, null),
+              child: ClipRect(
+                child: RepaintBoundary(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      AppBarAni(
+                        isTop: true,
+                        controller: _animationController,
+                        isFullScreen: isFullScreen,
+                        removeSafeArea: plPlayerController.removeSafeArea,
+                        child: plPlayerController.isDesktopPip
+                            ? GestureDetector(
+                                behavior: HitTestBehavior.translucent,
+                                onPanStart: (_) => WindowController
+                                    .instance
+                                    .window
+                                    ?.startDragging(),
+                                child: widget.headerControl,
+                              )
+                            : widget.headerControl,
+                      ),
+                      AppBarAni(
+                        isTop: false,
+                        controller: _animationController,
+                        isFullScreen: isFullScreen,
+                        removeSafeArea: plPlayerController.removeSafeArea,
+                        child:
+                            widget.bottomControl ??
+                            BottomControl(
+                              maxWidth: maxWidth,
+                              isFullScreen: isFullScreen,
+                              controller: plPlayerController,
+                              videoDetailController: videoDetailController,
+                              buildBottomControl: () => buildBottomControl(
+                                videoDetailController,
+                                maxWidth > maxHeight,
+                              ),
+                            ),
+                      ),
+                    ],
                   ),
-                  AppBarAni(
-                    isTop: false,
-                    controller: _animationController,
-                    isFullScreen: isFullScreen,
-                    removeSafeArea: plPlayerController.removeSafeArea,
-                    child:
-                        widget.bottomControl ??
-                        BottomControl(
-                          maxWidth: maxWidth,
-                          isFullScreen: isFullScreen,
-                          controller: plPlayerController,
-                          videoDetailController: videoDetailController,
-                          buildBottomControl: () => buildBottomControl(
-                            videoDetailController,
-                            maxWidth > maxHeight,
-                          ),
-                        ),
-                  ),
-                ],
+                ),
               ),
             ),
           ),
-        ),
 
         // Positioned(
         //   right: 25,
@@ -1796,31 +1939,43 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
                   child: Obx(
                     () => Offstage(
                       offstage: !plPlayerController.showControls.value,
-                      child: DecoratedBox(
-                        decoration: const BoxDecoration(
-                          color: Color(0x45000000),
-                          borderRadius: BorderRadius.all(Radius.circular(8)),
-                        ),
-                        child: Obx(() {
-                          final controlsLock =
-                              plPlayerController.controlsLock.value;
-                          return ComBtn(
-                            tooltip: controlsLock ? '解锁' : '锁定',
-                            icon: controlsLock
-                                ? const Icon(
-                                    FontAwesomeIcons.lock,
-                                    size: 15,
-                                    color: Colors.white,
-                                  )
-                                : const Icon(
-                                    FontAwesomeIcons.lockOpen,
-                                    size: 15,
-                                    color: Colors.white,
+                      child: Builder(
+                        builder: (context) {
+                          final button = Obx(() {
+                            final controlsLock =
+                                plPlayerController.controlsLock.value;
+                            return ComBtn(
+                              width: GlassCapabilities.isIOS ? 44 : 34,
+                              height: GlassCapabilities.isIOS ? 44 : 34,
+                              tooltip: controlsLock ? '解锁' : '锁定',
+                              icon: controlsLock
+                                  ? const Icon(
+                                      FontAwesomeIcons.lock,
+                                      size: 15,
+                                      color: Colors.white,
+                                    )
+                                  : const Icon(
+                                      FontAwesomeIcons.lockOpen,
+                                      size: 15,
+                                      color: Colors.white,
+                                    ),
+                              onTap: () => plPlayerController.onLockControl(
+                                !controlsLock,
+                              ),
+                            );
+                          });
+                          return GlassCapabilities.isIOS && !isLive
+                              ? GlassSurface(radius: 28, child: button)
+                              : DecoratedBox(
+                                  decoration: const BoxDecoration(
+                                    color: Color(0x45000000),
+                                    borderRadius: BorderRadius.all(
+                                      Radius.circular(8),
+                                    ),
                                   ),
-                            onTap: () =>
-                                plPlayerController.onLockControl(!controlsLock),
-                          );
-                        }),
+                                  child: button,
+                                );
+                        },
                       ),
                     ),
                   ),
@@ -1829,7 +1984,8 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
             ),
 
           // 截图
-          if (plPlayerController.showFsScreenshotBtn)
+          if (plPlayerController.showFsScreenshotBtn &&
+              !(GlassCapabilities.isIOS && !isLive))
             ViewSafeArea(
               left: false,
               right: !plPlayerController.removeSafeArea,

@@ -91,6 +91,8 @@ class ActionItem extends StatelessWidget {
     final hasText = text != null;
     final child = Text(
       hasText ? text! : '-',
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
       key: hasText ? ValueKey(text!) : null,
       style: TextStyle(
         color: selectStatus

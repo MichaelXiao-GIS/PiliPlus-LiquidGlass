@@ -250,8 +250,17 @@ class GlassContentViewport extends StatelessWidget {
     builder: (context, constraints) {
       final data = MediaQuery.of(context);
       final viewport = origin & constraints.biggest;
+      // A display switch can deliver the new layout constraints one frame
+      // before MediaQuery's scene metrics. Keep the viewport inside the source
+      // bounds without turning that size difference into extra safe padding.
+      final source = data.copyWith(
+        size: Size(
+          math.max(data.size.width, viewport.right),
+          math.max(data.size.height, viewport.bottom),
+        ),
+      );
       return MediaQuery(
-        data: data
+        data: source
             .removeDisplayFeatures(viewport)
             .copyWith(
               size: viewport.size,

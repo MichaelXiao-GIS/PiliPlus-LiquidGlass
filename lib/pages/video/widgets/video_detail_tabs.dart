@@ -44,7 +44,7 @@ class VideoDetailTabs extends StatelessWidget {
     );
     final actionsWidth =
         math.max(
-      64.0,
+          64.0,
           measure('发弹幕', const TextStyle(fontSize: 12)) + 20,
         ) +
         44 +
@@ -54,6 +54,7 @@ class VideoDetailTabs extends StatelessWidget {
     final tabBar = SizedBox(
       height: tabHeight,
       child: TabBar(
+        key: ObjectKey(controller),
         controller: controller,
         isScrollable: true,
         tabAlignment: TabAlignment.start,

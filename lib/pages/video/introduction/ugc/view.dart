@@ -25,6 +25,7 @@ import 'package:PiliPlus/pages/search/widgets/search_text.dart';
 import 'package:PiliPlus/pages/video/controller.dart';
 import 'package:PiliPlus/pages/video/introduction/ugc/controller.dart';
 import 'package:PiliPlus/pages/video/introduction/ugc/widgets/action_item.dart';
+import 'package:PiliPlus/pages/video/introduction/ugc/widgets/balanced_intro_column.dart';
 import 'package:PiliPlus/pages/video/introduction/ugc/widgets/page.dart';
 import 'package:PiliPlus/pages/video/introduction/ugc/widgets/season.dart';
 import 'package:PiliPlus/utils/app_scheme.dart';
@@ -57,6 +58,7 @@ class UgcIntroPanel extends StatefulWidget {
     required this.onShowMemberPage,
     required this.isPortrait,
     required this.isHorizontal,
+    this.balanceHeight = 0,
   });
   final String heroTag;
   final Function showAiBottomSheet;
@@ -64,6 +66,7 @@ class UgcIntroPanel extends StatefulWidget {
   final ValueChanged<int?> onShowMemberPage;
   final bool isPortrait;
   final bool isHorizontal;
+  final double balanceHeight;
 
   @override
   State<UgcIntroPanel> createState() => _UgcIntroPanelState();
@@ -111,8 +114,8 @@ class _UgcIntroPanelState extends State<UgcIntroPanel> {
                 feedBack();
                 introController.expand.toggle();
               },
-              child: TranslucentColumn(
-                crossAxisAlignment: .start,
+              child: BalancedIntroColumn(
+                availableHeight: widget.balanceHeight,
                 children: [
                   NoTranslucentArea(
                     child: _buildOwnerInfo(
@@ -173,7 +176,7 @@ class _UgcIntroPanelState extends State<UgcIntroPanel> {
                   ),
                   // 点赞收藏转发 布局样式2
                   if (!isHorizontal) ...[
-                    const SizedBox(height: 8),
+                    const IntroActionGap(),
                     actionGrid(
                       context,
                       isLoading,
@@ -467,7 +470,7 @@ class _UgcIntroPanelState extends State<UgcIntroPanel> {
     VideoStat? stat,
   ) {
     return SizedBox(
-      height: 48,
+      height: 34 + MediaQuery.textScalerOf(context).scale(14),
       child: Row(
         crossAxisAlignment: .start,
         children: [
@@ -913,25 +916,29 @@ class _UgcIntroPanelState extends State<UgcIntroPanel> {
               vipStatus: userStat.card?.vip?.status,
               officialType: userStat.card?.official?.type,
             ),
-            Column(
-              crossAxisAlignment: .start,
-              children: [
-                Text(
-                  userStat.card?.name ?? "",
-                  maxLines: 1,
-                  overflow: .ellipsis,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: isVip && userStat.card?.vip?.type == 2
-                        ? colorScheme.vipColor
-                        : null,
+            Flexible(
+              child: Column(
+                crossAxisAlignment: .start,
+                children: [
+                  Text(
+                    userStat.card?.name ?? "",
+                    maxLines: 1,
+                    overflow: .ellipsis,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: isVip && userStat.card?.vip?.type == 2
+                          ? colorScheme.vipColor
+                          : null,
+                    ),
                   ),
-                ),
-                Text(
-                  '${NumUtils.numFormat(userStat.follower)}粉丝    ${'${NumUtils.numFormat(userStat.archiveCount)}视频'}',
-                  style: TextStyle(fontSize: 12, color: colorScheme.outline),
-                ),
-              ],
+                  Text(
+                    '${NumUtils.numFormat(userStat.follower)}粉丝    ${'${NumUtils.numFormat(userStat.archiveCount)}视频'}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 12, color: colorScheme.outline),
+                  ),
+                ],
+              ),
             ),
           ],
         );
