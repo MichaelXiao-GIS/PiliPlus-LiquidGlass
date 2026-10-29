@@ -2,6 +2,7 @@ import 'dart:ui' show DisplayFeature, DisplayFeatureState, DisplayFeatureType;
 
 import 'package:PiliPlus/plugin/pl_player/widgets/glass_player_controls.dart';
 import 'package:PiliPlus/plugin/pl_player/widgets/app_bar_ani.dart';
+import 'package:PiliPlus/plugin/pl_player/widgets/player_control_metrics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -122,7 +123,10 @@ void main() {
         if (cameraAtTopLeft) {
           final button = tester.getRect(moved).shift(-viewport.topLeft);
           expect(button.top, camera.bottom + 8);
-          expect(button.center.dx, camera.center.dx);
+          expect(
+            button.center.dx,
+            playerControlHorizontalPadding + playerPlayButtonWidth / 2,
+          );
           expect(button.size, const Size(44, 44));
           expect(
             find.byKey(const ValueKey('original-back')).hitTestable(),
@@ -143,6 +147,121 @@ void main() {
         expect(tester.takeException(), isNull);
       },
       variant: TargetPlatformVariant.only(TargetPlatform.iOS),
+    );
+  }
+
+  for (final width in [240.0, 360.0, 600.0]) {
+    testWidgets(
+      'inline back aligns with play even when other controls shrink: $width',
+      (tester) async {
+        var taps = 0;
+        await tester.pumpWidget(
+          MaterialApp(
+            home: MediaQuery(
+              data: const MediaQueryData(
+                size: Size(678, 466),
+                displayFeatures: [
+                  DisplayFeature(
+                    bounds: Rect.fromLTWH(20, 12, 48, 54),
+                    type: DisplayFeatureType.cutout,
+                    state: DisplayFeatureState.unknown,
+                  ),
+                ],
+              ),
+              child: Center(
+                child: SizedBox(
+                  width: width,
+                  height: 203,
+                  child: InlinePlayerBackControl(
+                    onBack: () => taps++,
+                    child: Align(
+                      alignment: Alignment.bottomCenter,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: playerControlHorizontalPadding,
+                        ),
+                        child: InlinePlayerTransport(
+                          play: SizedBox(
+                            height: 34,
+                            child: IconButton(
+                              key: const ValueKey('play-axis'),
+                              onPressed: () => taps++,
+                              icon: const Icon(Icons.play_arrow),
+                            ),
+                          ),
+                          leading: const SizedBox(width: 100, height: 34),
+                          trailing: const SizedBox(
+                            key: ValueKey('secondary-controls'),
+                            width: 400,
+                            height: 34,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        final back = find.byKey(const ValueKey('inline-back-below-camera'));
+        final play = find.byKey(const ValueKey('play-axis'));
+        expect(tester.getCenter(back).dx, tester.getCenter(play).dx);
+        expect(tester.getSize(back), const Size(44, 44));
+        expect(tester.getSize(play).width, playerPlayButtonWidth);
+        final scale =
+            ((width -
+                        2 * playerControlHorizontalPadding -
+                        playerPlayButtonWidth) /
+                    500)
+                .clamp(0.0, 1.0);
+        expect(
+          tester
+              .getRect(find.byKey(const ValueKey('secondary-controls')))
+              .width,
+          closeTo(400 * scale, 0.01),
+        );
+        await tester.tap(back);
+        await tester.tap(play);
+        expect(taps, 2);
+        expect(tester.takeException(), isNull);
+      },
+      variant: TargetPlatformVariant.only(TargetPlatform.iOS),
+    );
+  }
+
+  for (final left in [true, false]) {
+    testWidgets(
+      'fullscreen dock stays centered with asymmetric iPhone safe area: $left',
+      (tester) async {
+        const size = Size(874, 402);
+        await tester.binding.setSurfaceSize(size);
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+        final safe = EdgeInsets.only(
+          left: left ? 62 : 0,
+          right: left ? 0 : 62,
+          bottom: 21,
+        );
+        await tester.pumpWidget(
+          MaterialApp(
+            home: MediaQuery(
+              data: MediaQueryData(size: size, viewPadding: safe),
+              child: const GlassPlayerChrome(
+                animation: AlwaysStoppedAnimation(1),
+                header: SizedBox(height: 56),
+                footer: SizedBox(height: 82),
+              ),
+            ),
+          ),
+        );
+        final dock = tester.getRect(
+          find.byKey(const ValueKey('player-glass-dock')),
+        );
+        expect(dock.center.dx, size.width / 2);
+        expect(dock.left, greaterThanOrEqualTo(safe.left));
+        expect(dock.right, lessThanOrEqualTo(size.width - safe.right));
+        expect(tester.takeException(), isNull);
+      },
     );
   }
 
@@ -380,7 +499,15 @@ void main() {
             find.byKey(const ValueKey('player-glass-dock')),
           );
           final band = playerControlBand(data, size, false);
-          expect(dock.center.dx, closeTo(band.center.dx, 0.01));
+          expect(
+            dock.center.dx,
+            closeTo(
+              features.any((f) => f.type == DisplayFeatureType.hinge)
+                  ? band.center.dx
+                  : size.width / 2,
+              0.01,
+            ),
+          );
           final title = tester.getRect(
             find.byKey(const ValueKey('player-glass-title')),
           );

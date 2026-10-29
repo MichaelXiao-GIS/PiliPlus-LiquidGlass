@@ -21,6 +21,7 @@ Widget _app({
   bool compact = false,
   bool rtl = false,
   bool accessible = false,
+  Axis axis = Axis.horizontal,
 }) {
   var selected = 0;
   return MaterialApp(
@@ -36,14 +37,19 @@ Widget _app({
             child: StatefulBuilder(
               builder: (context, setState) => Align(
                 alignment: Alignment.bottomCenter,
-                child: GlassNavigationBar(
-                  destinations: _items,
-                  selectedIndex: selected,
-                  compact: compact,
-                  onSelected: (index) {
-                    onSelected(index);
-                    setState(() => selected = index);
-                  },
+                child: SizedBox(
+                  width: axis == Axis.vertical ? 60 : null,
+                  height: axis == Axis.vertical ? 156 : null,
+                  child: GlassNavigationBar(
+                    axis: axis,
+                    destinations: _items,
+                    selectedIndex: selected,
+                    compact: compact,
+                    onSelected: (index) {
+                      onSelected(index);
+                      setState(() => selected = index);
+                    },
+                  ),
                 ),
               ),
             ),
@@ -68,6 +74,79 @@ Future<TestGesture> _dragTo(
 }
 
 void main() {
+  for (final rtl in [false, true]) {
+    testWidgets(
+      'vertical rail previews, snaps, preserves badges and tap actions rtl=$rtl',
+      (tester) async {
+        final selections = <int>[];
+        await tester.pumpWidget(
+          _app(onSelected: selections.add, axis: Axis.vertical, rtl: rtl),
+        );
+        final target = tester.getCenter(_item(2));
+        final bar = tester.getRect(find.byType(GlassTabScrubber));
+        final gesture = await _dragTo(tester, target);
+        expect(_lens, findsOneWidget);
+        expect(tester.getRect(_lens).center.dy, closeTo(target.dy, 9));
+        expect(tester.getRect(_lens).center.dx, bar.center.dx);
+        expect(selections, isEmpty);
+        expect(tester.getSemantics(_item(1)).value, '3 条未读动态');
+        await gesture.up();
+        await tester.pumpAndSettle();
+        expect(selections, [2]);
+        await tester.tap(_item(1));
+        await tester.pumpAndSettle();
+        expect(selections, [2, 1]);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+  for (final cancel in ['pointer', 'outside', 'return', 'horizontal']) {
+    testWidgets('vertical rail $cancel cancels without selection', (
+      tester,
+    ) async {
+      final selections = <int>[];
+      await tester.pumpWidget(
+        _app(onSelected: selections.add, axis: Axis.vertical),
+      );
+      final start = tester.getCenter(_item(0));
+      final gesture = cancel == 'horizontal'
+          ? await tester.startGesture(start)
+          : await _dragTo(tester, tester.getCenter(_item(2)));
+      if (cancel == 'pointer') {
+        await gesture.cancel();
+      } else {
+        await gesture.moveTo(
+          cancel == 'return' ? start : start - const Offset(120, 0),
+        );
+        await gesture.up();
+      }
+      await tester.pumpAndSettle();
+      expect(selections, isEmpty);
+      expect(_lens, findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+  }
+  testWidgets(
+    'vertical rail lens clamps to the end and supports reduced motion',
+    (tester) async {
+      final selections = <int>[];
+      await tester.pumpWidget(
+        _app(onSelected: selections.add, axis: Axis.vertical, accessible: true),
+      );
+      final bar = tester.getRect(find.byType(GlassTabScrubber));
+      final gesture = await _dragTo(
+        tester,
+        Offset(bar.center.dx, bar.bottom + 100),
+      );
+      expect(tester.getRect(_lens).bottom, lessThanOrEqualTo(bar.bottom));
+      expect(tester.getRect(_lens).height, 48);
+      await gesture.up();
+      await tester.pump();
+      expect(selections, [2]);
+      expect(_lens, findsNothing);
+    },
+  );
+
   for (final compact in [false, true]) {
     for (final rtl in [false, true]) {
       testWidgets(

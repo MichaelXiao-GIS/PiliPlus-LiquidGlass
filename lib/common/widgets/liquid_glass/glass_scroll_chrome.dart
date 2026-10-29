@@ -222,21 +222,17 @@ class GlassScrollPage extends StatelessWidget {
             builder: (context, child) => Stack(
               clipBehavior: Clip.none,
               children: [
-                Positioned.fill(
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: -28,
                   child: IgnorePointer(
-                    child: ClipRect(
-                      child: BackdropFilter(
-                        enabled: !opaque && controller.blur > 0,
-                        filter: ImageFilter.blur(
-                          sigmaX: 20 * controller.blur,
-                          sigmaY: 20 * controller.blur,
-                        ),
-                        child: ColoredBox(
-                          color: colors.surface.withValues(
-                            alpha: opaque ? 1 : 0.78 * controller.blur,
-                          ),
-                        ),
-                      ),
+                    child: _FeatheredScrollMaterial(
+                      solidExtent: extent - 4,
+                      blur: controller.blur,
+                      color: colors.surface,
+                      opaque: opaque,
                     ),
                   ),
                 ),
@@ -248,4 +244,77 @@ class GlassScrollPage extends StatelessWidget {
       ],
     );
   }
+}
+
+/// Clip the backdrop directly: a ShaderMask isolates it from Flutter's content
+/// on Impeller. The narrow feather bands blend the real backdrop with gradually
+/// decreasing blur; the continuous tint gradient hides their tonal boundaries.
+class _FeatheredScrollMaterial extends StatelessWidget {
+  const _FeatheredScrollMaterial({
+    required this.solidExtent,
+    required this.blur,
+    required this.color,
+    required this.opaque,
+  });
+  final double solidExtent;
+  final double blur;
+  final Color color;
+  final bool opaque;
+  static const feather = 32.0;
+  static const bands = 16;
+
+  Widget filter(double opacity) => ClipRect(
+    child: BackdropFilter(
+      enabled: !opaque && blur > 0,
+      filter: ImageFilter.compose(
+        outer: ColorFilter.mode(
+          Colors.white.withValues(alpha: opacity),
+          BlendMode.modulate,
+        ),
+        inner: ImageFilter.blur(
+          sigmaX: 20 * blur * opacity,
+          sigmaY: 20 * blur * opacity,
+        ),
+      ),
+      child: const SizedBox.expand(),
+    ),
+  );
+
+  @override
+  Widget build(BuildContext context) => Stack(
+    children: [
+      Positioned(
+        top: 0,
+        left: 0,
+        right: 0,
+        height: solidExtent,
+        child: filter(1),
+      ),
+      if (!opaque && blur > 0)
+        for (var i = 0; i < bands; i++)
+          Positioned(
+            top: solidExtent + i * feather / bands,
+            left: 0,
+            right: 0,
+            height: feather / bands,
+            child: filter(1 - (i + 0.5) / bands),
+          ),
+      Positioned.fill(
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                color.withValues(alpha: opaque ? 1 : 0.78 * blur),
+                color.withValues(alpha: opaque ? 1 : 0.78 * blur),
+                color.withValues(alpha: 0),
+              ],
+              stops: [0, solidExtent / (solidExtent + feather), 1],
+            ),
+          ),
+        ),
+      ),
+    ],
+  );
 }

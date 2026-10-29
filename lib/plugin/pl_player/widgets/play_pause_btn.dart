@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:PiliPlus/plugin/pl_player/controller.dart';
+import 'package:PiliPlus/plugin/pl_player/widgets/player_control_metrics.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:media_kit/media_kit.dart';
 
@@ -50,7 +51,7 @@ class PlayOrPauseButtonState extends State<PlayOrPauseButton>
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 42,
+      width: playerPlayButtonWidth,
       height: 34,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,

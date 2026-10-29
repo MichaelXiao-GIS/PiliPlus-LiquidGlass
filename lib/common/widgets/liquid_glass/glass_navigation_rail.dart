@@ -117,55 +117,63 @@ class GlassNavigationRail extends StatelessWidget {
           top: region.bottom - height,
           width: width,
           height: height,
-          child: surface(
-            SingleChildScrollView(
-              primary: false,
-              padding: const EdgeInsets.all(_inset),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  for (var i = 0; i < destinations.length; i++)
-                    Semantics(
-                      container: true,
-                      selected: i == selectedIndex,
-                      label: destinations[i].label,
-                      value: destinations[i].badge == null
-                          ? null
-                          : destinations[i].badge!.isEmpty
-                          ? '有未读动态'
-                          : '${destinations[i].badge} 条未读动态',
-                      button: true,
-                      onTap: () => onSelected(i),
-                      excludeSemantics: true,
-                      child: IconButton(
-                        tooltip: destinations[i].label,
-                        onPressed: () => onSelected(i),
-                        style: IconButton.styleFrom(
-                          fixedSize: const Size.square(_buttonSize),
-                          shape: const CircleBorder(),
-                          backgroundColor: i == selectedIndex
-                              ? colors.primary.withValues(alpha: 0.14)
-                              : Colors.transparent,
-                          foregroundColor: i == selectedIndex
-                              ? colors.primary
-                              : colors.onSurfaceVariant,
-                        ),
-                        icon: Badge(
-                          isLabelVisible: destinations[i].badge != null,
-                          label: destinations[i].badge?.isNotEmpty == true
-                              ? Text(destinations[i].badge!)
-                              : null,
-                          child: i == selectedIndex
-                              ? destinations[i].selectedIcon ??
-                                    destinations[i].icon
-                              : destinations[i].icon,
-                        ),
-                      ),
+          child: height >= navHeight
+              ? GlassNavigationBar(
+                  axis: Axis.vertical,
+                  compact: true,
+                  destinations: destinations,
+                  selectedIndex: selectedIndex,
+                  onSelected: onSelected,
+                )
+              : surface(
+                  SingleChildScrollView(
+                    primary: false,
+                    padding: const EdgeInsets.all(_inset),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        for (var i = 0; i < destinations.length; i++)
+                          Semantics(
+                            container: true,
+                            selected: i == selectedIndex,
+                            label: destinations[i].label,
+                            value: destinations[i].badge == null
+                                ? null
+                                : destinations[i].badge!.isEmpty
+                                ? '有未读动态'
+                                : '${destinations[i].badge} 条未读动态',
+                            button: true,
+                            onTap: () => onSelected(i),
+                            excludeSemantics: true,
+                            child: IconButton(
+                              tooltip: destinations[i].label,
+                              onPressed: () => onSelected(i),
+                              style: IconButton.styleFrom(
+                                fixedSize: const Size.square(_buttonSize),
+                                shape: const CircleBorder(),
+                                backgroundColor: i == selectedIndex
+                                    ? colors.primary.withValues(alpha: 0.14)
+                                    : Colors.transparent,
+                                foregroundColor: i == selectedIndex
+                                    ? colors.primary
+                                    : colors.onSurfaceVariant,
+                              ),
+                              icon: Badge(
+                                isLabelVisible: destinations[i].badge != null,
+                                label: destinations[i].badge?.isNotEmpty == true
+                                    ? Text(destinations[i].badge!)
+                                    : null,
+                                child: i == selectedIndex
+                                    ? destinations[i].selectedIcon ??
+                                          destinations[i].icon
+                                    : destinations[i].icon,
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
-                ],
-              ),
-            ),
-          ),
+                  ),
+                ),
         ),
       ],
     );

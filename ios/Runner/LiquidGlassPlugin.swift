@@ -234,6 +234,14 @@ private final class GlassControlView: UIView, UIGestureRecognizerDelegate {
   private var settleGeneration = 0
   private var previousSize = CGSize.zero
 
+  private var vertical: Bool { arguments["axis"] as? String == "vertical" }
+  private func main(_ point: CGPoint) -> CGFloat { vertical ? point.y : point.x }
+  private func mainLength(_ size: CGSize) -> CGFloat { vertical ? size.height : size.width }
+  private func isInside(_ point: CGPoint) -> Bool {
+    let cross = vertical ? point.x : point.y
+    return cross >= -36 && cross <= (vertical ? bounds.width : bounds.height) + 36
+  }
+
   private var selectedIndex: Int { arguments["selectedIndex"] as? Int ?? 0 }
 
   override init(frame: CGRect) {
@@ -273,7 +281,8 @@ private final class GlassControlView: UIView, UIGestureRecognizerDelegate {
   }
 
   func update(_ args: [String: Any]) {
-    if previewIndex != nil && selectedIndex != (args["selectedIndex"] as? Int ?? 0) {
+    if previewIndex != nil && (selectedIndex != (args["selectedIndex"] as? Int ?? 0) ||
+      vertical != (args["axis"] as? String == "vertical")) {
       cancelScrub()
     }
     arguments = args
@@ -319,7 +328,9 @@ private final class GlassControlView: UIView, UIGestureRecognizerDelegate {
       return
     }
     scrub.isEnabled = items.count > 1
-    let direction: UISemanticContentAttribute = args["rtl"] as? Bool == true ?
+    stack.axis = vertical ? .vertical : .horizontal
+    stack.spacing = vertical ? 0 : 4
+    let direction: UISemanticContentAttribute = !vertical && args["rtl"] as? Bool == true ?
       .forceRightToLeft : .forceLeftToRight
     if stack.semanticContentAttribute != direction { cancelScrub() }
     stack.semanticContentAttribute = direction
@@ -354,8 +365,10 @@ private final class GlassControlView: UIView, UIGestureRecognizerDelegate {
         committed: index == selectedIndex
       )
       let slot = selectionFrame(index)
-      let proximity = previewIndex != nil && !UIAccessibility.isReduceMotionEnabled && slot.width > 0 ?
-        max(0, 1 - abs(slot.midX - lens.frame.midX) / slot.width) : 0
+      let length = mainLength(slot.size)
+      let proximity = previewIndex != nil && !UIAccessibility.isReduceMotionEnabled && length > 0 ?
+        max(0, 1 - abs(main(CGPoint(x: slot.midX, y: slot.midY)) -
+                      main(lens.center)) / length) : 0
       buttons[index].setLensProximity(proximity)
     }
   }
@@ -370,15 +383,20 @@ private final class GlassControlView: UIView, UIGestureRecognizerDelegate {
       return super.gestureRecognizerShouldBegin(gestureRecognizer)
     }
     let velocity = scrub.velocity(in: self)
-    return isNavigation && buttons.count > 1 && abs(velocity.x) > abs(velocity.y)
+    return isNavigation && buttons.count > 1 &&
+      (vertical ? abs(velocity.y) > abs(velocity.x) : abs(velocity.x) > abs(velocity.y))
   }
 
   private func selectionFrame(_ index: Int) -> CGRect {
     buttons[index].convert(buttons[index].bounds, to: self)
   }
 
-  private func nearestTab(_ x: CGFloat) -> Int {
-    buttons.indices.min { abs(selectionFrame($0).midX - x) < abs(selectionFrame($1).midX - x) } ?? 0
+  private func nearestTab(_ position: CGFloat) -> Int {
+    func distance(_ index: Int) -> CGFloat {
+      let slot = selectionFrame(index)
+      return abs((vertical ? slot.midY : slot.midX) - position)
+    }
+    return buttons.indices.min { distance($0) < distance($1) } ?? 0
   }
 
   @objc private func scrubTabs(_ recognizer: UIPanGestureRecognizer) {
@@ -393,22 +411,26 @@ private final class GlassControlView: UIView, UIGestureRecognizerDelegate {
       fallthrough
     case .changed:
       guard previewIndex != nil else { return }
-      let inside = point.y >= -36 && point.y <= bounds.height + 36
-      let index = inside ? nearestTab(point.x) : scrubOrigin
+      let inside = isInside(point)
+      let index = inside ? nearestTab(main(point)) : scrubOrigin
       previewIndex = index
       let slot = selectionFrame(index)
       let stretch = UIAccessibility.isReduceMotionEnabled || !inside ? 0 :
-        min(18, abs(recognizer.velocity(in: self).x) * 0.012)
-      let width = min(bounds.width - 4, slot.width + stretch)
-      let height = min(bounds.height - 2, slot.height + (stretch > 0 ? 4 : 0))
-      let center = inside ? min(bounds.width - width / 2 - 2, max(width / 2 + 2, point.x)) : slot.midX
-      lens.frame = CGRect(x: center - width / 2, y: (bounds.height - height) / 2,
-                          width: width, height: height)
+        min(18, abs(main(recognizer.velocity(in: self))) * 0.012)
+      let extent = mainLength(bounds.size)
+      let crossExtent = vertical ? bounds.width : bounds.height
+      let length = min(extent - 4, mainLength(slot.size) + stretch)
+      let cross = min(crossExtent - 2, (vertical ? slot.width : slot.height) + (stretch > 0 ? 4 : 0))
+      let center = inside ? min(extent - length / 2 - 2, max(length / 2 + 2, main(point))) :
+        (vertical ? slot.midY : slot.midX)
+      lens.frame = vertical
+        ? CGRect(x: (bounds.width - cross) / 2, y: center - length / 2, width: cross, height: length)
+        : CGRect(x: center - length / 2, y: (bounds.height - cross) / 2, width: length, height: cross)
       configureButtons()
     case .ended:
       guard previewIndex != nil else { return }
-      let inside = point.y >= -36 && point.y <= bounds.height + 36
-      settle(at: inside ? nearestTab(point.x) : scrubOrigin, commit: inside)
+      let inside = isInside(point)
+      settle(at: inside ? nearestTab(main(point)) : scrubOrigin, commit: inside)
     case .cancelled, .failed:
       if previewIndex != nil { settle(at: scrubOrigin, commit: false) }
     default: break
@@ -464,13 +486,14 @@ private final class GlassControlView: UIView, UIGestureRecognizerDelegate {
       lens.cornerConfiguration = .capsule()
       lens.clipsToBounds = false
     } else {
-      material.layer.cornerRadius = min(radius, bounds.height / 2)
+      material.layer.cornerRadius = min(radius, min(bounds.width, bounds.height) / 2)
       material.layer.cornerCurve = .circular
       material.clipsToBounds = true
-      lens.layer.cornerRadius = lens.bounds.height / 2
+      lens.layer.cornerRadius = min(lens.bounds.width, lens.bounds.height) / 2
       lens.clipsToBounds = true
     }
-    stack.frame = bounds.insetBy(dx: 5, dy: 5)
+    let inset: CGFloat = vertical ? 6 : 5
+    stack.frame = bounds.insetBy(dx: inset, dy: inset)
   }
 }
 
@@ -542,7 +565,7 @@ private final class GlassTabButton: UIControl {
     super.layoutSubviews()
     imageView.transform = .identity
     label.transform = .identity
-    layer.cornerRadius = bounds.height / 2
+    layer.cornerRadius = min(bounds.width, bounds.height) / 2
     let labelHeight = ceil(label.font.lineHeight)
     let total = 23 + (2 + labelHeight) * (1 - compactProgress)
     let top = max(2, (bounds.height - total) / 2)

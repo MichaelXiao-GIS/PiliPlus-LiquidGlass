@@ -2,6 +2,8 @@ import 'dart:math' as math;
 import 'dart:ui' show DisplayFeatureType;
 
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_platform.dart';
+import 'package:PiliPlus/common/widgets/player_bar.dart';
+import 'package:PiliPlus/plugin/pl_player/widgets/player_control_metrics.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_surface.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_window_geometry.dart';
 import 'package:material_ui/material_ui.dart';
@@ -102,12 +104,13 @@ class InlinePlayerBackControl extends StatelessWidget {
         if (camera == null || camera.bottom + 52 > constraints.maxHeight) {
           return child;
         }
-        final left = (camera.center.dx - 22)
-            .clamp(
-              4.0,
-              math.max(4.0, constraints.maxWidth - 48),
-            )
-            .toDouble();
+        final left =
+            (playerControlHorizontalPadding + playerPlayButtonWidth / 2 - 22)
+                .clamp(
+                  4.0,
+                  math.max(4.0, constraints.maxWidth - 48),
+                )
+                .toDouble();
         return _InlineBackRelocated(
           child: Stack(
             fit: StackFit.expand,
@@ -149,6 +152,30 @@ class InlinePlayerBackControl extends StatelessWidget {
       },
     );
   }
+}
+
+/// Keep the play button on its leading axis even when secondary controls shrink.
+class InlinePlayerTransport extends StatelessWidget {
+  const InlinePlayerTransport({
+    super.key,
+    required this.play,
+    required this.leading,
+    required this.trailing,
+  });
+  final Widget play;
+  final Widget leading;
+  final Widget trailing;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    textDirection: TextDirection.ltr,
+    children: [
+      SizedBox(width: playerPlayButtonWidth, child: play),
+      Flexible(
+        child: PlayerBar(left: leading, right: trailing),
+      ),
+    ],
+  );
 }
 
 class InlinePlayerBackSlot extends StatelessWidget {
@@ -255,13 +282,20 @@ class _PlayerControlPlacement extends SingleChildLayoutDelegate {
     );
     // A short dock need not inherit the full-width toolbar's camera inset.
     // First center it in the screen/panel, then test its actual painted bounds.
+    final leftInset = cameras.any((c) => c.bounds.left < safe.left)
+        ? 0.0
+        : safe.left;
+    final rightInset =
+        cameras.any((c) => c.bounds.right > size.width - safe.right)
+        ? 0.0
+        : safe.right;
+    // Keep unknown system insets safe without shifting the dock off-center.
+    final sideInset = math.max(leftInset, rightInset);
     return playerControlBand(
       data.copyWith(
         viewPadding: safe.copyWith(
-          left: cameras.any((c) => c.bounds.left < safe.left) ? 0 : safe.left,
-          right: cameras.any((c) => c.bounds.right > size.width - safe.right)
-              ? 0
-              : safe.right,
+          left: sideInset,
+          right: sideInset,
         ),
         displayFeatures: [
           for (final feature in data.displayFeatures)

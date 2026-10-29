@@ -33,6 +33,7 @@ class GlassNavigationBar extends StatefulWidget {
     required this.selectedIndex,
     required this.onSelected,
     this.compact = false,
+    this.axis = Axis.horizontal,
   }) : assert(destinations.length > 1),
        assert(selectedIndex >= 0 && selectedIndex < destinations.length);
 
@@ -40,6 +41,9 @@ class GlassNavigationBar extends StatefulWidget {
   final int selectedIndex;
   final ValueChanged<int> onSelected;
   final bool compact;
+
+  /// A vertical bar fills its parent; its caller owns the safe-area placement.
+  final Axis axis;
 
   @override
   State<GlassNavigationBar> createState() => _GlassNavigationBarState();
@@ -59,11 +63,12 @@ class _GlassNavigationBarState extends State<GlassNavigationBar>
 
   Map<String, Object?> _arguments(BuildContext context) => {
     'selectedIndex': widget.selectedIndex,
+    'axis': widget.axis.name,
     'rtl': Directionality.of(context) == TextDirection.rtl,
     'dark': Theme.of(context).brightness == Brightness.dark,
     'tint': ColorScheme.of(context).primary.toARGB32(),
     'textScale': MediaQuery.textScalerOf(context).scale(12) / 12,
-    'compactProgress': _progress.value,
+    'compactProgress': widget.axis == Axis.vertical ? 1.0 : _progress.value,
     'destinations': [
       for (final destination in widget.destinations)
         {
@@ -139,6 +144,9 @@ class _GlassNavigationBarState extends State<GlassNavigationBar>
       _channel!.setMethodCallHandler(null);
       _channel = null;
     }
+    if (widget.axis == Axis.vertical) {
+      return _surface(context, native, 60);
+    }
     final data = MediaQuery.of(context);
     final left = math.max(data.padding.left, 16.0);
     final right = math.max(data.padding.right, 16.0);
@@ -164,42 +172,44 @@ class _GlassNavigationBarState extends State<GlassNavigationBar>
           child: SizedBox(
             width: width,
             height: height,
-            child: native
-                ? UiKitView(
-                    viewType: 'piliplus/glass_navigation',
-                    creationParams: _arguments(context),
-                    creationParamsCodec: const StandardMessageCodec(),
-                    onPlatformViewCreated: (id) {
-                      if (!mounted) return;
-                      _channel = MethodChannel('piliplus/glass_navigation/$id');
-                      _channel!.setMethodCallHandler((call) async {
-                        if (call.method == 'select' && mounted) {
-                          final index = call.arguments as int;
-                          if (index >= 0 &&
-                              index < widget.destinations.length) {
-                            widget.onSelected(index);
-                          }
-                        }
-                      });
-                      _update();
-                    },
-                  )
-                : GlassSurface(
-                    radius: height / 2,
-                    padding: const EdgeInsets.all(5),
-                    child: GlassTabScrubber(
-                      count: widget.destinations.length,
-                      selectedIndex: widget.selectedIndex,
-                      onSelected: widget.onSelected,
-                      itemBuilder: (index, preview, showBackground) =>
-                          _destination(context, index, preview, showBackground),
-                    ),
-                  ),
+            child: _surface(context, native, height),
           ),
         ),
       ),
     );
   }
+
+  Widget _surface(BuildContext context, bool native, double height) => native
+      ? UiKitView(
+          viewType: 'piliplus/glass_navigation',
+          creationParams: _arguments(context),
+          creationParamsCodec: const StandardMessageCodec(),
+          onPlatformViewCreated: (id) {
+            if (!mounted) return;
+            _channel = MethodChannel('piliplus/glass_navigation/$id');
+            _channel!.setMethodCallHandler((call) async {
+              if (call.method == 'select' && mounted) {
+                final index = call.arguments as int;
+                if (index >= 0 && index < widget.destinations.length) {
+                  widget.onSelected(index);
+                }
+              }
+            });
+            _update();
+          },
+        )
+      : GlassSurface(
+          radius: height / 2,
+          padding: EdgeInsets.all(widget.axis == Axis.vertical ? 6 : 5),
+          child: GlassTabScrubber(
+            axis: widget.axis,
+            count: widget.destinations.length,
+            selectedIndex: widget.selectedIndex,
+            onSelected: widget.onSelected,
+            itemBuilder: (index, preview, showBackground) =>
+                _destination(context, index, preview, showBackground),
+          ),
+        );
 
   Widget _destination(
     BuildContext context,
@@ -210,6 +220,44 @@ class _GlassNavigationBarState extends State<GlassNavigationBar>
     final destination = widget.destinations[index];
     final colors = ColorScheme.of(context);
     final foreground = selected ? colors.primary : colors.onSurface;
+    if (widget.axis == Axis.vertical) {
+      return Semantics(
+        container: true,
+        selected: index == widget.selectedIndex,
+        label: destination.label,
+        value: destination.badge == null
+            ? null
+            : destination.badge!.isEmpty
+            ? '有未读动态'
+            : '${destination.badge} 条未读动态',
+        button: true,
+        onTap: () => widget.onSelected(index),
+        excludeSemantics: true,
+        child: IconButton(
+          tooltip: destination.label,
+          onPressed: () => widget.onSelected(index),
+          style: IconButton.styleFrom(
+            fixedSize: const Size.square(48),
+            shape: const CircleBorder(),
+            backgroundColor: selected && showBackground
+                ? colors.primary.withValues(alpha: 0.14)
+                : Colors.transparent,
+            foregroundColor: selected
+                ? colors.primary
+                : colors.onSurfaceVariant,
+          ),
+          icon: Badge(
+            isLabelVisible: destination.badge != null,
+            label: destination.badge?.isNotEmpty == true
+                ? Text(destination.badge!)
+                : null,
+            child: selected
+                ? destination.selectedIcon ?? destination.icon
+                : destination.icon,
+          ),
+        ),
+      );
+    }
     return Semantics(
       selected: index == widget.selectedIndex,
       button: true,
@@ -259,9 +307,13 @@ class _GlassNavigationBarState extends State<GlassNavigationBar>
                     ),
                     ClipRect(
                       child: Align(
-                        heightFactor: 1 - _progress.value,
+                        heightFactor: widget.axis == Axis.vertical
+                            ? 0
+                            : 1 - _progress.value,
                         child: Opacity(
-                          opacity: 1 - _progress.value,
+                          opacity: widget.axis == Axis.vertical
+                              ? 0
+                              : 1 - _progress.value,
                           child: Padding(
                             padding: const EdgeInsets.only(top: 2),
                             child: ExcludeSemantics(

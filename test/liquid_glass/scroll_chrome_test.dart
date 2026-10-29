@@ -1,3 +1,6 @@
+import 'dart:ui' as ui;
+
+import 'package:flutter/rendering.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_navigation_bar.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_platform.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_scroll_chrome.dart';
@@ -334,16 +337,146 @@ void main() {
       tester.widget<BackdropFilter>(find.byType(BackdropFilter)).enabled,
       isFalse,
     );
-    final colored = tester.widget<ColoredBox>(
+    final tint = tester.widget<DecoratedBox>(
       find
           .descendant(
-            of: find.byType(BackdropFilter),
-            matching: find.byType(ColoredBox),
+            of: find.byType(GlassScrollPage),
+            matching: find.byType(DecoratedBox),
           )
-          .first,
+          .last,
     );
-    expect(colored.color.a, 1);
+    expect(
+      ((tint.decoration as BoxDecoration).gradient as LinearGradient)
+          .colors
+          .first
+          .a,
+      1,
+    );
   });
+
+  testWidgets('the material blurs actual content, not just its tint', (
+    tester,
+  ) async {
+    final chrome = GlassScrollController()..update(150);
+    addTearDown(chrome.dispose);
+    const key = ValueKey('blur-samples');
+    await tester.pumpWidget(
+      app(
+        Align(
+          alignment: Alignment.topLeft,
+          child: SizedBox(
+            width: 300,
+            height: 300,
+            child: RepaintBoundary(
+              key: key,
+              child: GlassScrollScope(
+                controller: chrome,
+                child: GlassScrollPage(
+                  headerExtent: 100,
+                  header: const SizedBox(),
+                  body: Row(
+                    children: [
+                      for (var i = 0; i < 75; i++)
+                        Expanded(
+                          child: ColoredBox(
+                            color: i.isEven ? Colors.black : Colors.white,
+                            child: const SizedBox.expand(),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final pixels = await tester.runAsync(() async {
+      final image = await tester
+          .renderObject<RenderRepaintBoundary>(find.byKey(key))
+          .toImage(pixelRatio: 1);
+      final bytes = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+      image.dispose();
+      return bytes!;
+    });
+    int red(int x, int y) => pixels!.getUint8((y * 300 + x) * 4);
+    expect((red(121, 90) - red(125, 90)).abs(), lessThan(15));
+    expect((red(121, 220) - red(125, 220)).abs(), greaterThan(230));
+  });
+
+  for (final opaque in [false, true]) {
+    testWidgets(
+      'scroll edge feathers into content without fading controls, opaque=$opaque',
+      (tester) async {
+        final chrome = GlassScrollController()..update(150);
+        addTearDown(chrome.dispose);
+        const pixelsKey = ValueKey('scroll-edge-pixels');
+        var taps = 0;
+        await tester.pumpWidget(
+          app(
+            Align(
+              alignment: Alignment.topLeft,
+              child: SizedBox(
+                width: 300,
+                height: 300,
+                child: RepaintBoundary(
+                  key: pixelsKey,
+                  child: GlassScrollScope(
+                    controller: chrome,
+                    child: GlassScrollPage(
+                      headerExtent: 100,
+                      header: Align(
+                        alignment: Alignment.bottomRight,
+                        child: GestureDetector(
+                          onTap: () => taps++,
+                          child: const SizedBox(
+                            key: ValueKey('header-control'),
+                            width: 40,
+                            height: 40,
+                            child: ColoredBox(color: Colors.red),
+                          ),
+                        ),
+                      ),
+                      body: GestureDetector(
+                        onTap: () => taps++,
+                        child: const ColoredBox(color: Colors.black),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            opaque: opaque,
+          ),
+        );
+        await tester.pumpAndSettle();
+        final pixels = await tester.runAsync(() async {
+          final boundary = tester.renderObject<RenderRepaintBoundary>(
+            find.byKey(pixelsKey),
+          );
+          final image = await boundary.toImage(pixelRatio: 1);
+          final data = await image.toByteData(
+            format: ui.ImageByteFormat.rawRgba,
+          );
+          image.dispose();
+          return data!;
+        });
+        int red(int x, int y) => pixels!.getUint8((y * 300 + x) * 4);
+        // The old lower edge was y=160: brightness must now fade smoothly across it.
+        expect(red(40, 155), greaterThan(150));
+        expect((red(40, 159) - red(40, 160)).abs(), lessThan(15));
+        expect(red(40, 170), greaterThan(red(40, 182)));
+        expect(red(40, 189), 0);
+        expect(pixels!.getUint32((145 * 300 + 280) * 4), 0xF44336FF);
+        await tester.tap(find.byKey(const ValueKey('header-control')));
+        await tester.tapAt(const Offset(40, 175));
+        expect(taps, 2);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
 
   testWidgets(
     'native capsule keeps the same view and receives icon-only progress',
@@ -387,6 +520,7 @@ void main() {
       });
       late StateSetter update;
       var compact = false;
+      var axis = Axis.horizontal;
       await tester.pumpWidget(
         app(
           GlassPlatformScope(
@@ -395,11 +529,16 @@ void main() {
                 update = setState;
                 return Align(
                   alignment: Alignment.bottomCenter,
-                  child: GlassNavigationBar(
-                    destinations: destinations,
-                    selectedIndex: 0,
-                    compact: compact,
-                    onSelected: (_) {},
+                  child: SizedBox(
+                    width: axis == Axis.vertical ? 60 : null,
+                    height: axis == Axis.vertical ? 156 : null,
+                    child: GlassNavigationBar(
+                      axis: axis,
+                      destinations: destinations,
+                      selectedIndex: 0,
+                      compact: compact,
+                      onSelected: (_) {},
+                    ),
                   ),
                 );
               },
@@ -413,6 +552,11 @@ void main() {
       expect(creates, 1);
       expect(updates.last['compactProgress'], 1);
       expect(tester.getSize(find.byType(UiKitView)), const Size(202, 54));
+      update(() => axis = Axis.vertical);
+      await tester.pumpAndSettle();
+      expect(updates.last['axis'], 'vertical');
+      expect(updates.last['compactProgress'], 1);
+      expect(tester.getSize(find.byType(UiKitView)), const Size(60, 156));
       expect(tester.takeException(), isNull);
     },
     variant: TargetPlatformVariant.only(TargetPlatform.iOS),

@@ -4,8 +4,7 @@ import 'dart:ui' as ui;
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_platform.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Flutter counterpart of the native glass lens, used on older hosts and while
-/// routes are moving. Selection is committed only after the finger is released.
+/// Flutter counterpart of the native glass lens, used on older hosts. Selection is committed only after the finger is released.
 class GlassTabScrubber extends StatefulWidget {
   const GlassTabScrubber({
     super.key,
@@ -13,8 +12,10 @@ class GlassTabScrubber extends StatefulWidget {
     required this.selectedIndex,
     required this.onSelected,
     required this.itemBuilder,
+    this.axis = Axis.horizontal,
   });
 
+  final Axis axis;
   final int count;
   final int selectedIndex;
   final ValueChanged<int> onSelected;
@@ -39,7 +40,8 @@ class _GlassTabScrubberState extends State<GlassTabScrubber>
   @override
   void didUpdateWidget(covariant GlassTabScrubber oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.count != oldWidget.count ||
+    if (widget.axis != oldWidget.axis ||
+        widget.count != oldWidget.count ||
         widget.selectedIndex != oldWidget.selectedIndex) {
       _reset();
     }
@@ -59,41 +61,59 @@ class _GlassTabScrubberState extends State<GlassTabScrubber>
     _preview = null;
   }
 
-  int _nearest(double x) {
-    final slot = (x / (_size.width / widget.count)).floor().clamp(
+  bool get _vertical => widget.axis == Axis.vertical;
+  double get _extent => _vertical ? _size.height : _size.width;
+  double _main(Offset point) => _vertical ? point.dy : point.dx;
+
+  int _nearest(double position) {
+    final slot = (position / (_extent / widget.count)).floor().clamp(
       0,
       widget.count - 1,
     );
     return _rtl ? widget.count - slot - 1 : slot;
   }
 
-  Rect _slot(int index) => Rect.fromLTWH(
-    (_rtl ? widget.count - index - 1 : index) * _size.width / widget.count,
-    0,
-    _size.width / widget.count,
-    _size.height,
-  );
+  Rect _slot(int index) {
+    final offset =
+        (_rtl ? widget.count - index - 1 : index) * _extent / widget.count;
+    return _vertical
+        ? Rect.fromLTWH(0, offset, _size.width, _extent / widget.count)
+        : Rect.fromLTWH(offset, 0, _extent / widget.count, _size.height);
+  }
 
   void _follow(Offset point, double delta) {
-    _inside = point.dy >= -36 && point.dy <= _size.height + 36;
-    final index = _inside ? _nearest(point.dx) : widget.selectedIndex;
+    final cross = _vertical ? point.dx : point.dy;
+    final crossExtent = _vertical ? _size.width : _size.height;
+    _inside = cross >= -36 && cross <= crossExtent + 36;
+    final index = _inside ? _nearest(_main(point)) : widget.selectedIndex;
     final slot = _slot(index);
     final stretch =
         GlassCapabilities.duration(context) == Duration.zero || !_inside
         ? 0.0
         : math.min(18.0, delta.abs() * 0.6);
-    final width = math.min(_size.width, slot.width + stretch);
+    final length = math.min(_extent, _extent / widget.count + stretch);
     final center = _inside
-        ? point.dx.clamp(width / 2, _size.width - width / 2)
-        : slot.center.dx;
+        ? _main(point).clamp(length / 2, _extent - length / 2)
+        : _main(slot.center);
     setState(() {
       _preview = index;
       _lens = Rect.fromCenter(
-        center: Offset(center, _size.height / 2),
-        width: width,
-        height: _size.height,
+        center: _vertical
+            ? Offset(_size.width / 2, center)
+            : Offset(center, _size.height / 2),
+        width: _vertical ? _size.width : length,
+        height: _vertical ? length : _size.height,
       );
     });
+  }
+
+  void _start(DragStartDetails details) {
+    _reset();
+    _follow(details.localPosition, 0);
+  }
+
+  void _drag(DragUpdateDetails details) {
+    if (_lens != null) _follow(details.localPosition, _main(details.delta));
   }
 
   Future<void> _finish({bool cancelled = false}) async {
@@ -119,7 +139,7 @@ class _GlassTabScrubberState extends State<GlassTabScrubber>
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
       final size = constraints.biggest;
-      final rtl = Directionality.of(context) == TextDirection.rtl;
+      final rtl = !_vertical && Directionality.of(context) == TextDirection.rtl;
       if (_size != size || _rtl != rtl) {
         _reset();
         _size = size;
@@ -136,16 +156,18 @@ class _GlassTabScrubberState extends State<GlassTabScrubber>
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
           excludeFromSemantics: true,
-          onHorizontalDragStart: (details) {
-            _reset();
-            _follow(details.localPosition, 0);
-          },
-          onHorizontalDragUpdate: (details) {
-            if (_lens != null) _follow(details.localPosition, details.delta.dx);
-          },
-          onHorizontalDragEnd: (_) => _finish(),
-          onHorizontalDragCancel: () => _finish(cancelled: true),
-          onVerticalDragStart: (_) {},
+          onHorizontalDragStart: _vertical ? (_) {} : _start,
+          onHorizontalDragUpdate: _vertical ? null : _drag,
+          onHorizontalDragEnd: _vertical ? null : (_) => _finish(),
+          onHorizontalDragCancel: _vertical
+              ? null
+              : () => _finish(cancelled: true),
+          onVerticalDragStart: _vertical ? _start : (_) {},
+          onVerticalDragUpdate: _vertical ? _drag : null,
+          onVerticalDragEnd: _vertical ? (_) => _finish() : null,
+          onVerticalDragCancel: _vertical
+              ? () => _finish(cancelled: true)
+              : null,
           child: AnimatedBuilder(
             animation: _settle,
             builder: (context, _) => Stack(
@@ -160,7 +182,9 @@ class _GlassTabScrubberState extends State<GlassTabScrubber>
                         _lens!,
                     child: ExcludeSemantics(
                       child: ClipRRect(
-                        borderRadius: BorderRadius.circular(_size.height / 2),
+                        borderRadius: BorderRadius.circular(
+                          math.min(_size.width, _size.height) / 2,
+                        ),
                         child: BackdropFilter(
                           enabled: !opaque,
                           filter: ui.ImageFilter.blur(sigmaX: 8, sigmaY: 8),
@@ -186,7 +210,7 @@ class _GlassTabScrubberState extends State<GlassTabScrubber>
                                       ],
                                     ),
                               borderRadius: BorderRadius.circular(
-                                _size.height / 2,
+                                math.min(_size.width, _size.height) / 2,
                               ),
                               border: Border.all(
                                 color: opaque
@@ -200,7 +224,8 @@ class _GlassTabScrubberState extends State<GlassTabScrubber>
                       ),
                     ),
                   ),
-                Row(
+                Flex(
+                  direction: widget.axis,
                   children: [
                     for (var i = 0; i < widget.count; i++)
                       Expanded(

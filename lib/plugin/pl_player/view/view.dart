@@ -998,6 +998,19 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
       if (isNotFileSource && flag) .qa,
       if (!plPlayerController.isDesktopPip) .fullscreen,
     ];
+    if (GlassCapabilities.isIOS && !isFullScreen) {
+      return InlinePlayerTransport(
+        play: progressWidget(BottomControlType.playOrPause),
+        leading: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: userSpecifyItemLeft.skip(1).map(progressWidget).toList(),
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: userSpecifyItemRight.map(progressWidget).toList(),
+        ),
+      );
+    }
     return PlayerBar(
       left: Row(
         mainAxisSize: .min,
