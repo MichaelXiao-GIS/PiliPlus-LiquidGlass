@@ -4,6 +4,7 @@ import 'package:PiliPlus/common/widgets/liquid_glass/glass_platform.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_scroll_chrome.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_tab_bar.dart';
 import 'package:PiliPlus/pages/home/widgets/ios_home_header.dart';
+import 'package:PiliPlus/pages/home/widgets/ios_home_header_motion.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -102,7 +103,8 @@ void main() {
           final expandedHeight = tester
               .getSize(find.byType(IosHomeHeader))
               .height;
-          for (final value in [0.0, 0.225, 0.45, 0.725, 1.0, 0.0]) {
+          final frames = [for (var i = 0; i <= 40; i++) i / 40, 0.0];
+          for (final value in frames) {
             update(() => progress = value);
             await tester.pumpAndSettle();
             final search = tester.getRect(find.byKey(IosHomeHeader.searchKey));
@@ -118,8 +120,16 @@ void main() {
               44,
             );
             expect(search.width, greaterThan(111.99));
-            expect(search.overlaps(title), isFalse);
-            expect(search.overlaps(actions), isFalse);
+            expect(
+              search.overlaps(title),
+              isFalse,
+              reason: 'progress=$value search=$search title=$title',
+            );
+            expect(
+              search.overlaps(actions),
+              isFalse,
+              reason: 'progress=$value search=$search actions=$actions',
+            );
             final searchIcon = tester.getRect(
               find.descendant(
                 of: find.byKey(IosHomeHeader.searchKey),
@@ -128,10 +138,7 @@ void main() {
             );
             expect(searchIcon.center.dy, closeTo(search.center.dy, 0.01));
             final label = tester.getRect(
-              find.descendant(
-                of: find.byKey(IosHomeHeader.searchKey),
-                matching: find.byType(Text),
-              ),
+              find.byKey(IosHomeHeader.labelKey),
             );
             expect(label.center.dy, closeTo(search.center.dy, 0.01));
             expect(search.bottom + 1, lessThanOrEqualTo(categories.top));
@@ -154,8 +161,8 @@ void main() {
             await tester.tap(find.byTooltip('消息'));
             expect(tester.takeException(), isNull);
           }
-          expect(searches, 6);
-          expect(messages, 6);
+          expect(searches, frames.length);
+          expect(messages, frames.length);
           expect(
             tester.getRect(find.byKey(IosHomeHeader.searchKey)),
             expandedSearch,
@@ -164,6 +171,102 @@ void main() {
       );
     }
   }
+
+  testWidgets('search moves on both axes and reverses without a position jump', (
+    tester,
+  ) async {
+    final tabs = TabController(length: labels.length, vsync: tester);
+    addTearDown(tabs.dispose);
+    var compact = false;
+    var progress = 0.0;
+    late StateSetter update;
+    await tester.pumpWidget(
+      app(
+        StatefulBuilder(
+          builder: (context, setState) {
+            update = setState;
+            return Align(
+              alignment: Alignment.topCenter,
+              child: IosHomeHeaderMotion(
+                compact: compact,
+                builder: (context, value, _) {
+                  progress = value;
+                  return header(context, tabs, value);
+                },
+              ),
+            );
+          },
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final expanded = tester.getRect(find.byKey(IosHomeHeader.searchKey));
+    update(() => compact = true);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 80));
+    final moving = tester.getRect(find.byKey(IosHomeHeader.searchKey));
+    expect(moving.width, lessThan(expanded.width));
+    expect(moving.top, lessThan(expanded.top - 1));
+    expect(progress, inExclusiveRange(0, 1));
+    final beforeReversal = progress;
+    update(() => compact = false);
+    await tester.pump();
+    expect(progress, beforeReversal);
+    // Momentum eases into the new direction instead of instantly changing sign.
+    await tester.pump(const Duration(milliseconds: 8));
+    expect(progress, greaterThan(beforeReversal));
+    expect(progress - beforeReversal, lessThan(0.06));
+    await tester.pump(const Duration(milliseconds: 180));
+    expect(progress, lessThan(beforeReversal));
+    await tester.pumpAndSettle();
+    expect(progress, 0);
+    expect(tester.getRect(find.byKey(IosHomeHeader.searchKey)), expanded);
+    update(() => compact = true);
+    await tester.pumpAndSettle();
+    expect(progress, 1);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('reducing motion snaps an in-flight header to its destination', (
+    tester,
+  ) async {
+    var compact = false;
+    var reduced = false;
+    var progress = 0.0;
+    late StateSetter update;
+    await tester.pumpWidget(
+      app(
+        StatefulBuilder(
+          builder: (context, setState) {
+            update = setState;
+            return MediaQuery(
+              data: MediaQuery.of(context).copyWith(disableAnimations: reduced),
+              child: IosHomeHeaderMotion(
+                compact: compact,
+                builder: (_, value, _) {
+                  progress = value;
+                  return const SizedBox();
+                },
+              ),
+            );
+          },
+        ),
+      ),
+    );
+    update(() => compact = true);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 80));
+    expect(progress, inExclusiveRange(0, 1));
+    update(() => reduced = true);
+    await tester.pump();
+    expect(progress, 1);
+    update(() => compact = false);
+    await tester.pump();
+    expect(progress, 0);
+    await tester.pumpAndSettle();
+    expect(progress, 0);
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('the category capsule has complete top and bottom edges', (
     tester,

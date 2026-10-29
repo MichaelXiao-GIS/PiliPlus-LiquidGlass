@@ -30,12 +30,13 @@ class IosHomeHeader extends StatelessWidget {
   static const titleKey = ValueKey('ios-home-title');
   static const actionsKey = ValueKey('ios-home-actions');
   static const tabsKey = ValueKey('ios-home-tabs');
+  static const labelKey = ValueKey('ios-home-search-label');
 
-  // Finish horizontal movement before lifting the field into the title row.
+  // Narrow early while lifting continuously. The eased horizontal finish and
+  // gradual lift round off the old right-angle path and keep controls apart.
   static double horizontal(double progress) =>
-      (progress / 0.45).clamp(0.0, 1.0);
-  static double vertical(double progress) =>
-      ((progress - 0.45) / 0.55).clamp(0.0, 1.0);
+      Curves.easeOutCubic.transform((progress / 0.60).clamp(0.0, 1.0));
+  static double vertical(double progress) => progress * progress * progress;
 
   static double rowHeight(BuildContext context, double progress) {
     final font = lerpDouble(34, 28, horizontal(progress))!;
@@ -48,6 +49,23 @@ class IosHomeHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = ColorScheme.of(context);
+    final labelBlend = Curves.easeInOut.transform(
+      (progress / 0.65).clamp(0.0, 1.0),
+    );
+    Widget label(String text, double opacity) => Opacity(
+      opacity: opacity,
+      child: Text(
+        text,
+        textScaler: MediaQuery.textScalerOf(context).clamp(maxScaleFactor: 2),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          fontSize: 16,
+          height: 1.2,
+          color: colors.onSurfaceVariant,
+        ),
+      ),
+    );
     final titleStyle = TextStyle(
       fontSize: lerpDouble(34, 28, horizontal(progress)),
       height: 1.2,
@@ -125,17 +143,13 @@ class IosHomeHeader extends StatelessWidget {
                                 width: lerpDouble(10, 6, horizontal(progress)),
                               ),
                               Expanded(
-                                child: Text(
-                                  progress > 0.01 ? '搜索' : hint,
-                                  textScaler: MediaQuery.textScalerOf(context)
-                                      .clamp(maxScaleFactor: 2),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    height: 1.2,
-                                    color: colors.onSurfaceVariant,
-                                  ),
+                                child: Stack(
+                                  key: labelKey,
+                                  alignment: Alignment.centerLeft,
+                                  children: [
+                                    label(hint, 1 - labelBlend),
+                                    label('搜索', labelBlend),
+                                  ],
                                 ),
                               ),
                               const SizedBox(width: 12),

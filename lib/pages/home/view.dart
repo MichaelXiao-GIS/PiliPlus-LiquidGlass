@@ -11,6 +11,7 @@ import 'package:PiliPlus/pages/common/common_page.dart';
 import 'package:PiliPlus/pages/home/controller.dart';
 import 'package:PiliPlus/pages/home/widgets/collapsing_search_bar.dart';
 import 'package:PiliPlus/pages/home/widgets/ios_home_header.dart';
+import 'package:PiliPlus/pages/home/widgets/ios_home_header_motion.dart';
 import 'package:PiliPlus/pages/main/controller.dart';
 import 'package:PiliPlus/pages/mine/controller.dart';
 import 'package:PiliPlus/utils/extension/get_ext.dart';
@@ -160,11 +161,10 @@ class _HomePageState extends CommonPageState<HomePage>
       return ListenableBuilder(
         listenable: chrome,
         child: pages,
-        builder: (context, body) => TweenAnimationBuilder<double>(
-          tween: Tween(end: chrome.compact ? 1.0 : 0.0),
-          duration: GlassCapabilities.duration(context, 280),
-          curve: Curves.easeInOutCubic,
-          builder: (context, progress, _) => GlassScrollPage(
+        builder: (context, body) => IosHomeHeaderMotion(
+          compact: chrome.compact,
+          child: body,
+          builder: (context, progress, body) => GlassScrollPage(
             headerExtent: IosHomeHeader.extentOf(context, progress, tabsExtent),
             contentHeaderExtent: IosHomeHeader.extentOf(context, 0, tabsExtent),
             header: Obx(
