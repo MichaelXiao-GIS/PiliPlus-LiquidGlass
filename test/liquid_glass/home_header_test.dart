@@ -211,7 +211,7 @@ void main() {
     final beforeReversal = progress;
     update(() => compact = false);
     await tester.pump();
-    expect(progress, beforeReversal);
+    expect(progress, closeTo(beforeReversal, 1e-10));
     // Momentum eases into the new direction instead of instantly changing sign.
     await tester.pump(const Duration(milliseconds: 8));
     expect(progress, greaterThan(beforeReversal));
@@ -226,6 +226,63 @@ void main() {
     expect(progress, 1);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'arc keeps narrowing through the lift and arrives without a bounce',
+    (
+      tester,
+    ) async {
+      await tester.binding.setSurfaceSize(const Size(402, 874));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final tabs = TabController(length: labels.length, vsync: tester);
+      addTearDown(tabs.dispose);
+      var compact = false;
+      late StateSetter update;
+      await tester.pumpWidget(
+        app(
+          StatefulBuilder(
+            builder: (context, setState) {
+              update = setState;
+              return Align(
+                alignment: Alignment.topCenter,
+                child: IosHomeHeaderMotion(
+                  compact: compact,
+                  builder: (context, value, _) => header(context, tabs, value),
+                ),
+              );
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final search = find.byKey(IosHomeHeader.searchKey);
+      final expanded = tester.getRect(search);
+      update(() => compact = true);
+      await tester.pump();
+      final frames = <int, Rect>{0: expanded};
+      for (var elapsed = 20; elapsed <= 600; elapsed += 20) {
+        await tester.pump(const Duration(milliseconds: 20));
+        final rect = tester.getRect(search);
+        final previous = frames[elapsed - 20]!;
+        expect(rect.width, lessThanOrEqualTo(previous.width + 0.001));
+        expect(rect.top, lessThanOrEqualTo(previous.top + 0.001));
+        frames[elapsed] = rect;
+      }
+      await tester.pumpAndSettle();
+      final destination = tester.getRect(search);
+      // In the old path width had already stopped changing at 120 ms, leaving
+      // a second, visibly separate upward movement. Both now continue together.
+      expect(frames[120]!.width - frames[240]!.width, greaterThan(2));
+      expect(expanded.top - frames[120]!.top, inExclusiveRange(2, 25));
+      expect(frames[240]!.top - destination.top, lessThan(15));
+      expect(frames[400]!.top - destination.top, inInclusiveRange(0, 2));
+      for (final rect in frames.values) {
+        expect(rect.width, greaterThanOrEqualTo(destination.width - 0.001));
+        expect(rect.top, greaterThanOrEqualTo(destination.top - 0.001));
+      }
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('reducing motion snaps an in-flight header to its destination', (
     tester,

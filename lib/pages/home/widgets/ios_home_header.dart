@@ -32,11 +32,18 @@ class IosHomeHeader extends StatelessWidget {
   static const tabsKey = ValueKey('ios-home-tabs');
   static const labelKey = ValueKey('ios-home-search-label');
 
-  // Narrow early while lifting continuously. The eased horizontal finish and
-  // gradual lift round off the old right-angle path and keep controls apart.
-  static double horizontal(double progress) =>
-      Curves.easeOutCubic.transform((progress / 0.60).clamp(0.0, 1.0));
-  static double vertical(double progress) => progress * progress * progress;
+  // Width leads the lift to clear the title and actions. Both coordinates keep
+  // moving until arrival, without an intermediate stop or a right-angle turn.
+  static double horizontal(double progress) {
+    final remaining = 1 - progress;
+    return 1 - remaining * remaining * remaining;
+  }
+
+  static double vertical(BuildContext context, double progress) {
+    // Taller accessibility titles need a little more room before the lift.
+    final scale = (MediaQuery.textScalerOf(context).scale(28) / 28).clamp(1, 3);
+    return math.pow(progress, 3.5 + (scale - 1) * 0.75).toDouble();
+  }
 
   static double rowHeight(BuildContext context, double progress) {
     final font = lerpDouble(34, 28, horizontal(progress))!;
@@ -44,13 +51,23 @@ class IosHomeHeader extends StatelessWidget {
   }
 
   static double extentOf(BuildContext context, double progress, double tabs) =>
-      12 + rowHeight(context, progress) + 52 * (1 - vertical(progress)) + tabs;
+      12 +
+      rowHeight(context, progress) +
+      52 * (1 - vertical(context, progress)) +
+      tabs;
 
   @override
   Widget build(BuildContext context) {
     final colors = ColorScheme.of(context);
-    final labelBlend = Curves.easeInOut.transform(
-      (progress / 0.65).clamp(0.0, 1.0),
+    // Let the long hint recede before the compact hint becomes prominent.
+    // Only the labels fade; the glass and the search hit target stay mounted.
+    final expandedLabelOpacity =
+        1 -
+        Curves.easeInOut.transform(
+          (progress / 0.65).clamp(0.0, 1.0),
+        );
+    final compactLabelOpacity = Curves.easeInOut.transform(
+      ((progress - 0.25) / 0.60).clamp(0.0, 1.0),
     );
     Widget label(String text, double opacity) => Opacity(
       opacity: opacity,
@@ -87,6 +104,7 @@ class IosHomeHeader extends StatelessWidget {
       child: CustomMultiChildLayout(
         delegate: _HomeHeaderLayout(
           progress: progress,
+          liftProgress: vertical(context, progress),
           rowHeight: rowHeight(context, progress),
           compactTitleWidth: compactTitleWidth,
           tabsExtent: tabsExtent,
@@ -147,8 +165,8 @@ class IosHomeHeader extends StatelessWidget {
                                   key: labelKey,
                                   alignment: Alignment.centerLeft,
                                   children: [
-                                    label(hint, 1 - labelBlend),
-                                    label('搜索', labelBlend),
+                                    label(hint, expandedLabelOpacity),
+                                    label('搜索', compactLabelOpacity),
                                   ],
                                 ),
                               ),
@@ -176,12 +194,14 @@ class IosHomeHeader extends StatelessWidget {
 class _HomeHeaderLayout extends MultiChildLayoutDelegate {
   _HomeHeaderLayout({
     required this.progress,
+    required this.liftProgress,
     required this.rowHeight,
     required this.compactTitleWidth,
     required this.tabsExtent,
   });
 
   final double progress;
+  final double liftProgress;
   final double rowHeight;
   final double compactTitleWidth;
   final double tabsExtent;
@@ -189,7 +209,7 @@ class _HomeHeaderLayout extends MultiChildLayoutDelegate {
   @override
   void performLayout(Size size) {
     final horizontal = IosHomeHeader.horizontal(progress);
-    final vertical = IosHomeHeader.vertical(progress);
+    final vertical = liftProgress;
     final actions = layoutChild(
       _HeaderPart.actions,
       BoxConstraints.loose(Size(size.width - 34, rowHeight)),
@@ -240,6 +260,7 @@ class _HomeHeaderLayout extends MultiChildLayoutDelegate {
   @override
   bool shouldRelayout(_HomeHeaderLayout oldDelegate) =>
       progress != oldDelegate.progress ||
+      liftProgress != oldDelegate.liftProgress ||
       rowHeight != oldDelegate.rowHeight ||
       compactTitleWidth != oldDelegate.compactTitleWidth ||
       tabsExtent != oldDelegate.tabsExtent;

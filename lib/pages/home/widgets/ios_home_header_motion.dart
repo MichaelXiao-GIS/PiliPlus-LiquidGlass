@@ -3,7 +3,7 @@ import 'package:flutter/physics.dart';
 import 'package:flutter/widgets.dart';
 
 /// Retarget the same spring when scrolling reverses, preserving its velocity.
-/// A critically damped response settles without bouncing into nearby controls.
+/// A near-critical response settles without bouncing into nearby controls.
 class IosHomeHeaderMotion extends StatefulWidget {
   const IosHomeHeaderMotion({
     super.key,
@@ -24,8 +24,8 @@ class _IosHomeHeaderMotionState extends State<IosHomeHeaderMotion>
     with SingleTickerProviderStateMixin {
   static const _spring = SpringDescription(
     mass: 1,
-    stiffness: 400,
-    damping: 40,
+    stiffness: 360,
+    damping: 38,
   );
   late final _motion = AnimationController(
     vsync: this,
