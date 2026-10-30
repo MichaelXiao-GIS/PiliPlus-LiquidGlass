@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:ui' show DisplayFeatureType;
 
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_navigation_bar.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_platform.dart';
@@ -28,14 +29,65 @@ class GlassNavigationRail extends StatelessWidget {
   static const _inset = 6.0;
   static const _buttonSize = 48.0;
 
+  static double _leftOf(MediaQueryData data, GlassWindowGeometry window) {
+    final left = window.railOnLeft(data);
+    final inset = left ? data.viewPadding.left : data.viewPadding.right;
+    final status = window.statusBarBounds(data);
+    final lane = math.max(inset, gutter);
+    // Safe-area width describes content clearance, not the visual center of
+    // the system's status/camera column. Both glass groups follow that column.
+    bool fitsColumn(double center) =>
+        (left ? center <= lane : center >= data.size.width - lane) &&
+        center - width / 2 >= 8 &&
+        center + width / 2 <= data.size.width - 8;
+    if (window.matches(data) &&
+        window.verticalBarEdge == (left ? 'left' : 'right')) {
+      // Duo can report a full-width 2pt statusBarFrame even with a vertical
+      // status column. Its compact camera occlusion is the reliable axis;
+      // exclude the tall reserved status region and active fold divisions.
+      Rect? camera;
+      for (final feature in data.displayFeatures) {
+        final rect = feature.bounds;
+        if (feature.type == DisplayFeatureType.cutout &&
+            !rect.isEmpty &&
+            rect.width <= lane &&
+            rect.height <= lane &&
+            rect.top >= 0 &&
+            rect.bottom <= data.size.height &&
+            fitsColumn(rect.center.dx) &&
+            (camera == null ||
+                rect.width * rect.height < camera.width * camera.height)) {
+          camera = rect;
+        }
+      }
+      if (camera != null) return camera.center.dx - width / 2;
+      // Hosts without a compact camera region may provide a real vertical
+      // status frame. Ignore horizontal or out-of-window frames on rotation.
+      if (!status.isEmpty &&
+          status.width < data.size.width / 2 &&
+          fitsColumn(status.center.dx)) {
+        return status.center.dx - width / 2;
+      }
+    }
+    return left
+        ? (inset >= gutter ? (inset - width) / 2 : inset + 8)
+        : data.size.width -
+              (inset >= gutter ? (inset + width) / 2 : inset + width + 8);
+  }
+
   static EdgeInsets contentInsetsOf(BuildContext context) {
     final data = MediaQuery.of(context);
     final safe = data.viewPadding;
-    final left = GlassCapabilities.of(context).window.railOnLeft(data);
+    final window = GlassCapabilities.of(context).window;
+    final left = window.railOnLeft(data);
     final inset = left ? safe.left : safe.right;
-    // A wide system lane already contains the rail. A narrow notch safe area
-    // pushes the rail inward, so reserve both that inset and the control lane.
-    final reserved = inset >= gutter ? inset : inset + gutter;
+    final x = _leftOf(data, window);
+    // Reserve the actual rail bounds plus its content-side gap. A status
+    // column shifted inward may extend beyond the system's safe-area lane.
+    final reserved = math.max(
+      inset,
+      left ? x + width + 8 : data.size.width - x + 8,
+    );
     // Reserve the bar's horizontal lane, but let scrolling content paint
     // through the bottom safe area. Controls still use the full safe insets.
     return left
@@ -49,13 +101,7 @@ class GlassNavigationRail extends StatelessWidget {
     final safe = data.viewPadding;
     final window = GlassCapabilities.of(context).window;
     final colors = ColorScheme.of(context);
-    final left = window.railOnLeft(data);
-    final inset = left ? safe.left : safe.right;
-    // Share the system edge gutter instead of reserving a second column.
-    final x = left
-        ? (inset >= gutter ? (inset - width) / 2 : inset + 8)
-        : data.size.width -
-              (inset >= gutter ? (inset + width) / 2 : inset + width + 8);
+    final x = _leftOf(data, window);
     var band = Rect.fromLTRB(
       x,
       safe.top + 12,
