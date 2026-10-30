@@ -1,271 +1,85 @@
 <div align="center">
-    <img width="200" height="200" src="assets/images/logo/logo.png">
+  <img src="assets/images/logo/logo.png" width="96" height="96" alt="PiliPlus 标志" />
+  <h1>PiliPlus Liquid Glass</h1>
+  <p>基于 PiliPlus 的 iOS 界面改造分支</p>
+  <p>原生玻璃质感 · 随滚动收拢的导航 · iPhone 与 iPhone Duo 布局适配</p>
+
+中文 · [English](README.en.md)
+
+[下载测试版](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases) · [安装说明](docs/ios-testing.md) · [上游 PiliPlus](https://github.com/bggRGjQaUbCoE/PiliPlus)
+
 </div>
 
+## 关于本项目
 
+**PiliPlus Liquid Glass** 是在 [PiliPlus](https://github.com/bggRGjQaUbCoE/PiliPlus) 基础上修改的第三方 Bilibili 客户端，沿用 Flutter 技术栈与上游业务功能，主要改进 iOS 的导航、搜索、设置和播放界面。
 
-<div align="center">
-    <h1>PiliPlus</h1>
-<div align="center">
+本仓库重点维护 iPhone 测试版，并针对 iOS 27.1 与 iPhone Duo 的窗口、安全区和旋转布局进行适配。其他平台的源码继承自上游；本页展示和发布的 Liquid Glass 改动以 iOS 为主。
 
-中文 | [English](README.en.md)
+## 本分支的主要改动
 
-![GitHub repo size](https://img.shields.io/github/repo-size/bggRGjQaUbCoE/PiliPlus) 
-![GitHub Repo stars](https://img.shields.io/github/stars/bggRGjQaUbCoE/PiliPlus) 
-![GitHub all releases](https://img.shields.io/github/downloads/bggRGjQaUbCoE/PiliPlus/total) 
-</div>
-    <p>使用Flutter开发的BiliBili第三方客户端</p>
-    
-<img src="assets/screenshots/510shots_so.png" width="32%" alt="home" />
-<img src="assets/screenshots/174shots_so.png" width="32%" alt="home" />
-<img src="assets/screenshots/850shots_so.png" width="32%" alt="home" />
-<br/>
-<img src="assets/screenshots/main_screen.png" width="96%" alt="home" />
-<br/>
-</div>
+| 界面 | 当前体验 |
+| --- | --- |
+| 首页与搜索 | 透明顶区随滚动柔和模糊；搜索框沿连续弧线缩窄并上移，回到顶部时展开，分类选项保持清晰可辨。 |
+| 玻璃导航 | 居中悬浮底栏可随滚动收起文字；底栏与侧栏支持跟随手指滑动的水滴状指示器。 |
+| 横屏与 Duo | 根据窗口切换底栏或侧栏，处理折叠区域和摄像头位置，减少整条空白与内容遮挡。 |
+| 视频播放 | 全屏控件分成标题、快捷操作和居中进度栏；保留 CC 字幕、倍速与画质入口，更多菜单按功能分组。 |
+| 设置与页面切换 | 分组设置、深浅色主题、默认 iOS 页面过渡；保留原有动画选项，并支持字号调整与系统辅助功能。 |
 
+视频、番剧、直播、动态、评论、收藏、历史记录、离线缓存等功能来自 PiliPlus。各项服务的可用性取决于账号权限、视频内容和 Bilibili 服务状态。
 
-<br/>
+## 当前界面
 
-## 适配平台
+以下为 **2.1.6 / 测试版 18** 的实际模拟器截图，展示深色主题下的首页展开、滚动收拢和设置页面。截图使用未登录状态；右上角的 DEBUG 标记仅出现在调试构建中，Release 安装包不显示。
 
-[iOS Liquid Glass 界面改造与构建说明](docs/ios-liquid-glass.md)
+<table>
+  <tr>
+    <th>首页 · 展开</th>
+    <th>首页 · 滚动后</th>
+    <th>分组设置</th>
+  </tr>
+  <tr>
+    <td><img src="assets/screenshots/liquid_glass/home-expanded-test18.png" width="280" alt="测试版 18：首页展开的搜索框和带文字的悬浮底栏" /></td>
+    <td><img src="assets/screenshots/liquid_glass/home-compact-test18.png" width="280" alt="测试版 18：搜索框收拢、顶区模糊和仅图标底栏" /></td>
+    <td><img src="assets/screenshots/liquid_glass/settings-test18.png" width="280" alt="测试版 18：深色主题的分组设置页面" /></td>
+  </tr>
+</table>
 
-### iOS Liquid Glass 测试版
+## 下载与安装
 
-此版本在 PiliPlus 上加入 iOS 原生 Liquid Glass 导航、悬浮搜索与页面栏、分组设置、深浅色及辅助功能适配。
+前往本仓库的 [Releases](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases) 下载 IPA。当前版本为 [PiliPlus Liquid Glass 测试版 18](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases/tag/v2.1.6-liquid-glass.test18)（应用版本 2.1.6，构建号 18）。后续更新以 Releases 为准。
 
-[下载 iPhone 测试版 IPA](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases) · [安装说明](docs/ios-testing.md)
+- **安装包**：iPhone arm64 Release，最低支持 iOS 15。
+- **玻璃效果**：iOS 26 及以上使用原生 Liquid Glass；较旧系统使用兼容材质。
+- **签名安装**：IPA 需要先通过 AltStore 或 Sideloadly，使用自己的 Apple ID 重新签名。覆盖更新时保持签名与应用标识一致。
+- **附件**：每个版本提供 IPA、`SHA256SUMS.txt` 和 `build-info.json`。
 
-测试版 4 将底栏进一步收拢为居中的悬浮胶囊，两侧留出更多空间；包含此前的横屏导航居中、设置间距和可选 iOS 默认页面动画改进。
+详细步骤见 [iPhone 测试版安装说明](docs/ios-testing.md)。
 
-IPA 为真机 arm64 Release 包，最低支持 iOS 15，安装前需使用自己的 Apple 身份重新签名。原生 Liquid Glass 在 iOS 26 及以上启用。
+## 开发与反馈
 
-<img src="assets/screenshots/liquid_glass/home.png" width="32%" alt="iOS Liquid Glass 首页" />
-<img src="assets/screenshots/liquid_glass/settings.png" width="32%" alt="iOS 分组设置" />
-<img src="assets/screenshots/liquid_glass/dark.png" width="32%" alt="iOS 深色模式" />
+[iOS 适配与构建说明](docs/ios-liquid-glass.md) 包含开发环境、原生玻璃实现和构建方式。发布包使用 `lib/main.dart` 作为入口。
 
-- [x] Android
-- [x] iOS
-- [x] Pad
-- [x] Windows
-- [x] Linux
+遇到本分支的问题，请在 [本仓库 Issues](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/issues) 附上版本号、设备与系统版本、旋转方向、复现步骤及截图。提交截图前请遮挡个人信息。
 
-[![Packaging status](https://repology.org/badge/vertical-allrepos/piliplus.svg)](https://repology.org/project/piliplus/versions)
+## 项目来源与声明
 
-## refactor
+本项目是 **PiliPlus 的独立修改分支**，主要增加 iOS Liquid Glass 界面与设备布局适配，并非从零开发的客户端，也不是 Bilibili 官方应用。此分支的改动和测试包由本仓库维护，不代表上游 PiliPlus 的发布版本。
 
-- [ ] gRPC [wip]
-- [x] 用户界面
-- [x] 其他
+感谢以下项目及所有贡献者：
 
-## feat
+- [bggRGjQaUbCoE/PiliPlus](https://github.com/bggRGjQaUbCoE/PiliPlus)：本项目直接基于的上游。
+- [orz12/PiliPalaX](https://github.com/orz12/PiliPalaX)：PiliPlus 的上游项目。
+- [guozhigq/pilipala](https://github.com/guozhigq/pilipala)：原始项目。
 
-- [x] 编辑动态
-- [x] DLNA 投屏
-- [x] 离线缓存/播放
-- [x] 移动端支持点击弹幕悬停，点赞、复制、举报 by [@My-Responsitories](https://github.com/My-Responsitories)
-- [x] 播放音频
-- [x] 跳过番剧片头/片尾
-- [x] 安卓端 `loudnorm` 适配 by [@My-Responsitories](https://github.com/My-Responsitories)
-- [x] Win/Mac 支持极验、短信登录 by [@My-Responsitories](https://github.com/My-Responsitories)
-- [x] 视频截取动图 by [@My-Responsitories](https://github.com/My-Responsitories)
-- [x] AI 原声翻译
-- [x] SuperChat
-- [x] 播放课堂视频
-- [x] 发起投票
-- [x] 发布动态/评论支持`富文本编辑`/`表情显示`/`@用户`
-- [x] 修改消息设置
-- [x] 修改聊天设置
-- [x] 展示折叠消息
-- [x] 查看用户图文
-- [x] 动态话题
-- [x] 直播分区
-- [x] 分享`视频`/`番剧`/`动态`/`专栏`/`直播`至消息
-- [x] 创建/修改/删除关注分组
-- [x] 移除粉丝
-- [x] 直播弹幕发送表情
-- [x] 收藏夹排序
-- [x] 稍后再看 ~~`未看`~~ / `未看完` / ~~`已看完`~~ 分类
-- [x] WebDAV 备份/恢复设置
-- [x] 保存评论/动态
-- [x] 高级弹幕 by [@My-Responsitories](https://github.com/My-Responsitories)
-- [x] 取消/置顶评论
-- [x] 记笔记
-- [x] 多账号支持 by [@My-Responsitories](https://github.com/My-Responsitories)
-- [x] 屏蔽带货动态/评论
-- [x] 互动视频
-- [x] 发评/动态反诈
-- [x] 高能进度条
-- [x] 滑动跳转预览视频缩略图
-- [x] Live Photo
-- [x] 复制/移动/排序收藏夹/稍后再看视频
-- [x] 超分辨率
-- [x] 合并弹幕
-- [x] 会员彩色弹幕
-- [x] 播放全部/继续播放/倒序播放
-- [x] Cookie登录
-- [x] 显示视频分段信息
-- [x] 调节字幕大小
-- [x] 调节全屏弹幕大小
-- [x] 收藏夹/稍后再看多选删除
-- [x] 搜索用户动态
-- [x] 直播弹幕
-- [x] 修改头像/用户名/签名/性别/生日
-- [x] 创建/编辑/删除收藏夹
-- [x] 评论楼中楼查看对话
-- [x] 评论楼中楼定位点击查看的评论
-- [x] 评论楼中楼按热度/时间排序
-- [x] 评论点踩
-- [x] 私信发图
-- [x] 投币动画
-- [x] 取消/追番，更新追番状态
-- [x] 取消/订阅合集
-- [x] SponsorBlock
-- [x] 显示视频完整合集
-- [x] 三连动画
-- [x] 番剧三连
-- [x] 带图评论
-- [x] 视频TAG
-- [x] 筛选搜索
-- [x] 转发动态
-- [x] 合集图片
-- [x] 删除/置顶/撤回私信
-- [x] 举报用户/评论/视频/动态
-- [x] 删除/发布/置顶文本/图片动态
-- [x] 其他
+本项目用于开源学习、界面研究与个人测试，不提供破解内容或绕过付费权限的功能。Bilibili 及相关名称、图像和视频内容的权利归各自权利人所有；截图仅用于展示客户端界面。
 
-## opt
+本仓库沿用 **GNU GPL v3** 许可证，保留上游版权及许可声明。使用、修改和分发请遵循 [LICENSE](LICENSE)；软件按许可证约定提供，不作保证。
 
-- [x] 专栏界面
-- [x] 私信界面
-- [x] 收藏面板
-- [x] PIP
-- [x] 视频封面
-- [x] 回复界面
-- [x] 系统通知
-- [x] 评论显示
-- [x] 亮度调节
-- [x] 视频播放
-- [x] 视频staff
-- [x] 防止bottomsheet遮挡全屏视频
-- [x] 其他
-
-## fix
-
-- [x] 番剧分集点赞/投币/收藏
-- [x] bugs
-
-<br/>
-
-## 功能
-
-- [x] 推荐视频列表(app端)
-- [x] 最热视频列表
-- [x] 热门直播
-- [x] 番剧列表
-- [x] 屏蔽黑名单内用户视频
-- [x] 无痕模式（播放视为未登录）
-- [x] 游客模式（推荐视为未登录）
-
-- [x] 用户相关
-  - [x] 粉丝、关注用户、拉黑用户查看
-  - [x] 用户主页查看
-  - [x] 关注/取关用户
-  - [x] 离线缓存
-  - [x] 稍后再看
-  - [x] 观看记录
-  - [x] 我的收藏
-  - [x] 站内私信
-  
-- [x] 动态相关
-  - [x] 全部、投稿、番剧分类查看
-  - [x] 动态评论查看
-  - [x] 动态评论回复功能
-
-- [x] 视频播放相关
-  - [x] 双击快进/快退
-  - [x] 双击播放/暂停
-  - [x] 垂直方向调节亮度/音量
-  - [x] 垂直方向上滑全屏、下滑退出全屏
-  - [x] 水平方向手势快进/快退
-  - [x] 全屏方向设置
-  - [x] 倍速选择/长按2倍速
-  - [x] 硬件加速（视机型而定）
-  - [x] 画质选择（高清画质未解锁）
-  - [x] 音质选择（视视频而定）
-  - [x] 解码格式选择（视视频而定）
-  - [x] 弹幕
-  - [x] 字幕
-  - [x] 记忆播放
-  - [x] 视频比例：高度/宽度适应、填充、包含等
-     
-- [x] 搜索相关
-  - [x] 热搜
-  - [x] 搜索历史
-  - [x] 默认搜索词
-  - [x] 投稿、番剧、直播间、用户搜索
-  - [x] 视频搜索排序、按时长筛选
-    
-- [x] 视频详情页相关
-  - [x] 视频选集(分p)切换
-  - [x] 点赞、投币、收藏/取消收藏
-  - [x] 相关视频查看
-  - [x] 评论用户身份标识
-  - [x] 评论(排序)查看、二楼评论查看
-  - [x] 主楼、二楼评论回复功能
-  - [x] 评论点赞
-  - [x] 评论笔记图片查看、保存
-
-- [x] 设置相关
-  - [x] 画质、音质、解码方式预设      
-  - [x] 图片质量设定
-  - [x] 主题模式：亮色/暗色/跟随系统
-  - [x] 震动反馈(可选)
-  - [x] 高帧率
-  - [x] 自动全屏
-  - [x] 横屏适配
-- [ ] 等等
-
-<br/>
-
-## 下载
-
-可以从 [Releases](https://github.com/bggRGjQaUbCoE/PiliPlus/releases) 下载，或克隆仓库拉取代码后在本地编译。
-
-<br/>
-
-## 声明
-
-此项目（PiliPlus）是个人为了兴趣而开发，仅用于学习和测试，请于下载后24小时内删除。
-所用API皆从官方网站收集，不提供任何破解内容。
-在此致敬原作者：[guozhigq/pilipala](https://github.com/guozhigq/pilipala)
-在此致敬上游作者：[orz12/PiliPalaX](https://github.com/orz12/PiliPalaX)
-本仓库做了更激进的修改，感谢原作者的开源精神。
-
-感谢使用
-
-
-<br/>
-
-## 致谢
+## 其他致谢
 
 - [bilibili-API-collect](https://github.com/SocialSisterYi/bilibili-API-collect)
 - [flutter_meedu_videoplayer](https://github.com/zezo357/flutter_meedu_videoplayer)
 - [media-kit](https://github.com/media-kit/media-kit)
 - [dio](https://pub.dev/packages/dio)
-- 等等
-
-<br/>
-<br/>
-<br/>
-
-## Star History
-
-<a href="https://star-history.dera.page/#bggRGjQaUbCoE/PiliPlus&Date">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://star-history.dera.page/svg?repos=bggRGjQaUbCoE/PiliPlus&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://star-history.dera.page/svg?repos=bggRGjQaUbCoE/PiliPlus&type=Date" />
-   <img alt="Star History Chart" src="https://star-history.dera.page/svg?repos=bggRGjQaUbCoE/PiliPlus&type=Date" />
- </picture>
-</a>
+- PiliPlus 的其他开源依赖及贡献者。
