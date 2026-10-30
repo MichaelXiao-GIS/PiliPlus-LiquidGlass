@@ -8,6 +8,7 @@ import 'package:PiliPlus/common/constants.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_platform.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_surface.dart';
 import 'package:PiliPlus/plugin/pl_player/widgets/glass_player_controls.dart';
+import 'package:PiliPlus/plugin/pl_player/widgets/player_more_sheet.dart';
 import 'package:PiliPlus/common/style.dart';
 import 'package:PiliPlus/common/widgets/cropped_image.dart';
 import 'package:PiliPlus/common/widgets/custom_icon.dart';
@@ -427,7 +428,7 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
       /// 上一集
       BottomControlType.pre => ComBtn(
         width: widgetWidth,
-        height: 30,
+        height: extrasOnly ? 44 : 30,
         tooltip: '上一集',
         icon: const Icon(
           Icons.skip_previous,
@@ -444,7 +445,7 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
       /// 下一集
       BottomControlType.next => ComBtn(
         width: widgetWidth,
-        height: 30,
+        height: extrasOnly ? 44 : 30,
         tooltip: '下一集',
         icon: const Icon(
           Icons.skip_next,
@@ -478,7 +479,7 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
             final show = videoDetailController.showDmTrendChart.value;
             return ComBtn(
               width: widgetWidth,
-              height: 30,
+              height: extrasOnly ? 44 : 30,
               tooltip: '高能进度条',
               icon: DisabledIcon(
                 disable: !show,
@@ -525,9 +526,12 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
             },
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Text(
-                type.label,
-                style: const TextStyle(color: Colors.white, fontSize: 13),
+              child: Center(
+                widthFactor: 1,
+                child: Text(
+                  type.label,
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                ),
               ),
             ),
           );
@@ -540,7 +544,7 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
           if (videoDetailController.viewPointList.isNotEmpty) {
             return ComBtn(
               width: widgetWidth,
-              height: 30,
+              height: extrasOnly ? 44 : 30,
               tooltip: '分段信息',
               icon: DisabledIcon(
                 disable: !videoDetailController.showVP.value,
@@ -567,7 +571,7 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
       /// 选集
       BottomControlType.episode => ComBtn(
         width: widgetWidth,
-        height: 30,
+        height: extrasOnly ? 44 : 30,
         tooltip: '选集',
         icon: const Icon(
           Icons.list,
@@ -679,7 +683,7 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
               ],
               child: SizedBox(
                 width: widgetWidth,
-                height: 30,
+                height: extrasOnly ? 44 : 30,
                 child: const Icon(
                   Icons.translate,
                   size: 18,
@@ -744,7 +748,7 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
               },
               child: SizedBox(
                 width: widgetWidth,
-                height: 30,
+                height: extrasOnly ? 44 : 30,
                 child: val == 0
                     ? const Icon(
                         Icons.closed_caption_off_outlined,
@@ -883,7 +887,7 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
       /// 全屏
       BottomControlType.fullscreen => ComBtn(
         width: widgetWidth,
-        height: 30,
+        height: extrasOnly ? 44 : 30,
         tooltip: isFullScreen ? '退出全屏' : '全屏',
         icon: isFullScreen
             ? const Icon(Icons.fullscreen_exit, size: 24, color: Colors.white)
@@ -899,8 +903,12 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
 
     if (grouped) {
       Widget control(BottomControlType type) => SizedBox(
-        height: 44,
-        child: Center(child: progressWidget(type)),
+        height: extrasOnly
+            ? math.max(44, MediaQuery.textScalerOf(context).scale(16) + 8)
+            : 44,
+        child: extrasOnly
+            ? progressWidget(type)
+            : Center(child: progressWidget(type)),
       );
       if (extrasOnly) {
         final extras = <(BottomControlType, String)>[
@@ -921,27 +929,10 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
           if (videoDetailController.languages.value?.isNotEmpty ?? false)
             (.aiTranslate, '翻译'),
         ];
-        return Wrap(
-          spacing: 8,
-          runSpacing: 12,
+        return Column(
           children: [
             for (final (type, label) in extras)
-              SizedBox(
-                width: 88,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    control(type),
-                    Text(
-                      label,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.white70,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              PlayerMenuControl(label: label, control: control(type)),
           ],
         );
       }
