@@ -233,6 +233,9 @@ private final class GlassControlView: UIView, UIGestureRecognizerDelegate {
   private var scrubOrigin = 0
   private var settleGeneration = 0
   private var previousSize = CGSize.zero
+  private var routeCovered = false
+  private var routeSnapshot: UIView?
+  private let routeFallback = UIView()
 
   private var vertical: Bool { arguments["axis"] as? String == "vertical" }
   private func main(_ point: CGPoint) -> CGFloat { vertical ? point.y : point.x }
@@ -251,6 +254,9 @@ private final class GlassControlView: UIView, UIGestureRecognizerDelegate {
     lens.isUserInteractionEnabled = false
     lens.isHidden = true
     addSubview(lens)
+    routeFallback.isUserInteractionEnabled = false
+    routeFallback.isHidden = true
+    addSubview(routeFallback)
     stack.axis = .horizontal
     stack.distribution = .fillEqually
     stack.spacing = 4
@@ -281,10 +287,17 @@ private final class GlassControlView: UIView, UIGestureRecognizerDelegate {
   }
 
   func update(_ args: [String: Any]) {
+    // Capture before changing any appearance. A live UIGlassEffect can escape
+    // Flutter's overlapping route surfaces; a rendered UIView snapshot cannot.
+    // Retain the actual material/buttons so returning never recreates glass or
+    // swaps to Flutter's more opaque fallback.
+    setRouteCovered(isNavigation && args["routeCovered"] as? Bool == true)
     if previewIndex != nil && (selectedIndex != (args["selectedIndex"] as? Int ?? 0) ||
       vertical != (args["axis"] as? String == "vertical")) {
       cancelScrub()
     }
+    let appearanceChanged = arguments["dark"] as? Bool != args["dark"] as? Bool ||
+      vertical != (args["axis"] as? String == "vertical")
     arguments = args
     overrideUserInterfaceStyle = args["dark"] as? Bool == true ? .dark : .light
     radius = (args["radius"] as? NSNumber)?.doubleValue ?? 32
@@ -294,6 +307,7 @@ private final class GlassControlView: UIView, UIGestureRecognizerDelegate {
     let interactive = false
     let style = "\(opaque)-\(interactive)"
     if materialStyle != style {
+      if routeCovered { discardRouteSnapshot() }
       materialStyle = style
       if opaque {
         material.effect = nil
@@ -322,6 +336,7 @@ private final class GlassControlView: UIView, UIGestureRecognizerDelegate {
         }
       }
     }
+    if appearanceChanged && routeCovered { discardRouteSnapshot() }
     guard isNavigation, let items = args["destinations"] as? [[String: Any]] else {
       scrub.isEnabled = false
       setNeedsLayout()
@@ -347,6 +362,49 @@ private final class GlassControlView: UIView, UIGestureRecognizerDelegate {
     }
     configureButtons()
     setNeedsLayout()
+  }
+
+  private func setRouteCovered(_ covered: Bool) {
+    guard routeCovered != covered else { return }
+    routeCovered = covered
+    cancelScrub()
+    if covered {
+      // Snapshot the parent, not UIVisualEffectView alone, to include the
+      // already-composited material and its controls. No screen image is saved.
+      if window != nil && !bounds.isEmpty,
+         let snapshot = snapshotView(afterScreenUpdates: false) {
+        snapshot.frame = bounds
+        snapshot.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        snapshot.isUserInteractionEnabled = false
+        snapshot.accessibilityElementsHidden = true
+        addSubview(snapshot)
+        routeSnapshot = snapshot
+      }
+      // If first created under an already-covered route there is no rendered
+      // appearance to capture. Use plain native controls until it returns.
+      material.isHidden = true
+      stack.isHidden = routeSnapshot != nil
+      routeFallback.isHidden = routeSnapshot != nil
+      routeFallback.backgroundColor = .secondarySystemBackground
+    } else {
+      material.isHidden = false
+      stack.isHidden = false
+      routeFallback.isHidden = true
+      routeSnapshot?.removeFromSuperview()
+      routeSnapshot = nil
+    }
+    isUserInteractionEnabled = !covered
+    accessibilityElementsHidden = covered
+  }
+
+  private func discardRouteSnapshot() {
+    routeSnapshot?.removeFromSuperview()
+    routeSnapshot = nil
+    // A rotation or accessibility change invalidates the old rendered shape.
+    // Keep readable native controls without reactivating live glass mid-route.
+    routeFallback.backgroundColor = .secondarySystemBackground
+    routeFallback.isHidden = false
+    stack.isHidden = false
   }
 
   private func configureButtons() {
@@ -475,9 +533,12 @@ private final class GlassControlView: UIView, UIGestureRecognizerDelegate {
     super.layoutSubviews()
     if previousSize != bounds.size {
       if previewIndex != nil { cancelScrub() }
+      if routeCovered { discardRouteSnapshot() }
       previousSize = bounds.size
     }
     material.frame = bounds
+    routeFallback.frame = bounds
+    routeFallback.layer.cornerRadius = min(radius, min(bounds.width, bounds.height) / 2)
     if #available(iOS 26.0, *) {
       // Describe the shape to the glass renderer instead of masking the final
       // effect. Its refraction and highlight must follow the same contour.

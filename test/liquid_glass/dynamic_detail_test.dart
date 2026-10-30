@@ -109,13 +109,20 @@ void main() {
     );
   }
 
-  for (final dark in [false, true]) {
+  for (final (dark, axis) in [
+    for (final dark in [false, true])
+      for (final axis in Axis.values) (dark, axis),
+  ]) {
     testWidgets(
-      'bottom glass stays native while detail surfaces yield during push and swipe, dark=$dark',
+      'glass retains native view and freezes material while covered: $axis, dark=$dark',
       (tester) async {
         await tester.binding.setSurfaceSize(const Size(402, 874));
         addTearDown(() => tester.binding.setSurfaceSize(null));
         var navigationCreates = 0;
+        final coveredUpdates = <bool>[];
+        final compact = ValueNotifier(axis == Axis.vertical);
+        addTearDown(compact.dispose);
+        MethodChannel? navigationChannel;
         final messenger = tester.binding.defaultBinaryMessenger
           ..setMockMethodCallHandler(
             const MethodChannel('piliplus/liquid_glass'),
@@ -128,6 +135,20 @@ void main() {
                   (call.arguments as Map)['viewType'] ==
                       'piliplus/glass_navigation') {
                 navigationCreates++;
+                navigationChannel = MethodChannel(
+                  'piliplus/glass_navigation/${(call.arguments as Map)['id']}',
+                );
+                tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+                  navigationChannel!,
+                  (call) async {
+                    if (call.method == 'update') {
+                      coveredUpdates.add(
+                        (call.arguments as Map)['routeCovered'] as bool,
+                      );
+                    }
+                    return null;
+                  },
+                );
               }
               return null;
             },
@@ -139,6 +160,9 @@ void main() {
               null,
             )
             ..setMockMethodCallHandler(SystemChannels.platform_views, null);
+          if (navigationChannel != null) {
+            messenger.setMockMethodCallHandler(navigationChannel!, null);
+          }
           Get.reset();
         });
         await tester.pumpWidget(
@@ -151,18 +175,27 @@ void main() {
             getPages: [
               GetPage(
                 name: '/',
-                page: () => SimpleScaffold(
-                  appBar: AppBar(title: const Text('动态列表')),
-                  body: Center(
-                    child: TextButton(
-                      onPressed: () => Get.toNamed('/detail'),
-                      child: const Text('打开'),
+                page: () => ValueListenableBuilder(
+                  valueListenable: compact,
+                  builder: (_, isCompact, _) => SimpleScaffold(
+                    appBar: AppBar(title: const Text('动态列表')),
+                    body: Center(
+                      child: TextButton(
+                        onPressed: () => Get.toNamed('/detail'),
+                        child: const Text('打开'),
+                      ),
                     ),
-                  ),
-                  fab: GlassNavigationBar(
-                    destinations: _destinations,
-                    selectedIndex: 1,
-                    onSelected: (_) {},
+                    fab: SizedBox(
+                      width: axis == Axis.vertical ? 60 : null,
+                      height: axis == Axis.vertical ? 156 : null,
+                      child: GlassNavigationBar(
+                        axis: axis,
+                        compact: isCompact,
+                        destinations: _destinations,
+                        selectedIndex: 1,
+                        onSelected: (_) {},
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -179,13 +212,32 @@ void main() {
           skipOffstage: false,
         );
         final nativeState = tester.state(navigation);
+        expect(coveredUpdates.last, isFalse);
+        final expandedSize = tester.getSize(navigation);
+        if (axis == Axis.horizontal) {
+          compact.value = true;
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 80));
+          expect(
+            tester.getSize(navigation).width,
+            lessThan(expandedSize.width),
+          );
+        }
+        final capturedSize = tester.getSize(navigation);
         await tester.tap(find.text('打开'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 100));
         expect(find.byType(UiKitView), findsOneWidget);
+        expect(coveredUpdates.last, isTrue);
         expect(identical(tester.state(navigation), nativeState), isTrue);
+        expect(tester.getSize(navigation), capturedSize);
+        // A newer scroll state may arrive under the detail page. Defer its
+        // size animation so it cannot invalidate the native material snapshot.
+        if (axis == Axis.horizontal) compact.value = false;
         await tester.pumpAndSettle();
         expect(find.byType(UiKitView), findsNWidgets(2));
+        expect(coveredUpdates.last, isTrue);
+        expect(tester.getSize(navigation), capturedSize);
         final detail = tester.state<_DetailState>(find.byType(_Detail));
         detail.scroll.jumpTo(180);
         await tester.tap(find.text('计数 0'));
@@ -195,11 +247,13 @@ void main() {
         await gesture.moveBy(const Offset(40, 0));
         await tester.pump(const Duration(milliseconds: 100));
         expect(find.byType(UiKitView), findsOneWidget);
+        expect(coveredUpdates.last, isTrue);
         expect(identical(tester.state(navigation), nativeState), isTrue);
         expect(tester.getRect(find.byType(_Detail)).left, greaterThan(0));
         // A stationary finger must not bring native overlay surfaces back early.
         await tester.pump(const Duration(seconds: 1));
         expect(find.byType(UiKitView), findsOneWidget);
+        expect(coveredUpdates.last, isTrue);
         await gesture.up();
         await tester.pumpAndSettle();
         expect(identical(tester.state(find.byType(_Detail)), detail), isTrue);
@@ -208,6 +262,7 @@ void main() {
         expect(find.byType(UiKitView), findsNWidgets(2));
         expect(identical(tester.state(navigation), nativeState), isTrue);
         expect(navigationCreates, 1);
+        expect(coveredUpdates.last, isTrue);
         await tester.timedDragFrom(
           const Offset(1, 300),
           const Offset(360, 0),
@@ -215,6 +270,9 @@ void main() {
         );
         await tester.pumpAndSettle();
         expect(find.byType(_Detail), findsNothing);
+        expect(coveredUpdates.last, isFalse);
+        expect(navigationCreates, 1);
+        expect(tester.getSize(navigation), expandedSize);
         expect(find.byType(UiKitView), findsNWidgets(2));
         expect(tester.takeException(), isNull);
       },

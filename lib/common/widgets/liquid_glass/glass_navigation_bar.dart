@@ -52,6 +52,8 @@ class GlassNavigationBar extends StatefulWidget {
 class _GlassNavigationBarState extends State<GlassNavigationBar>
     with SingleTickerProviderStateMixin {
   MethodChannel? _channel;
+  Animation<double>? _coverAnimation;
+  bool _routeCovered = false;
   late final _collapse = AnimationController(
     vsync: this,
     value: widget.compact ? 1 : 0,
@@ -63,6 +65,7 @@ class _GlassNavigationBarState extends State<GlassNavigationBar>
 
   Map<String, Object?> _arguments(BuildContext context) => {
     'selectedIndex': widget.selectedIndex,
+    'routeCovered': _routeCovered,
     'axis': widget.axis.name,
     'rtl': Directionality.of(context) == TextDirection.rtl,
     'dark': Theme.of(context).brightness == Brightness.dark,
@@ -99,12 +102,45 @@ class _GlassNavigationBarState extends State<GlassNavigationBar>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    final animation = ModalRoute.of(context)?.secondaryAnimation;
+    if (_coverAnimation != animation) {
+      _coverAnimation?.removeListener(_coverChanged);
+      _coverAnimation?.removeStatusListener(_coverStatusChanged);
+      _coverAnimation = animation
+        ?..addListener(_coverChanged)
+        ..addStatusListener(_coverStatusChanged);
+    }
+    _readCoverState();
     _animate();
     _update();
   }
 
+  void _coverStatusChanged(AnimationStatus _) => _coverChanged();
+
+  void _readCoverState() {
+    final animation = _coverAnimation;
+    // Keep the rendered material frozen while covered, too. An interactive
+    // return must reveal the same glass, even when the finger stops or cancels.
+    _routeCovered =
+        animation != null &&
+        (animation.value > 0 ||
+            animation.status == AnimationStatus.forward ||
+            animation.status == AnimationStatus.reverse);
+  }
+
+  void _coverChanged() {
+    final previous = _routeCovered;
+    _readCoverState();
+    if (previous != _routeCovered) {
+      _animate();
+      _update();
+    }
+  }
+
   @override
   void dispose() {
+    _coverAnimation?.removeListener(_coverChanged);
+    _coverAnimation?.removeStatusListener(_coverStatusChanged);
     _progress.dispose();
     _collapse.dispose();
     _channel?.setMethodCallHandler(null);
@@ -112,6 +148,13 @@ class _GlassNavigationBarState extends State<GlassNavigationBar>
   }
 
   void _animate() {
+    // Do not resize an already-captured native material if the user opens a
+    // video while scroll-driven compacting is still in flight. Resume towards
+    // the latest compact target only after returning to this route.
+    if (_routeCovered) {
+      _collapse.stop();
+      return;
+    }
     final duration = GlassCapabilities.duration(context, 280);
     if (duration == Duration.zero) {
       _collapse.value = widget.compact ? 1 : 0;
@@ -137,8 +180,9 @@ class _GlassNavigationBarState extends State<GlassNavigationBar>
           widget.destinations.length *
               (64.0 + expanded * (20 + math.max(0.0, textScale - 1) * 16)),
     );
-    // Keep the original native view alive under a pushed route. Replacing it
-    // with Flutter's more opaque fallback causes a visible flash on swipe-back.
+    // Keep the native view alive. UIKit presents its rendered appearance while
+    // another route covers it, avoiding live glass bleeding through that route
+    // without a more opaque Flutter fallback flashing during swipe-back.
     final native = capabilities.nativeGlass;
     if (!native && _channel != null) {
       _channel!.setMethodCallHandler(null);
