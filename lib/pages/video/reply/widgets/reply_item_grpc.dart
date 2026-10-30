@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:PiliPlus/common/assets.dart';
 import 'package:PiliPlus/common/constants.dart';
 import 'package:PiliPlus/common/style.dart';
@@ -25,6 +23,7 @@ import 'package:PiliPlus/pages/dynamics/widgets/vote.dart';
 import 'package:PiliPlus/pages/member/widget/medal_widget.dart';
 import 'package:PiliPlus/pages/save_panel/view.dart';
 import 'package:PiliPlus/pages/video/controller.dart';
+import 'package:PiliPlus/pages/video/reply/widgets/reply_action_sheet.dart';
 import 'package:PiliPlus/pages/video/reply/widgets/zan_grpc.dart';
 import 'package:PiliPlus/utils/accounts.dart';
 import 'package:PiliPlus/utils/app_scheme.dart';
@@ -33,7 +32,6 @@ import 'package:PiliPlus/utils/color_utils.dart';
 import 'package:PiliPlus/utils/danmaku_utils.dart';
 import 'package:PiliPlus/utils/date_utils.dart';
 import 'package:PiliPlus/utils/duration_utils.dart';
-import 'package:PiliPlus/utils/extension/context_ext.dart';
 import 'package:PiliPlus/utils/extension/iterable_ext.dart';
 import 'package:PiliPlus/utils/extension/num_ext.dart';
 import 'package:PiliPlus/utils/extension/selectable_region_ext.dart';
@@ -101,13 +99,8 @@ class ReplyItemGrpc extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = ColorScheme.of(context);
 
-    void showMore() => showModalBottomSheet(
+    void showMore() => showReplyActionSheet(
       context: context,
-      useSafeArea: true,
-      isScrollControlled: true,
-      constraints: BoxConstraints(
-        maxWidth: min(640, context.mediaQueryShortestSide),
-      ),
       builder: (context) {
         return morePanel(
           context: context,
@@ -590,13 +583,8 @@ class ReplyItemGrpc extends StatelessWidget {
                     padding = const .fromLTRB(8, 4, 8, 4);
                   }
                 }
-                void showMore() => showModalBottomSheet(
+                void showMore() => showReplyActionSheet(
                   context: context,
-                  useSafeArea: true,
-                  isScrollControlled: true,
-                  constraints: BoxConstraints(
-                    maxWidth: min(640, context.mediaQueryShortestSide),
-                  ),
                   builder: (context) {
                     return morePanel(
                       context: context,
@@ -1001,7 +989,9 @@ class ReplyItemGrpc extends StatelessWidget {
 
     return Padding(
       padding: .only(
-        bottom: MediaQuery.viewPaddingOf(context).bottom + 20,
+        bottom: theme.platform == TargetPlatform.iOS
+            ? 12
+            : MediaQuery.viewPaddingOf(context).bottom + 20,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -1013,6 +1003,7 @@ class ReplyItemGrpc extends StatelessWidget {
               height: 35,
               child: Center(
                 child: Container(
+                  key: const ValueKey('reply-action-drag-handle'),
                   width: 32,
                   height: 3,
                   decoration: BoxDecoration(
