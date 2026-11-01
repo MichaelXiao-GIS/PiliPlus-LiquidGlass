@@ -53,25 +53,67 @@ class GlassScrollInsets extends InheritedWidget {
   const GlassScrollInsets({
     super.key,
     required this.top,
+    this.pinnedTop = 0,
     required super.child,
   });
 
   final double top;
+  final double pinnedTop;
 
   static double topOf(BuildContext context) =>
       context.dependOnInheritedWidgetOfExactType<GlassScrollInsets>()?.top ?? 0;
 
+  static double pinnedTopOf(BuildContext context) =>
+      context
+          .dependOnInheritedWidgetOfExactType<GlassScrollInsets>()
+          ?.pinnedTop ??
+      0;
+
   @override
-  bool updateShouldNotify(GlassScrollInsets oldWidget) => top != oldWidget.top;
+  bool updateShouldNotify(GlassScrollInsets oldWidget) =>
+      top != oldWidget.top || pinnedTop != oldWidget.pinnedTop;
 }
 
 class GlassScrollSpacer extends StatelessWidget {
-  const GlassScrollSpacer({super.key});
+  const GlassScrollSpacer({super.key, this.pinned = false});
+
+  /// Let subsequent pinned controls stack below the floating app header.
+  final bool pinned;
 
   @override
-  Widget build(BuildContext context) => SliverToBoxAdapter(
-    child: SizedBox(height: GlassScrollInsets.topOf(context)),
-  );
+  Widget build(BuildContext context) {
+    final top = GlassScrollInsets.topOf(context);
+    if (pinned && top > 0) {
+      return SliverPersistentHeader(
+        pinned: true,
+        delegate: _GlassScrollSpacerDelegate(
+          top,
+          GlassScrollInsets.pinnedTopOf(context).clamp(0.0, top),
+        ),
+      );
+    }
+    return SliverToBoxAdapter(child: SizedBox(height: top));
+  }
+}
+
+class _GlassScrollSpacerDelegate extends SliverPersistentHeaderDelegate {
+  const _GlassScrollSpacerDelegate(this.maxExtent, this.minExtent);
+
+  @override
+  final double maxExtent;
+  @override
+  final double minExtent;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) => const IgnorePointer(child: SizedBox.expand());
+
+  @override
+  bool shouldRebuild(_GlassScrollSpacerDelegate oldDelegate) =>
+      maxExtent != oldDelegate.maxExtent || minExtent != oldDelegate.minExtent;
 }
 
 /// Each category keeps its own offset, including while it is kept alive.
@@ -264,6 +306,7 @@ class GlassScrollPage extends StatelessWidget {
         Positioned.fill(
           child: GlassScrollInsets(
             top: top + (contentHeaderExtent ?? headerExtent),
+            pinnedTop: extent,
             child: body,
           ),
         ),

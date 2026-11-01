@@ -16,6 +16,8 @@
 
 本仓库重点维护 iPhone 测试版，并针对 iOS 27.1 与 iPhone Duo 的窗口、安全区和旋转布局进行适配。其他平台的源码继承自上游；本页展示和发布的 Liquid Glass 改动以 iOS 为主。
 
+当前已合并上游 [PiliPlus 2.2.0](https://github.com/bggRGjQaUbCoE/PiliPlus/releases/tag/2.2.0)，包括番剧与剧集 PV 切换、订阅倒序、折叠评论、相关推荐黑名单过滤、数据备份和下载音质等更新。
+
 ## 本分支的主要改动
 
 | 界面 | 当前体验 |
@@ -47,7 +49,7 @@
 
 ## 下载与安装
 
-前往本仓库的 [Releases](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases) 下载 IPA。当前版本为 [PiliPlus Liquid Glass 测试版 21](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases/tag/v2.1.6-liquid-glass.test21)（应用版本 2.1.6，构建号 21）。后续更新以 Releases 为准。
+前往本仓库的 [Releases](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases) 下载 IPA。当前版本为 [PiliPlus Liquid Glass 测试版 22](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases/tag/v2.2.0-liquid-glass.test22)（应用版本 2.2.0，构建号 22）。后续更新以 Releases 为准。
 
 - **安装包**：iPhone arm64 Release，最低支持 iOS 15。
 - **玻璃效果**：iOS 26 及以上使用原生 Liquid Glass；较旧系统使用兼容材质。

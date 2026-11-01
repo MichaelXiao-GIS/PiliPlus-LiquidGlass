@@ -102,7 +102,7 @@ iOS 动态详情初始显示居中的“动态详情”，正文作者滚出后�
 
 测试版 7 共 112 项检查通过，静态分析通过。在 iPhone Duo / iOS 27.1 模拟器使用问题截图中的同一视频对照，确认加载后出现相关视频、评论与播放列表，推荐卡片标题和统计信息保留在可用区域内。对照图随测试版发布；真机播放性能仍需设备验证。
 
-使用项目指定的 Flutter 3.47.7。新增 Duo API 需要 Xcode 27.1 / iOS 27.1 或更新 SDK，CI 会先检查 SDK 版本。运行时按系统版本启用这些 API，最低部署版本仍为 iOS 15。
+使用项目指定的 Flutter 3.47.9。新增 Duo API 需要 Xcode 27.1 / iOS 27.1 或更新 SDK，CI 会先检查 SDK 版本。运行时按系统版本启用这些 API，最低部署版本仍为 iOS 15。
 
 本项目上游依赖 Flutter、Material 和 Cupertino 的补丁。干净环境请沿用仓库 `lib/scripts/patch.ps1 iOS` 的准备过程，或运行现有 `.github/workflows/ios.yml` 工作流。不要在同一套 SDK、包缓存或源码上重复应用补丁。
 
