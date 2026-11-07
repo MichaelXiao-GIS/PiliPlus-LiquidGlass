@@ -1,3 +1,5 @@
+import 'package:PiliPlus/common/widgets/liquid_glass/ios_settings_symbol.dart';
+import 'package:PiliPlus/common/widgets/liquid_glass/glass_page_bar.dart';
 import 'package:PiliPlus/common/widgets/custom_icon.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_platform.dart';
 import 'package:PiliPlus/common/widgets/flutter/list_tile.dart';
@@ -39,6 +41,8 @@ class SettingPage extends StatefulWidget {
 }
 
 class _SettingPageState extends State<SettingPage> {
+  // Reparent the same list when Duo changes between one and two panes.
+  final _listKey = GlobalKey();
   late SettingType _type = .privacySetting;
   final RxBool _noAccount = Accounts.account.isEmpty.obs;
   late bool _isPortrait;
@@ -116,6 +120,7 @@ class _SettingPageState extends State<SettingPage> {
   @override
   Widget build(BuildContext context) {
     return SimpleScaffold(
+      overlayAppBar: true,
       appBar: AppBar(
         title: _isPortrait ? const Text('设置') : Text(_type.title),
       ),
@@ -135,13 +140,21 @@ class _SettingPageState extends State<SettingPage> {
                   ),
                   Expanded(
                     flex: 6,
-                    child: switch (_type) {
-                      .webdavSetting => const WebDavSettingPage(
-                        showAppBar: false,
+                    child: Padding(
+                      padding: EdgeInsets.only(
+                        top: GlassPageBar.topInset(context),
                       ),
-                      .about => const AboutPage(showAppBar: false),
-                      _ => CommonSetting(settingType: _type, showAppBar: false),
-                    },
+                      child: switch (_type) {
+                        .webdavSetting => const WebDavSettingPage(
+                          showAppBar: false,
+                        ),
+                        .about => const AboutPage(showAppBar: false),
+                        _ => CommonSetting(
+                          settingType: _type,
+                          showAppBar: false,
+                        ),
+                      },
+                    ),
                   ),
                 ],
               ),
@@ -186,6 +199,7 @@ class _SettingPageState extends State<SettingPage> {
       color: theme.colorScheme.outline,
     );
     return ListView(
+      key: _listKey,
       padding: EdgeInsets.only(bottom: padding.bottom + 100),
       children: [
         _buildSearchItem(theme),
@@ -262,7 +276,7 @@ class _SettingPageState extends State<SettingPage> {
     Widget row({
       required String title,
       required Widget icon,
-      required Color color,
+      required String symbol,
       required VoidCallback onTap,
       String? subtitle,
       bool selected = false,
@@ -273,19 +287,7 @@ class _SettingPageState extends State<SettingPage> {
       minLeadingWidth: 36,
       minTileHeight: 64,
       tileColor: selected ? colors.primary.withValues(alpha: 0.08) : null,
-      leading: Container(
-        width: 34,
-        height: 34,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(9),
-        ),
-        child: IconTheme(
-          data: const IconThemeData(size: 20, color: Colors.white),
-          child: icon,
-        ),
-      ),
+      leading: IosSettingsSymbol(name: symbol, fallback: icon),
       title: Text(
         title,
         style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w400),
@@ -304,20 +306,26 @@ class _SettingPageState extends State<SettingPage> {
         color: colors.onSurfaceVariant.withValues(alpha: 0.6),
       ),
     );
-    const iconColors = [
-      Color(0xFF007AFF),
-      Color(0xFF32ADE6),
-      Color(0xFFFF2D55),
-      Color(0xFFAF52DE),
-      Color(0xFF34C759),
-      Color(0xFFFF9500),
-      Color(0xFF30B0C7),
-      Color(0xFF5856D6),
-      Color(0xFF8E8E93),
-      Color(0xFF007AFF),
+    const symbols = [
+      'lock.shield',
+      'safari',
+      'play.rectangle',
+      'slider.horizontal.3',
+      'text.bubble',
+      'bubble.left.and.bubble.right',
+      'rectangle.stack',
+      'circle.lefthalf.filled',
+      'gearshape',
+      'arrow.triangle.2.circlepath',
     ];
     return ListView(
-      padding: EdgeInsets.fromLTRB(16, 20, 16, bottom + 32),
+      key: _listKey,
+      padding: EdgeInsets.fromLTRB(
+        16,
+        20 + GlassPageBar.topInset(context),
+        16,
+        bottom + 32,
+      ),
       children: [
         _buildSearchItem(theme),
         heading('偏好设置'),
@@ -327,7 +335,7 @@ class _SettingPageState extends State<SettingPage> {
               title: _items[i].type.title,
               subtitle: _items[i].subtitle,
               icon: _items[i].icon,
-              color: iconColors[i % iconColors.length],
+              symbol: symbols[i],
               selected: !_isPortrait && _type == _items[i].type,
               onTap: () => _toPage(_items[i].type),
             ),
@@ -338,20 +346,20 @@ class _SettingPageState extends State<SettingPage> {
             row(
               title: '切换账号',
               icon: const Icon(Icons.switch_account_outlined),
-              color: const Color(0xFF007AFF),
+              symbol: 'person.2',
               onTap: () => LoginPageController.switchAccountDialog(context),
             ),
             if (!_noAccount.value)
               row(
                 title: '退出登录',
                 icon: const Icon(Icons.logout_outlined),
-                color: const Color(0xFFFF3B30),
+                symbol: 'rectangle.portrait.and.arrow.right',
                 onTap: () => _logoutDialog(context),
               ),
             row(
               title: '关于',
               icon: _items.last.icon,
-              color: const Color(0xFF8E8E93),
+              symbol: 'info.circle',
               onTap: () => _toPage(_items.last.type),
             ),
           ]),

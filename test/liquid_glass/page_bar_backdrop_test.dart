@@ -1,0 +1,177 @@
+import 'package:PiliPlus/common/widgets/liquid_glass/glass_page_bar.dart';
+import 'package:PiliPlus/common/widgets/liquid_glass/ios_settings_symbol.dart';
+import 'package:PiliPlus/common/widgets/scaffold/simple_scaffold.dart';
+import 'package:PiliPlus/utils/ios/ios_theme.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
+
+void main() {
+  testWidgets('nested comment controls stop below the translucent toolbar', (
+    tester,
+  ) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(400, 800);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.view.resetPhysicalSize);
+    final nested = GlobalKey<NestedScrollViewState>();
+    const tabsKey = ValueKey('comment tabs');
+    await tester.pumpWidget(
+      MaterialApp(
+        home: MediaQuery(
+          data: const MediaQueryData(padding: EdgeInsets.only(top: 60)),
+          child: SimpleScaffold(
+            overlayAppBar: true,
+            appBar: AppBar(title: const Text('动态详情')),
+            body: NestedScrollView(
+              key: nested,
+              headerSliverBuilder: (_, _) => const [
+                SliverToBoxAdapter(child: SizedBox(height: 600)),
+              ],
+              body: GlassNestedScrollBody(
+                child: Column(
+                  children: [
+                    const SizedBox(key: tabsKey, height: 40),
+                    Expanded(
+                      child: ListView.builder(
+                        itemExtent: 70,
+                        itemCount: 50,
+                        itemBuilder: (_, index) => Text('comment $index'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.getTopLeft(find.byKey(tabsKey)).dy, 600);
+    final outer = nested.currentState!.outerController;
+    outer.jumpTo(outer.position.maxScrollExtent);
+    await tester.pumpAndSettle();
+    expect(tester.getTopLeft(find.byKey(tabsKey)).dy, 130);
+    outer.jumpTo(outer.position.maxScrollExtent - 50);
+    await tester.pumpAndSettle();
+    expect(tester.getTopLeft(find.byKey(tabsKey)).dy, 130);
+    outer.jumpTo(0);
+    await tester.pumpAndSettle();
+    expect(tester.getTopLeft(find.byKey(tabsKey)).dy, 600);
+    expect(tester.takeException(), isNull);
+  }, variant: TargetPlatformVariant.only(TargetPlatform.iOS));
+
+  testWidgets(
+    'overlay keeps the viewport behind the bar and toolbar hit testing above it',
+    (tester) async {
+      final scroll = ScrollController();
+      addTearDown(scroll.dispose);
+      var toolbarTaps = 0;
+      var bodyTaps = 0;
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: IosTheme.apply(ThemeData()),
+          home: MediaQuery(
+            data: const MediaQueryData(
+              size: Size(400, 800),
+              padding: EdgeInsets.only(top: 60),
+            ),
+            child: Builder(
+              builder: (context) => SimpleScaffold(
+                overlayAppBar: true,
+                appBar: AppBar(
+                  leading: IconButton(
+                    icon: const Icon(Icons.arrow_back),
+                    onPressed: () => toolbarTaps++,
+                  ),
+                ),
+                body: ListView.builder(
+                  key: const ValueKey('feed'),
+                  controller: scroll,
+                  padding: EdgeInsets.only(top: GlassPageBar.topInset(context)),
+                  itemExtent: 70,
+                  itemCount: 40,
+                  itemBuilder: (_, index) => TextButton(
+                    onPressed: () => bodyTaps++,
+                    child: Text('row $index'),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.getTopLeft(find.byKey(const ValueKey('feed'))).dy, 0);
+      expect(tester.getTopLeft(find.text('row 0')).dy, greaterThan(130));
+      scroll.jumpTo(300);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.arrow_back));
+      expect(toolbarTaps, 1);
+      expect(bodyTaps, 0);
+      expect(scroll.offset, 300);
+      expect(tester.takeException(), isNull);
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.iOS),
+  );
+
+  testWidgets('opaque accessibility mode disables header backdrop filtering', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: IosTheme.apply(ThemeData()),
+        home: MediaQuery(
+          data: const MediaQueryData(highContrast: true),
+          child: SimpleScaffold(
+            overlayAppBar: true,
+            appBar: AppBar(title: const Text('设置')),
+            body: const SizedBox.expand(),
+          ),
+        ),
+      ),
+    );
+    final filters = tester.widgetList<BackdropFilter>(
+      find.byType(BackdropFilter),
+    );
+    expect(filters, isNotEmpty);
+    expect(filters.every((f) => !f.enabled), isTrue);
+  }, variant: TargetPlatformVariant.only(TargetPlatform.iOS));
+
+  testWidgets(
+    'system symbols use a single native request across theme changes and have a fallback',
+    (tester) async {
+      const channel = MethodChannel('piliplus/liquid_glass');
+      var calls = 0;
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(channel, (
+        call,
+      ) async {
+        expect(call.method, 'symbolImage');
+        expect(call.arguments['name'], 'lock.shield');
+        calls++;
+        return null; // A missing symbol on an older OS still has a visible icon.
+      });
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          channel,
+          null,
+        ),
+      );
+      Widget app(Brightness brightness) => MaterialApp(
+        theme: ThemeData(brightness: brightness),
+        home: const IosSettingsSymbol(
+          name: 'lock.shield',
+          fallback: Icon(Icons.shield),
+        ),
+      );
+      await tester.pumpWidget(app(Brightness.light));
+      await tester.pumpAndSettle();
+      expect(find.byIcon(Icons.shield), findsOneWidget);
+      await tester.pumpWidget(app(Brightness.dark));
+      await tester.pumpAndSettle();
+      expect(calls, 1);
+      expect(tester.takeException(), isNull);
+    },
+  );
+}

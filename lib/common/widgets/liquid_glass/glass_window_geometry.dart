@@ -84,6 +84,62 @@ class GlassWindowGeometry {
   Rect statusBarBounds(MediaQueryData data) =>
       matches(data) ? _scaleRect(statusBarFrame, _factor(data)) : Rect.zero;
 
+  /// Open Duo portrait exposes a corner status region instead of a full-width
+  /// top bar. Reuse its empty lane only with matching, explicit system regions.
+  Rect? topToolbarRect(MediaQueryData data, {required double height}) {
+    if (!matches(data) ||
+        verticalBarEdge != 'none' ||
+        horizontalSizeClass != 2 ||
+        data.size.width < 600 ||
+        data.size.height <= data.size.width ||
+        data.padding.top < height + 16) {
+      return null;
+    }
+    final band = Rect.fromLTWH(
+      math.max(24, data.padding.left + 12),
+      (data.padding.top - height) / 2,
+      data.size.width -
+          math.max(24, data.padding.left + 12) -
+          math.max(24, data.padding.right + 12),
+      height,
+    );
+    final blockers = <Rect>[
+      for (final feature in data.displayFeatures)
+        if (feature.type == DisplayFeatureType.cutout &&
+            feature.bounds.overlaps(band))
+          feature.bounds,
+      if (statusBarBounds(data) case final status
+          when status.height > 8 && status.width < data.size.width / 2)
+        status,
+    ];
+    // Ordinary phones, iPads and incomplete transition metrics keep SafeArea.
+    if (!blockers.any(
+      (r) =>
+          r.top < data.padding.top &&
+          (r.left <= 2 || r.right >= data.size.width - 2),
+    )) {
+      return null;
+    }
+    final protected = data.copyWith(
+      displayFeatures: [
+        ...data.displayFeatures,
+        for (final r in blockers)
+          DisplayFeature(
+            bounds: r.inflate(12),
+            type: DisplayFeatureType.cutout,
+            state: DisplayFeatureState.unknown,
+          ),
+      ],
+    );
+    final rect = glassControlRegion(protected, band, Axis.horizontal);
+    final minimum = math.max(300, data.textScaler.scale(20) * 12);
+    if (rect.width < minimum ||
+        protected.displayFeatures.any((f) => f.bounds.overlaps(rect))) {
+      return null;
+    }
+    return rect;
+  }
+
   bool railOnLeft(MediaQueryData data) =>
       matches(data) && verticalBarEdge == 'left';
 

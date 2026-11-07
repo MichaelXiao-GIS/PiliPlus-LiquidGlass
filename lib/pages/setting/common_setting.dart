@@ -51,7 +51,7 @@ class _CommonSettingState extends State<CommonSetting> {
     return SimpleScaffold(
       appBar: showAppBar ? AppBar(title: Text(widget.settingType.title)) : null,
       body: ListView.builder(
-        key: ValueKey(widget.settingType),
+        key: PageStorageKey(widget.settingType),
         padding: EdgeInsets.only(
           left: showAppBar ? padding.left : 0,
           right: showAppBar ? padding.right : 0,

@@ -70,6 +70,27 @@ final class LiquidGlassPlugin: NSObject, FlutterPlugin {
   }
 
   func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+    if call.method == "symbolImage" {
+      let args = call.arguments as? [String: Any] ?? [:]
+      let name = args["name"] as? String ?? "questionmark"
+      let bold = args["bold"] as? Bool ?? false
+      let configuration = UIImage.SymbolConfiguration(pointSize: 22, weight: bold ? .semibold : .regular)
+      guard let symbol = UIImage(systemName: name, withConfiguration: configuration) else {
+        result(nil)
+        return
+      }
+      let format = UIGraphicsImageRendererFormat()
+      format.scale = min(8, max(1, args["scale"] as? CGFloat ?? 3))
+      format.opaque = false
+      let image = UIGraphicsImageRenderer(size: CGSize(width: 30, height: 30), format: format).image { _ in
+        let factor = min(26 / symbol.size.width, 26 / symbol.size.height, 1)
+        let size = CGSize(width: symbol.size.width * factor, height: symbol.size.height * factor)
+        symbol.withTintColor(.white, renderingMode: .alwaysOriginal).draw(in:
+          CGRect(x: (30 - size.width) / 2, y: (30 - size.height) / 2, width: size.width, height: size.height))
+      }
+      result(image.pngData().map { FlutterStandardTypedData(bytes: $0) })
+      return
+    }
     guard call.method == "capabilities" else {
       result(FlutterMethodNotImplemented)
       return

@@ -1,33 +1,171 @@
+import 'dart:ui' show ImageFilter;
+
+import 'package:PiliPlus/common/widgets/liquid_glass/glass_platform.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_surface.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_window_geometry.dart';
+import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Keeps existing route actions, search inputs and bottom tabs intact.
 class GlassPageBar extends StatelessWidget {
-  const GlassPageBar({super.key, required this.child});
+  const GlassPageBar({super.key, required this.child, this.overlay = false});
 
   final AppBar child;
+  final bool overlay;
+
+  static double topInset(BuildContext context) {
+    if (!GlassCapabilities.isIOS) return 0;
+    final data = MediaQuery.of(context);
+    final alongside = GlassCapabilities.of(context).window.topToolbarRect(
+      data,
+      height: kToolbarHeight,
+    );
+    return data.padding.top + (alongside == null ? kToolbarHeight + 14 : 0);
+  }
 
   @override
-  Widget build(BuildContext context) => SafeArea(
-    bottom: false,
-    child: GlassControlBand(
-      height: child.preferredSize.height + 14,
-      origin: Offset(
-        MediaQuery.paddingOf(context).left,
-        MediaQuery.paddingOf(context).top,
-      ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 6, 12, 8),
-        child: GlassSurface(
-          radius: 28,
-          child: MediaQuery.removePadding(
-            context: context,
-            removeTop: true,
-            child: child,
+  Widget build(BuildContext context) {
+    final data = MediaQuery.of(context);
+    final theme = Theme.of(context);
+    final systemStyle =
+        child.systemOverlayStyle ??
+        theme.appBarTheme.systemOverlayStyle ??
+        (theme.brightness == Brightness.dark
+            ? SystemUiOverlayStyle.light
+            : SystemUiOverlayStyle.dark);
+    final bar = LayoutBuilder(
+      builder: (context, constraints) {
+        final height = child.preferredSize.height;
+        final alongside = (constraints.maxWidth - data.size.width).abs() < 2
+            ? GlassCapabilities.of(context).window
+                  .topToolbarRect(data, height: height)
+            : null;
+        final extent = data.padding.top + (alongside == null ? height + 14 : 0);
+        final rect =
+            alongside ??
+            glassControlRegion(
+              data,
+              Rect.fromLTRB(
+                data.padding.left + 12,
+                data.padding.top + 6,
+                constraints.maxWidth - data.padding.right - 12,
+                data.padding.top + 6 + height,
+              ),
+              Axis.horizontal,
+            );
+        return SizedBox(
+          height: extent,
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(
+              rect.left,
+              rect.top,
+              constraints.maxWidth - rect.right,
+              extent - rect.bottom,
+            ),
+            child: GlassSurface(
+              radius: 28,
+              child: MediaQuery.removePadding(
+                context: context,
+                removeTop: true,
+                removeLeft: true,
+                removeRight: true,
+                child: Theme(
+                  data: theme.copyWith(
+                    appBarTheme: theme.appBarTheme.copyWith(
+                      systemOverlayStyle: systemStyle,
+                    ),
+                  ),
+                  child: child,
+                ),
+              ),
+            ),
           ),
+        );
+      },
+    );
+    final systemBar = AnnotatedRegion<SystemUiOverlayStyle>(
+      // The capsule can sit beside the status region; cover that region too
+      // so iOS still chooses legible status glyphs from this page's theme.
+      value: systemStyle,
+      child: bar,
+    );
+    if (!overlay) return systemBar;
+    final opaque =
+        GlassCapabilities.of(context).reduceTransparency ||
+        MediaQuery.highContrastOf(context);
+    return ClipRect(
+      child: BackdropFilter(
+        enabled: !opaque,
+        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+        child: ColoredBox(
+          color: ColorScheme.of(context).surface
+              .withValues(alpha: opaque ? 1 : 0.18),
+          child: systemBar,
         ),
       ),
-    ),
-  );
+    );
+  }
+}
+
+/// Keeps a nested body's fixed controls below the overlay only as they reach it.
+/// Padding the body unconditionally would leave a second toolbar-sized gap
+/// between the dynamic content and its comment tabs before the header collapses.
+class GlassNestedScrollBody extends StatefulWidget {
+  const GlassNestedScrollBody({super.key, required this.child});
+  final Widget child;
+
+  @override
+  State<GlassNestedScrollBody> createState() => _GlassNestedScrollBodyState();
+}
+
+class _GlassNestedScrollBodyState extends State<GlassNestedScrollBody> {
+  ScrollController? _outer;
+  bool _updateQueued = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final outer = context
+        .findAncestorStateOfType<NestedScrollViewState>()!
+        .outerController;
+    if (_outer != outer) {
+      _outer?.removeListener(_queueUpdate);
+      _outer = outer..addListener(_queueUpdate);
+    }
+  }
+
+  void _queueUpdate() {
+    if (_updateQueued) return;
+    _updateQueued = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _updateQueued = false;
+      if (mounted) setState(() {});
+    });
+    WidgetsBinding.instance.ensureVisualUpdate();
+  }
+
+  @override
+  void dispose() {
+    _outer?.removeListener(_queueUpdate);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final inset = GlassPageBar.topInset(context);
+    final position = _outer!.hasClients ? _outer!.position : null;
+    final remaining = position?.hasContentDimensions == true
+        ? position!.maxScrollExtent - position.pixels
+        : inset;
+    return NotificationListener<ScrollMetricsNotification>(
+      onNotification: (_) {
+        _queueUpdate();
+        return false;
+      },
+      child: Padding(
+        padding: EdgeInsets.only(top: (inset - remaining).clamp(0, inset)),
+        child: widget.child,
+      ),
+    );
+  }
 }

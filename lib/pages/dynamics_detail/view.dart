@@ -7,6 +7,7 @@ import 'package:PiliPlus/common/widgets/flutter/dyn_tab_bar.dart';
 import 'package:PiliPlus/common/widgets/flutter/refresh_indicator.dart';
 import 'package:PiliPlus/common/widgets/flutter/text_field/controller.dart';
 import 'package:PiliPlus/common/widgets/gesture/horizontal_drag_gesture_recognizer.dart';
+import 'package:PiliPlus/common/widgets/liquid_glass/glass_page_bar.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_platform.dart';
 import 'package:PiliPlus/common/widgets/pair.dart';
 import 'package:PiliPlus/common/widgets/refresh_indicator.dart';
@@ -100,6 +101,7 @@ class _DynamicDetailPageState extends CommonDynPageMultiState<DynamicDetailPage>
   }
 
   ScrollableState? _scrollable;
+  final _tabStorage = PageStorageBucket();
 
   @override
   void dispose() {
@@ -113,6 +115,7 @@ class _DynamicDetailPageState extends CommonDynPageMultiState<DynamicDetailPage>
       /// apply `lib/scripts/scrollable.patch`
       isScrolling: () => _scrollable?.shouldIgnorePointer ?? false,
       child: SimpleScaffold(
+        overlayAppBar: true,
         appBar: _buildAppBar(),
         body: Padding(
           padding: EdgeInsets.only(left: padding.left, right: padding.right),
@@ -371,29 +374,34 @@ class _DynamicDetailPageState extends CommonDynPageMultiState<DynamicDetailPage>
       reply = refreshIndicator(onRefresh: controller.onRefresh, child: reply);
     }
 
-    final child = TabBarView(
-      controller: tabController,
-      hitTestBehavior: .translucent,
-      physics: const NeverScrollableScrollPhysics(),
-      horizontalDragGestureRecognizer:
-          CustomHorizontalDragGestureRecognizer.new,
-      children: DynType.values
-          .map(
-            (e) => switch (e) {
-              .repost => DynRepostPage(
-                isPortrait: isPortrait,
-                id: controller.dynItem.idStr,
-                controller: _repostController,
-              ),
-              .reply => reply,
-              .like => DynLikePage(
-                isPortrait: isPortrait,
-                id: controller.dynItem.idStr,
-                controller: _likeController,
-              ),
-            },
-          )
-          .toList(),
+    final child = PageStorage(
+      // Keep each comments/reposts/likes offset independent of the outer
+      // single-column NestedScrollView and the two-column layout.
+      bucket: _tabStorage,
+      child: TabBarView(
+        controller: tabController,
+        hitTestBehavior: .translucent,
+        physics: const NeverScrollableScrollPhysics(),
+        horizontalDragGestureRecognizer:
+            CustomHorizontalDragGestureRecognizer.new,
+        children: DynType.values
+            .map(
+              (e) => switch (e) {
+                .repost => DynRepostPage(
+                  isPortrait: isPortrait,
+                  id: controller.dynItem.idStr,
+                  controller: _repostController,
+                ),
+                .reply => reply,
+                .like => DynLikePage(
+                  isPortrait: isPortrait,
+                  id: controller.dynItem.idStr,
+                  controller: _likeController,
+                ),
+              },
+            )
+            .toList(),
+      ),
     );
     if (isPortrait) {
       return Stack(
@@ -435,19 +443,29 @@ class _DynamicDetailPageState extends CommonDynPageMultiState<DynamicDetailPage>
   }
 
   Widget _buildPortrait(double padding) {
+    Widget body = Column(
+      children: [
+        _buildTabBar(),
+        Expanded(child: _buildTabBody()),
+      ],
+    );
+    if (GlassCapabilities.isIOS) body = GlassNestedScrollBody(child: body);
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: padding),
       child: NestedScrollView(
+        key: const PageStorageKey('dynamic-detail-body'),
         scrollBehavior: const NoOverscrollIndicator(),
         headerSliverBuilder: (context, innerBoxIsScrolled) {
-          return [_buildDynPanel()];
+          return [
+            if (GlassCapabilities.isIOS)
+              SliverPersistentHeader(
+                pinned: true,
+                delegate: _GlassDetailInset(GlassPageBar.topInset(context)),
+              ),
+            _buildDynPanel(),
+          ];
         },
-        body: Column(
-          children: [
-            _buildTabBar(),
-            Expanded(child: _buildTabBody()),
-          ],
-        ),
+        body: body,
       ),
     );
   }
@@ -461,11 +479,13 @@ class _DynamicDetailPageState extends CommonDynPageMultiState<DynamicDetailPage>
         Expanded(
           flex: flex,
           child: CustomScrollView(
+            key: const PageStorageKey('dynamic-detail-body'),
             primary: true,
             slivers: [
               SliverPadding(
                 padding: .only(
                   left: padding,
+                  top: GlassPageBar.topInset(context),
                   bottom: this.padding.bottom + 100,
                 ),
                 sliver: _buildDynPanel(),
@@ -476,7 +496,10 @@ class _DynamicDetailPageState extends CommonDynPageMultiState<DynamicDetailPage>
         Expanded(
           flex: flex1,
           child: Padding(
-            padding: EdgeInsets.only(right: padding),
+            padding: EdgeInsets.only(
+              right: padding,
+              top: GlassPageBar.topInset(context),
+            ),
             child: MiniScaffold(
               body: Column(
                 children: [
@@ -690,4 +713,24 @@ class _DynamicDetailPageState extends CommonDynPageMultiState<DynamicDetailPage>
       position.jumpTo(position.maxScrollExtent);
     } catch (_) {}
   }
+}
+
+/// Reserve the pinned toolbar without painting an opaque band. The outer
+/// dynamic content may scroll behind it; the comment tabs stop below it.
+class _GlassDetailInset extends SliverPersistentHeaderDelegate {
+  _GlassDetailInset(this.extent);
+  final double extent;
+  @override
+  double get minExtent => extent;
+  @override
+  double get maxExtent => extent;
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) => const SizedBox.expand();
+  @override
+  bool shouldRebuild(_GlassDetailInset oldDelegate) =>
+      extent != oldDelegate.extent;
 }
