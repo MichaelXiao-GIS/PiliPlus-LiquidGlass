@@ -1,6 +1,6 @@
 # PiliPlus 2.2.0.2 同步与 iOS 状态栏回顶
 
-日期：2026-11-07。状态：源码同步及状态栏回顶修复已通过 293 项组件/工具测试；静态分析无 error/warning（39 项已有 info）。iOS 27.2 构建和模拟器检查进行中。
+日期：2026-11-07。状态：源码同步及状态栏回顶修复已通过 293 项组件/工具测试；静态分析无 error/warning（39 项已有 info）。iOS 27.2 模拟器和真机 Release 已构建成功；已检查 iPhone 与 Duo 活动屏首页。
 
 ## 版本与来源
 
@@ -12,9 +12,9 @@
 | 上游范围 | 18 个提交，35 个变更文件 |
 | 待构建应用版本 | `2.2.0+23`；上游标签为四段版本，但沿用上游 pubspec 的三段应用版本 |
 | Flutter 基线 | 3.47.9，未改动 |
-| 已发布版本 | 仍为 test22 |
+| 本次发布 | `v2.2.0-liquid-glass.test23` |
 
-通过 GitHub 连接读取上游完整 compare 的 35 个文件补丁，在已确认内容完整的工作区执行 `git apply --check` 后应用。原有定制没有出现补丁冲突。此次为工作区源码同步，未生成 Git 合并提交；当前 HEAD 仍是 test22。将来正式合并/提交时应保留本记录中的上游 SHA，不能将旧 HEAD 当作新构建的完整来源。
+通过 GitHub 连接读取上游完整 compare 的 35 个文件补丁，在已确认内容完整的工作区执行 `git apply --check` 后应用。原有定制没有出现补丁冲突。此次为工作区源码同步，未生成 Git 合并提交；源码同步时 HEAD 仍是 test22；后续已提交，最终发布以 test23 标签为准。将来正式合并/提交时应保留本记录中的上游 SHA，不能将旧 HEAD 当作新构建的完整来源。
 
 ## 上游更新与适配
 
@@ -73,3 +73,17 @@ flutter build ios --simulator --debug --no-pub -t lib/main.dart
 正式打包前重新生成 `pili_release.json`（迁移目录中的旧文件仍描述 test22），写入实际新提交与构建时间，显式使用应用版本 2.2.0、构建号 23，再生成 IPA、SHA256SUMS 与 build-info。`build-info` 只记录本次真正执行过的验证。此时再更新 README 的下载版本；当前 Release 链接保持 test22。
 
 参考：[上游完整比较](https://github.com/bggRGjQaUbCoE/PiliPlus/compare/2.2.0...2.2.0.2)、[上游 Release](https://github.com/bggRGjQaUbCoE/PiliPlus/releases/tag/2.2.0.2)、[Flutter 3.47.9 状态栏事件](https://github.com/flutter/flutter/blob/3.47.9/packages/flutter/lib/src/widgets/binding.dart)、[Flutter Scaffold 回顶实现](https://github.com/flutter/flutter/blob/3.47.9/packages/flutter/lib/src/material/scaffold.dart)。
+
+## 本次发布验证（2026-11-07）
+
+- 293 项 widget/utility 测试全部通过，包含新增的 6 项状态栏回顶用例。静态分析没有 error 或 warning，保留 39 项已有 info lint。
+- Flutter 3.47.9 / Dart 3.13.7；Xcode 27.2 (27B52)，iOS 27.2 SDK；CocoaPods 1.16.2。更新真机 Podfile.lock 和 Flutter 调试器初始化配置。
+- 正式入口 `lib/main.dart`；真机 arm64 Release 成功，包内版本 2.2.0、构建号 23、标识 `com.example.piliplus`、最低系统 15.0。
+- iPhone 18 Pro 与 iPhone Duo 的独立 iOS 27.2 模拟器安装并启动成功，首页加载线上内容；检查 iPhone 底栏和 Duo 活动屏侧栏截图，未见布局溢出。
+- Duo 的另一显示屏处于非活动状态；本轮没有完成实际折叠切换和旋转的交互验收。状态栏回顶的顶部/侧置事件、分类保留、遮挡/返回及无障碍行为由组件测试覆盖，未冒充实体设备操作验证。
+- 真机构建应用既有 `bottom_sheet_ios_piliplus.patch` 和 `geetest_ios.patch`，包含 GT3Captcha-iOS 0.15.9。模拟器仅应用手势补丁，采用上游 WebView 验证码，避开厂商不支持 arm64 simulator 的限制。
+- 安装包使用 ad-hoc 打包签名；`codesign --verify --deep --strict` 通过，用户安装前需自行重新签名。
+- 实体 iPhone 登录/验证码、播放、字幕、投屏、画中画和滚动性能仍需用户设备验收。
+- 本地发布证据保存在 `dist/test23/`（Git 忽略）：测试与分析日志、构建日志、模拟器截图、IPA、SHA256SUMS.txt、build-info.json、发布说明。GitHub Release 上传 IPA 与两份校验/构建元数据。
+
+本机临时专用环境：`/private/tmp/piliplus-env.sh`、`/private/tmp/piliplus-flutter-test23`、`/private/tmp/piliplus-pub-test23`；真机构建副本为 `/private/tmp/piliplus-test23-device`。它们不属于可长期依赖的源码资产，重启清理后应依照既有补丁流程恢复。

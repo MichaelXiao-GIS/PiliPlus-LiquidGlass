@@ -158,7 +158,7 @@ flutter build ios --simulator --debug --no-pub
 
 回归覆盖横向底栏、纵向侧栏、深浅色、进入、交互返回停留、取消和完成，验证原生视图不重建。`tool/preview_navigation_occlusion.dart` 提供离线 UIKit 合成复现场景：可暂停真实路由的不同进度，对照前景页面的遮挡与返回后的玻璃恢复。正式应用入口仍为 `lib/main.dart`。
 
-## 上游 2.2.0.2 与状态栏回顶（test23 源码，待构建验证）
+## 上游 2.2.0.2 与状态栏回顶（test23）
 
 同步上游 2.2.0 至 2.2.0.2 的完整变更，保留原生玻璃、Duo 窗口布局、评论操作菜单和播放系统栏协调。简介新增的 BV/AV 编号使用可换行布局，避免窄栏或大字号挤占宽度。
 
@@ -166,4 +166,4 @@ flutter build ios --simulator --debug --no-pub
 
 回顶使用 Flutter 状态栏动作的 1000ms `easeOutCirc` 动画；减少动态效果时直接定位。只滚动列表，不调用刷新，也不改变动态页横向 UP 列表。详情、弹窗、本地历史覆盖层、交互返回和应用非活动状态下不滚动后方页面；页面销毁时移除事件监听及滚动目标。
 
-新增测试使用 `WidgetTester.simulateStatusBarTap()` 发送实际框架事件，覆盖顶部/侧置状态区、主导航与分类切换、横向列表保留、遮挡及交互返回、减少动态效果和销毁。当前机器缺少 Flutter/Dart 及可用依赖缓存，尚未运行新增测试或生成 test23 IPA；不能将此前 test22 的 287 项通过记录计为本版验证。完整状态见 [更新记录](UPSTREAM_2.2.0.2_TEST23.md)。
+新增测试使用 `WidgetTester.simulateStatusBarTap()` 发送实际框架事件，覆盖顶部/侧置状态区、主导航与分类切换、横向列表保留、遮挡及交互返回、减少动态效果和销毁。本机已恢复专用环境，重新运行 293 项测试全部通过；静态分析无 error/warning，完成 iOS 27.2 模拟器及真机 Release 构建。完整状态见 [更新记录](UPSTREAM_2.2.0.2_TEST23.md)。
