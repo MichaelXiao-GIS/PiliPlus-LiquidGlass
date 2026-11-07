@@ -1,8 +1,11 @@
+import 'dart:ui' as ui;
+
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_page_bar.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/ios_settings_symbol.dart';
 import 'package:PiliPlus/common/widgets/scaffold/simple_scaffold.dart';
 import 'package:PiliPlus/utils/ios/ios_theme.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/rendering.dart' show RenderRepaintBoundary;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -111,6 +114,77 @@ void main() {
       expect(toolbarTaps, 1);
       expect(bodyTaps, 0);
       expect(scroll.offset, 300);
+      // The feather extends below the toolbar without intercepting the list.
+      await tester.tapAt(const Offset(200, 145));
+      expect(bodyTaps, 1);
+      expect(tester.takeException(), isNull);
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.iOS),
+  );
+
+  testWidgets(
+    'page header blurs the backdrop and fades into readable content',
+    (
+      tester,
+    ) async {
+      const pixelsKey = ValueKey('page-header-pixels');
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: IosTheme.apply(ThemeData()),
+          home: Align(
+            alignment: Alignment.topLeft,
+            child: SizedBox(
+              width: 300,
+              height: 300,
+              child: RepaintBoundary(
+                key: pixelsKey,
+                child: MediaQuery(
+                  data: const MediaQueryData(
+                    size: Size(300, 300),
+                    padding: EdgeInsets.only(top: 60),
+                  ),
+                  child: SimpleScaffold(
+                    overlayAppBar: true,
+                    appBar: AppBar(title: const Text('设置')),
+                    body: Row(
+                      children: [
+                        for (var i = 0; i < 75; i++)
+                          Expanded(
+                            child: ColoredBox(
+                              color: i.isEven ? Colors.black : Colors.white,
+                              child: const SizedBox.expand(),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final pixels = await tester.runAsync(() async {
+        final image = await tester
+            .renderObject<RenderRepaintBoundary>(find.byKey(pixelsKey))
+            .toImage(pixelRatio: 1);
+        final bytes = await image.toByteData(
+          format: ui.ImageByteFormat.rawRgba,
+        );
+        image.dispose();
+        return bytes!;
+      });
+      int red(int x, int y) => pixels!.getUint8((y * 300 + x) * 4);
+      int contrast(int y) => (red(121, y) - red(125, y)).abs();
+      expect(contrast(30), lessThan(15));
+      // The surface remains translucent, rather than painting a white panel.
+      expect(red(121, 30), inInclusiveRange(130, 170));
+      expect(contrast(135), lessThan(contrast(150)));
+      expect(contrast(150), lessThan(contrast(180)));
+      // Crossing the old toolbar edge must not suddenly reveal sharp content.
+      expect((red(121, 129) - red(121, 130)).abs(), lessThan(15));
+      expect(contrast(160), greaterThan(230));
       expect(tester.takeException(), isNull);
     },
     variant: TargetPlatformVariant.only(TargetPlatform.iOS),

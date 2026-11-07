@@ -1,5 +1,4 @@
-import 'dart:ui' show ImageFilter;
-
+import 'package:PiliPlus/common/widgets/liquid_glass/glass_feathered_backdrop.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_platform.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_window_geometry.dart';
 import 'package:material_ui/material_ui.dart';
@@ -357,7 +356,7 @@ class GlassScrollPage extends StatelessWidget {
                   right: 0,
                   bottom: -28,
                   child: IgnorePointer(
-                    child: _FeatheredScrollMaterial(
+                    child: GlassFeatheredBackdrop(
                       solidExtent: extent - 4,
                       blur: controller.blur,
                       color: colors.surface,
@@ -373,77 +372,4 @@ class GlassScrollPage extends StatelessWidget {
       ],
     );
   }
-}
-
-/// Clip the backdrop directly: a ShaderMask isolates it from Flutter's content
-/// on Impeller. The narrow feather bands blend the real backdrop with gradually
-/// decreasing blur; the continuous tint gradient hides their tonal boundaries.
-class _FeatheredScrollMaterial extends StatelessWidget {
-  const _FeatheredScrollMaterial({
-    required this.solidExtent,
-    required this.blur,
-    required this.color,
-    required this.opaque,
-  });
-  final double solidExtent;
-  final double blur;
-  final Color color;
-  final bool opaque;
-  static const feather = 32.0;
-  static const bands = 16;
-
-  Widget filter(double opacity) => ClipRect(
-    child: BackdropFilter(
-      enabled: !opaque && blur > 0,
-      filter: ImageFilter.compose(
-        outer: ColorFilter.mode(
-          Colors.white.withValues(alpha: opacity),
-          BlendMode.modulate,
-        ),
-        inner: ImageFilter.blur(
-          sigmaX: 14 * blur * opacity,
-          sigmaY: 14 * blur * opacity,
-        ),
-      ),
-      child: const SizedBox.expand(),
-    ),
-  );
-
-  @override
-  Widget build(BuildContext context) => Stack(
-    children: [
-      Positioned(
-        top: 0,
-        left: 0,
-        right: 0,
-        height: solidExtent,
-        child: filter(1),
-      ),
-      if (!opaque && blur > 0)
-        for (var i = 0; i < bands; i++)
-          Positioned(
-            top: solidExtent + i * feather / bands,
-            left: 0,
-            right: 0,
-            height: feather / bands,
-            child: filter(1 - (i + 0.5) / bands),
-          ),
-      Positioned.fill(
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                color.withValues(alpha: opaque ? 1 : 0.62 * blur),
-                color.withValues(alpha: opaque ? 1 : 0.62 * blur),
-                color.withValues(alpha: 0),
-              ],
-              stops: [0, solidExtent / (solidExtent + feather), 1],
-            ),
-          ),
-        ),
-      ),
-    ],
-  );
 }

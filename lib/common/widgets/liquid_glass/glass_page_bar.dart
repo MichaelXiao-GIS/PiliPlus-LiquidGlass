@@ -1,5 +1,4 @@
-import 'dart:ui' show ImageFilter;
-
+import 'package:PiliPlus/common/widgets/liquid_glass/glass_feathered_backdrop.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_platform.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_surface.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_window_geometry.dart';
@@ -33,7 +32,7 @@ class GlassPageBar extends StatelessWidget {
         (theme.brightness == Brightness.dark
             ? SystemUiOverlayStyle.light
             : SystemUiOverlayStyle.dark);
-    final bar = LayoutBuilder(
+    return LayoutBuilder(
       builder: (context, constraints) {
         final height = child.preferredSize.height;
         final alongside = (constraints.maxWidth - data.size.width).abs() < 2
@@ -53,7 +52,7 @@ class GlassPageBar extends StatelessWidget {
               ),
               Axis.horizontal,
             );
-        return SizedBox(
+        final bar = SizedBox(
           height: extent,
           child: Padding(
             padding: EdgeInsets.fromLTRB(
@@ -81,28 +80,45 @@ class GlassPageBar extends StatelessWidget {
             ),
           ),
         );
+        final systemBar = AnnotatedRegion<SystemUiOverlayStyle>(
+          // The capsule can sit beside the status region; cover that region too
+          // so iOS still chooses legible status glyphs from this page's theme.
+          value: systemStyle,
+          child: bar,
+        );
+        if (!overlay) return systemBar;
+        final opaque =
+            GlassCapabilities.of(context).reduceTransparency ||
+            MediaQuery.highContrastOf(context);
+        final color = ColorScheme.of(context).surface;
+        if (opaque) return ColoredBox(color: color, child: systemBar);
+        // Fade through the toolbar and slightly past it. Painting the feather
+        // outside the bar preserves the content inset and the controls' hit area.
+        final solidExtent = data.padding.top.clamp(0.0, extent * 0.55);
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: -28,
+              child: IgnorePointer(
+                child: GlassFeatheredBackdrop(
+                  solidExtent: solidExtent,
+                  featherExtent: extent + 28 - solidExtent,
+                  blur: 1,
+                  sigma: 18,
+                  tintOpacity: 0.18,
+                  color: color,
+                  opaque: false,
+                ),
+              ),
+            ),
+            systemBar,
+          ],
+        );
       },
-    );
-    final systemBar = AnnotatedRegion<SystemUiOverlayStyle>(
-      // The capsule can sit beside the status region; cover that region too
-      // so iOS still chooses legible status glyphs from this page's theme.
-      value: systemStyle,
-      child: bar,
-    );
-    if (!overlay) return systemBar;
-    final opaque =
-        GlassCapabilities.of(context).reduceTransparency ||
-        MediaQuery.highContrastOf(context);
-    return ClipRect(
-      child: BackdropFilter(
-        enabled: !opaque,
-        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-        child: ColoredBox(
-          color: ColorScheme.of(context).surface
-              .withValues(alpha: opaque ? 1 : 0.18),
-          child: systemBar,
-        ),
-      ),
     );
   }
 }
