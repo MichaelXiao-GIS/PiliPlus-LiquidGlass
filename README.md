@@ -16,7 +16,7 @@
 
 本仓库重点维护 iPhone 测试版，并针对 iOS 27.1 与 iPhone Duo 的窗口、安全区和旋转布局进行适配。其他平台的源码继承自上游；本页展示和发布的 Liquid Glass 改动以 iOS 为主。
 
-当前已合并上游 [PiliPlus 2.2.0](https://github.com/bggRGjQaUbCoE/PiliPlus/releases/tag/2.2.0)，包括番剧与剧集 PV 切换、订阅倒序、折叠评论、相关推荐黑名单过滤、数据备份和下载音质等更新。
+当前源码已同步上游 [PiliPlus 2.2.0.2](https://github.com/bggRGjQaUbCoE/PiliPlus/releases/tag/2.2.0.2)，在 2.2.0 的功能基础上补充选集、评论分页、课堂视频、投屏依赖和弹幕跳转等更新。下一测试版同时恢复首页及动态页点击 iOS 状态栏回到顶部；源码验证与构建状态见 [test23 更新记录](docs/UPSTREAM_2.2.0.2_TEST23.md)。已发布下载包仍为下文的 test22。
 
 ## 本分支的主要改动
 

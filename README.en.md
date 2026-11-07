@@ -16,6 +16,8 @@
 
 This repository focuses on iPhone test builds, including window, safe-area and rotation handling for iOS 27.1 and iPhone Duo. Source code for other platforms is inherited from upstream; the Liquid Glass changes and releases presented here focus on iOS.
 
+The working source includes upstream [PiliPlus 2.2.0.2](https://github.com/bggRGjQaUbCoE/PiliPlus/releases/tag/2.2.0.2), including episode selection, comment pagination, course-video, casting dependency and danmaku-link updates. The next test build also restores native iOS status-bar scroll-to-top for Home and Dynamics. See the [test23 integration record](docs/UPSTREAM_2.2.0.2_TEST23.md) for validation and build status; the published download remains test22.
+
 ## Changes in this fork
 
 | Area | Experience |

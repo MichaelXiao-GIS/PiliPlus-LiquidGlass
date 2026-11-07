@@ -9,6 +9,7 @@ import 'package:PiliPlus/common/widgets/liquid_glass/glass_navigation_bar.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_navigation_rail.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_platform.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_scroll_chrome.dart';
+import 'package:PiliPlus/common/widgets/liquid_glass/glass_status_bar_scroll_to_top.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_window_geometry.dart';
 import 'package:PiliPlus/common/widgets/route_aware_mixin.dart';
 import 'package:PiliPlus/models/common/nav_bar_config.dart';
@@ -499,6 +500,21 @@ class _MainAppState extends PopScopeState<MainApp>
         ),
       ),
     );
+
+    if (GlassCapabilities.isIOS) {
+      child = GlassStatusBarScrollToTop(
+        position: () {
+          if (_mainController.mainTabBarView &&
+              (_mainController.controller as TabController).indexIsChanging) {
+            return null;
+          }
+          final type = _mainController
+              .navigationBars[_mainController.selectedIndex.value];
+          return _mainController.scrollChrome[type]?.position;
+        },
+        child: child,
+      );
+    }
 
     if (PlatformUtils.isMobile) {
       return AnnotatedRegion<SystemUiOverlayStyle>(

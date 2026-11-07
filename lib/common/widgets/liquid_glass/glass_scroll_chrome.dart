@@ -9,9 +9,13 @@ import 'package:material_ui/material_ui.dart';
 class GlassScrollController extends ChangeNotifier {
   double _blur = 0;
   bool _compact = false;
+  ScrollPosition? Function()? _readPosition;
 
   double get blur => _blur;
   bool get compact => _compact;
+
+  /// Only the selected, still-mounted vertical feed can answer a native tap.
+  ScrollPosition? get position => _readPosition?.call();
 
   void update(double offset) {
     final blur = (offset / 64).clamp(0.0, 1.0);
@@ -156,6 +160,19 @@ class _GlassScrollBodyState extends State<GlassScrollBody> {
       widget.tabController!.index == widget.tabIndex;
   bool get _active => widget.active && _parentActive && _selected;
 
+  ScrollPosition? _readPosition() {
+    final scrollable = _scrollable;
+    return mounted && _active && scrollable != null && scrollable.mounted
+        ? scrollable.position
+        : null;
+  }
+
+  void _detachPosition() {
+    if (_controller?._readPosition == _readPosition) {
+      _controller?._readPosition = null;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -172,6 +189,7 @@ class _GlassScrollBodyState extends State<GlassScrollBody> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    _detachPosition();
     _controller = GlassScrollScope.maybeOf(context);
     _parentActive =
         context.dependOnInheritedWidgetOfExactType<_ScrollActivity>()?.active ??
@@ -211,6 +229,7 @@ class _GlassScrollBodyState extends State<GlassScrollBody> {
 
   @override
   void dispose() {
+    _detachPosition();
     widget.tabController?.removeListener(_onTabChanged);
     super.dispose();
   }
@@ -236,7 +255,10 @@ class _GlassScrollBodyState extends State<GlassScrollBody> {
     _offset = extent <= 0
         ? 0
         : (metrics.pixels - metrics.minScrollExtent).clamp(0.0, extent);
-    if (_active) _controller?.update(_offset!);
+    if (_active) {
+      if (_scrollable != null) _controller?._readPosition = _readPosition;
+      _controller?.update(_offset!);
+    }
   }
 
   @override
