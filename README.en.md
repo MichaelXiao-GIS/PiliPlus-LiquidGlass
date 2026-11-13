@@ -34,18 +34,29 @@ Video, anime, live streams, feeds, comments, favorites, history and offline cach
 
 ## Current interface
 
-These are actual **2.1.6 / test build 18** simulator screenshots showing the expanded home header, its scrolled state and grouped settings in dark mode. The app is signed out. The DEBUG banner belongs to the debug build and is absent from the Release IPA.
+Simulator screenshots from test build 28.
 
 <table>
   <tr>
-    <th>Home · Expanded</th>
-    <th>Home · Scrolled</th>
-    <th>Grouped settings</th>
+    <th>13-inch iPad Pro · Landscape</th>
+    <th>iPhone Duo · Unfolded landscape</th>
   </tr>
   <tr>
-    <td><img src="assets/screenshots/liquid_glass/home-expanded-test18.png" width="280" alt="Test build 18: expanded search field and floating tab bar with labels" /></td>
-    <td><img src="assets/screenshots/liquid_glass/home-compact-test18.png" width="280" alt="Test build 18: compact search field, blurred header and icon-only tab bar" /></td>
-    <td><img src="assets/screenshots/liquid_glass/settings-test18.png" width="280" alt="Test build 18: grouped settings in dark mode" /></td>
+    <td><a href="assets/screenshots/liquid_glass/ipad-landscape-test28.jpg"><img src="assets/screenshots/liquid_glass/ipad-landscape-test28.jpg" width="420" alt="Home recommendations with four videos per row" /></a></td>
+    <td><a href="assets/screenshots/liquid_glass/duo-landscape-test28.jpg"><img src="assets/screenshots/liquid_glass/duo-landscape-test28.jpg" width="420" alt="Home recommendations with three videos per row" /></a></td>
+  </tr>
+</table>
+
+<table>
+  <tr>
+    <th>iPhone · Home</th>
+    <th>iPhone · After scrolling</th>
+    <th>iPhone · Settings</th>
+  </tr>
+  <tr>
+    <td><a href="assets/screenshots/liquid_glass/home-expanded-test28.jpg"><img src="assets/screenshots/liquid_glass/home-expanded-test28.jpg" width="280" alt="Expanded search field at the top of Home" /></a></td>
+    <td><a href="assets/screenshots/liquid_glass/home-scrolled-test28.jpg"><img src="assets/screenshots/liquid_glass/home-scrolled-test28.jpg" width="280" alt="Compact search field and bottom bar after scrolling the feed" /></a></td>
+    <td><a href="assets/screenshots/liquid_glass/settings-test28.jpg"><img src="assets/screenshots/liquid_glass/settings-test28.jpg" width="280" alt="Grouped settings with monochrome icons" /></a></td>
   </tr>
 </table>
 

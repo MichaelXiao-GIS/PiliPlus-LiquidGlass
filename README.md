@@ -34,18 +34,29 @@
 
 ## 当前界面
 
-以下为 **2.1.6 / 测试版 18** 的实际模拟器截图，展示深色主题下的首页展开、滚动收拢和设置页面。截图使用未登录状态；右上角的 DEBUG 标记仅出现在调试构建中，Release 安装包不显示。
+以下是测试版 28 的模拟器截图。
 
 <table>
   <tr>
-    <th>首页 · 展开</th>
-    <th>首页 · 滚动后</th>
-    <th>分组设置</th>
+    <th>13 英寸 iPad Pro · 横屏</th>
+    <th>iPhone Duo · 展开横屏</th>
   </tr>
   <tr>
-    <td><img src="assets/screenshots/liquid_glass/home-expanded-test18.png" width="280" alt="测试版 18：首页展开的搜索框和带文字的悬浮底栏" /></td>
-    <td><img src="assets/screenshots/liquid_glass/home-compact-test18.png" width="280" alt="测试版 18：搜索框收拢、顶区模糊和仅图标底栏" /></td>
-    <td><img src="assets/screenshots/liquid_glass/settings-test18.png" width="280" alt="测试版 18：深色主题的分组设置页面" /></td>
+    <td><a href="assets/screenshots/liquid_glass/ipad-landscape-test28.jpg"><img src="assets/screenshots/liquid_glass/ipad-landscape-test28.jpg" width="420" alt="首页推荐，每排 4 个视频" /></a></td>
+    <td><a href="assets/screenshots/liquid_glass/duo-landscape-test28.jpg"><img src="assets/screenshots/liquid_glass/duo-landscape-test28.jpg" width="420" alt="首页推荐，每排 3 个视频" /></a></td>
+  </tr>
+</table>
+
+<table>
+  <tr>
+    <th>iPhone · 首页</th>
+    <th>iPhone · 滚动后</th>
+    <th>iPhone · 设置</th>
+  </tr>
+  <tr>
+    <td><a href="assets/screenshots/liquid_glass/home-expanded-test28.jpg"><img src="assets/screenshots/liquid_glass/home-expanded-test28.jpg" width="280" alt="首页顶部展开的搜索框" /></a></td>
+    <td><a href="assets/screenshots/liquid_glass/home-scrolled-test28.jpg"><img src="assets/screenshots/liquid_glass/home-scrolled-test28.jpg" width="280" alt="滚动推荐列表后收起的搜索框和底栏" /></a></td>
+    <td><a href="assets/screenshots/liquid_glass/settings-test28.jpg"><img src="assets/screenshots/liquid_glass/settings-test28.jpg" width="280" alt="分组显示的设置和单色图标" /></a></td>
   </tr>
 </table>
 
