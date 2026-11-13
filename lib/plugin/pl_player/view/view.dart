@@ -1683,29 +1683,35 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
 
         // iOS fullscreen controls use separate floating groups. The safe area
         // surrounds those groups instead of becoming blank space inside glass.
-        if (GlassCapabilities.isIOS && isFullScreen && !isLive)
+        if (GlassCapabilities.isIOS &&
+            isFullScreen &&
+            (!isLive || maxWidth > maxHeight))
           Positioned.fill(
             child: GlassPlayerChrome(
               animation: _animationController,
-              header: GlassPlayerExtraControls(
-                builder: (_) => buildBottomControl(
-                  videoDetailController,
-                  maxWidth > maxHeight,
-                  extrasOnly: true,
-                ),
-                child: widget.headerControl,
-              ),
-              footer: BottomControl(
-                animCtr: _animationController,
-                maxWidth: maxWidth,
-                isFullScreen: true,
-                controller: plPlayerController,
-                videoDetailController: videoDetailController,
-                buildBottomControl: () => buildBottomControl(
-                  videoDetailController,
-                  maxWidth > maxHeight,
-                ),
-              ),
+              header: isLive
+                  ? widget.headerControl
+                  : GlassPlayerExtraControls(
+                      builder: (_) => buildBottomControl(
+                        videoDetailController,
+                        maxWidth > maxHeight,
+                        extrasOnly: true,
+                      ),
+                      child: widget.headerControl,
+                    ),
+              footer:
+                  widget.bottomControl ??
+                  BottomControl(
+                    animCtr: _animationController,
+                    maxWidth: maxWidth,
+                    isFullScreen: true,
+                    controller: plPlayerController,
+                    videoDetailController: videoDetailController,
+                    buildBottomControl: () => buildBottomControl(
+                      videoDetailController,
+                      maxWidth > maxHeight,
+                    ),
+                  ),
             ),
           )
         else

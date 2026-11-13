@@ -2,6 +2,10 @@ import 'dart:io' show Platform;
 import 'dart:math' as math;
 
 import 'package:PiliPlus/common/style.dart';
+import 'package:PiliPlus/common/widgets/custom_icon.dart';
+import 'package:PiliPlus/pages/video/widgets/header_mixin.dart';
+import 'package:PiliPlus/plugin/pl_player/widgets/glass_player_controls.dart';
+import 'package:PiliPlus/plugin/pl_player/widgets/player_more_sheet.dart';
 import 'package:PiliPlus/common/widgets/draggable_sheet/dyn.dart';
 import 'package:PiliPlus/common/widgets/marquee.dart';
 import 'package:PiliPlus/pages/live_room/controller.dart';
@@ -24,7 +28,7 @@ import 'package:collection/collection.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get/get.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:material_ui/material_ui.dart' hide showBottomSheet;
 
 class LiveHeaderControl extends StatefulWidget {
   const LiveHeaderControl({
@@ -53,7 +57,7 @@ class LiveHeaderControl extends StatefulWidget {
 }
 
 class _LiveHeaderControlState extends State<LiveHeaderControl>
-    with TimeBatteryMixin {
+    with HeaderMixin, TimeBatteryMixin {
   @override
   late final plPlayerController = widget.plPlayerController;
 
@@ -82,6 +86,45 @@ class _LiveHeaderControlState extends State<LiveHeaderControl>
         style: const TextStyle(fontSize: 15, height: 1, color: Colors.white),
       ),
     );
+    if (context.findAncestorWidgetOfExactType<GlassPlayerChrome>() != null) {
+      return GlassPlayerHeader(
+        back: glassPlayerButton(
+          '返回',
+          Icons.chevron_left,
+          () => plPlayerController.triggerFullScreen(status: false),
+        ),
+        title: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            child,
+            if (widget.upName case final String name when name.isNotEmpty)
+              Text(
+                name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: Colors.white70, fontSize: 11),
+              ),
+          ],
+        ),
+        actions: [
+          glassPlayerButton(
+            '发弹幕',
+            Icons.comment_outlined,
+            widget.onSendDanmaku,
+          ),
+          Obx(() {
+            final enabled = plPlayerController.enableShowLiveDanmaku.value;
+            return glassPlayerButton(
+              enabled ? '关闭弹幕' : '开启弹幕',
+              enabled ? CustomIcons.dm_on : CustomIcons.dm_off,
+              plPlayerController.toggleLiveDanmaku,
+            );
+          }),
+          glassPlayerButton('更多设置', Icons.more_horiz, _showGlassOptions),
+        ],
+      );
+    }
     if (isFullScreen) {
       child = Column(
         spacing: 5,
@@ -294,6 +337,99 @@ class _LiveHeaderControlState extends State<LiveHeaderControl>
               ),
             ),
         ],
+      ),
+    );
+  }
+
+  void _showGlassOptions() {
+    final player = plPlayerController.videoPlayerController;
+    Widget action(String label, IconData icon, VoidCallback run) => ListTile(
+      leading: Icon(icon),
+      title: Text(label),
+      onTap: () {
+        Get.back();
+        run();
+      },
+    );
+    showBottomSheet(
+      (_, _) => Theme(
+        data: ThemeData.dark(),
+        child: PlayerMoreSheet(
+          onClose: Get.back,
+          children: [
+            if (IOSPipHelper.isAvailable)
+              action(
+                '画中画',
+                Icons.picture_in_picture_outlined,
+                plPlayerController.enterPip,
+              ),
+            Obx(
+              () => action(
+                plPlayerController.onlyPlayAudio.value ? '恢复画面' : '仅播放音频',
+                Icons.music_note_outlined,
+                () {
+                  plPlayerController.onlyPlayAudio.toggle();
+                  widget.onPlayAudio();
+                },
+              ),
+            ),
+            Obx(
+              () => action(
+                plPlayerController.continuePlayInBackground.value
+                    ? '关闭后台播放'
+                    : '开启后台播放',
+                Icons.play_circle_outline,
+                plPlayerController.setContinuePlayInBackground,
+              ),
+            ),
+            action(
+              '定时关闭',
+              Icons.schedule,
+              () => shutdownTimerService.showScheduleExitDialog(
+                context,
+                isFullScreen: true,
+                isLive: true,
+              ),
+            ),
+            action('弹幕设置', Icons.tune, () => showSetDanmaku(isLive: true)),
+            action(
+              '屏蔽',
+              Icons.block,
+              widget.liveController.showDanmakuBlockSettings,
+            ),
+            if (player != null) ...[
+              action('切换路线', Icons.alt_route, _showLiveStreamDialog),
+              action(
+                '播放信息',
+                Icons.info_outline,
+                () =>
+                    HeaderControlState.showPlayerInfo(context, player: player),
+              ),
+              action(
+                '播放器音量',
+                Icons.volume_up,
+                () => showPlayerVolumeDialog(
+                  context,
+                  () {},
+                  onChanged: player.setVolume,
+                ),
+              ),
+            ],
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Wrap(
+                spacing: 12,
+                runSpacing: 6,
+                children: [
+                  widget.liveController.watchedWidget,
+                  widget.onlineWidget,
+                  widget.liveController.timeWidget,
+                  ...?timeBatteryWidgets,
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

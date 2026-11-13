@@ -198,6 +198,16 @@ class PlPlayerController with BlockConfigMixin, AudioNormalizationMixin {
 
   /// 弹幕开关
   late final RxBool enableShowDanmaku = Pref.enableShowDanmaku.obs;
+  void toggleLiveDanmaku() {
+    enableShowLiveDanmaku.toggle();
+    if (!tempPlayerConf) {
+      GStorage.setting.put(
+        SettingBoxKey.enableShowLiveDanmaku,
+        enableShowLiveDanmaku.value,
+      );
+    }
+  }
+
   late final RxBool enableShowLiveDanmaku = Pref.enableShowLiveDanmaku.obs;
   RxBool get enableShowDanmakuAdaptive =>
       isLive ? enableShowLiveDanmaku : enableShowDanmaku;

@@ -136,7 +136,12 @@ abstract final class LoginHttp {
       ),
     );
 
-    if (res.data['code'] == 0 && res.data['data']['recaptcha_url'] == "") {
+    final payload = res.data['data'];
+    if (res.data['code'] == 0 &&
+        payload is Map &&
+        payload['captcha_key'] is String &&
+        (payload['captcha_key'] as String).isNotEmpty &&
+        (payload['recaptcha_url'] == null || payload['recaptcha_url'] == '')) {
       return {'status': true, 'data': res.data['data']};
     } else {
       return {

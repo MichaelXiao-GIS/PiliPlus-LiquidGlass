@@ -3,6 +3,8 @@ import 'dart:io' show Platform;
 
 import 'package:PiliPlus/http/browser_ua.dart';
 import 'package:PiliPlus/main.dart';
+import 'package:PiliPlus/pages/login/geetest/login_challenge.dart';
+import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:PiliPlus/plugin/linux_webview.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:get/get.dart';
@@ -17,11 +19,41 @@ class GeetestWebviewDialog extends StatefulWidget {
   @override
   State<GeetestWebviewDialog> createState() => _GeetestWebviewDialogState();
 
-  static Future<Map<String, dynamic>?> geetest(String gt, String challenge) {
-    return showDialog<Map<String, dynamic>>(
+  static Future<Map<String, dynamic>?> geetest(
+    String gt,
+    String challenge, {
+    bool reportFailure = false,
+  }) async {
+    try {
+      final result = await _openWeb(gt, challenge);
+      if (result == null) return null;
+      if (result
+          case {
+            'geetest_challenge': String c,
+            'geetest_validate': String v,
+            'geetest_seccode': String s,
+          }
+          when c.isNotEmpty && v.isNotEmpty && s.isNotEmpty) {
+        return result;
+      }
+      throw const GeetestFailure();
+    } on GeetestFailure catch (error) {
+      if (reportFailure) rethrow;
+      SmartDialog.showToast(error.message);
+      return null;
+    }
+  }
+
+  static Future<Map<String, dynamic>?> _openWeb(
+    String gt,
+    String challenge,
+  ) async {
+    final result = await showDialog<Object>(
       context: Get.context!,
       builder: (context) => GeetestWebviewDialog(gt, challenge),
     );
+    if (result is GeetestFailure) throw result;
+    return result as Map<String, dynamic>?;
   }
 }
 
@@ -53,10 +85,19 @@ class _GeetestWebviewDialogState extends State<GeetestWebviewDialog> {
         '</body></html>';
   }
 
+  late final html = _buildHtml(widget.gt, widget.challenge);
+  bool _finished = false;
+
+  void _finish([Object? value]) {
+    if (_finished || !mounted || ModalRoute.of(context)?.isCurrent != true) {
+      return;
+    }
+    _finished = true;
+    Navigator.of(context).pop(value);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final html = _buildHtml(widget.gt, widget.challenge);
-
     if (Platform.isLinux) {
       return AlertDialog(
         title: const Text('验证码'),
@@ -73,14 +114,14 @@ class _GeetestWebviewDialogState extends State<GeetestWebviewDialog> {
                 final dataStr = msgStr.substring("success:".length);
                 try {
                   final data = jsonDecode(dataStr);
-                  Get.back(result: data);
+                  _finish(data);
                 } catch (e) {
-                  debugPrint('geetest decode error: $e');
+                  _finish(const GeetestFailure());
                 }
               } else if (msgStr.startsWith("error:")) {
-                debugPrint('geetest error: $msgStr');
+                _finish(GeetestFailure.provider(null, msgStr));
               } else if (msgStr.startsWith('close:')) {
-                Get.back();
+                _finish();
               }
             },
           ),
@@ -132,22 +173,22 @@ class _GeetestWebviewDialogState extends State<GeetestWebviewDialog> {
                 callback: (args) {
                   if (args.isNotEmpty) {
                     if (args[0] case Map<String, dynamic> data) {
-                      Get.back(result: data);
+                      _finish(data);
                       return;
                     }
                   }
-                  debugPrint('geetest invalid result: $args');
+                  _finish(const GeetestFailure());
                 },
               )
               ..addJavaScriptHandler(
                 handlerName: 'error',
                 callback: (args) {
-                  debugPrint('geetest error: $args');
+                  _finish(GeetestFailure.provider(null, args));
                 },
               )
               ..addJavaScriptHandler(
                 handlerName: 'close',
-                callback: (args) => Get.back(),
+                callback: (args) => _finish(),
               );
           },
         ),
@@ -156,7 +197,7 @@ class _GeetestWebviewDialogState extends State<GeetestWebviewDialog> {
           top: 8,
           child: IconButton(
             icon: const Icon(Icons.close),
-            onPressed: Get.back,
+            onPressed: _finish,
             tooltip: '关闭',
           ),
         ),

@@ -1741,17 +1741,6 @@ class HeaderControlState extends State<HeaderControl>
 
   late final isFileSource = videoDetailCtr.isFileSource;
 
-  Widget _glassButton(String label, IconData icon, VoidCallback onPressed) =>
-      SizedBox.square(
-        dimension: 44,
-        child: IconButton(
-          tooltip: label,
-          onPressed: onPressed,
-          padding: EdgeInsets.zero,
-          icon: Icon(icon, size: 22, color: Colors.white),
-        ),
-      );
-
   Widget _buildFullscreenActions({bool menu = false}) {
     final actions = <Widget>[
       SizedBox(
@@ -1931,21 +1920,21 @@ class HeaderControlState extends State<HeaderControl>
 
     if (GlassCapabilities.isIOS && isFullScreen) {
       return GlassPlayerHeader(
-        back: _glassButton(
+        back: glassPlayerButton(
           '返回',
           Icons.chevron_left,
           () => plPlayerController.onPopInvokedWithResult(false, null),
         ),
         title: title ?? const SizedBox.shrink(),
         actions: [
-          _glassButton(
+          glassPlayerButton(
             '发弹幕',
             Icons.comment_outlined,
             videoDetailCtr.showShootDanmakuSheet,
           ),
           Obx(() {
             final enabled = plPlayerController.enableShowDanmaku.value;
-            return _glassButton(
+            return glassPlayerButton(
               '${enabled ? '关闭' : '开启'}弹幕',
               enabled ? CustomIcons.dm_on : CustomIcons.dm_off,
               () {
@@ -1956,7 +1945,7 @@ class HeaderControlState extends State<HeaderControl>
               },
             );
           }),
-          _glassButton('更多设置', Icons.more_horiz, showSettingSheet),
+          glassPlayerButton('更多设置', Icons.more_horiz, showSettingSheet),
         ],
       );
     }

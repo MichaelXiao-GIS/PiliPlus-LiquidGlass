@@ -64,6 +64,18 @@ class LiveRoomController extends GetxController {
     isLive: true,
   );
 
+  void showDanmakuBlockSettings() {
+    if (kDebugMode || isLogin) {
+      Get.toNamed(
+        '/liveDmBlockPage',
+        parameters: {'roomId': roomId.toString()},
+        arguments: this,
+      );
+    } else {
+      SmartDialog.showToast('账号未登录');
+    }
+  }
+
   final isLoaded = false.obs;
   final roomInfoH5 = Rxn<RoomInfoH5Data>();
 

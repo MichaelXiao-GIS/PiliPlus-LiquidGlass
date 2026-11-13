@@ -5,12 +5,9 @@ import 'package:PiliPlus/pages/video/widgets/header_mixin.dart';
 import 'package:PiliPlus/plugin/pl_player/controller.dart';
 import 'package:PiliPlus/plugin/pl_player/models/video_fit_type.dart';
 import 'package:PiliPlus/plugin/pl_player/widgets/common_btn.dart';
+import 'package:PiliPlus/plugin/pl_player/widgets/glass_player_controls.dart';
 import 'package:PiliPlus/plugin/pl_player/widgets/play_pause_btn.dart';
-import 'package:PiliPlus/utils/storage.dart';
-import 'package:PiliPlus/utils/storage_key.dart';
 import 'package:PiliPlus/utils/theme_utils.dart';
-import 'package:flutter/foundation.dart' show kDebugMode;
-import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:get/get.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -45,6 +42,103 @@ class _BottomControlState extends State<BottomControl> with HeaderMixin {
   @override
   Widget build(BuildContext context) {
     final isFullScreen = plPlayerController.isFullScreen.value;
+    final fit = Obx(
+      () => PopupMenuButton<VideoFitType>(
+        tooltip: '画面比例',
+        initialValue: plPlayerController.videoFit.value,
+        color: Colors.black.withValues(alpha: 0.8),
+        itemBuilder: (context) {
+          return VideoFitType.values
+              .map(
+                (boxFit) => PopupMenuItem<VideoFitType>(
+                  height: 35,
+                  padding: const EdgeInsets.only(left: 30),
+                  value: boxFit,
+                  onTap: () => plPlayerController.toggleVideoFit(boxFit),
+                  child: Text(
+                    boxFit.desc,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              )
+              .toList();
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          child: Text(
+            plPlayerController.videoFit.value.desc,
+            style: const TextStyle(color: Colors.white, fontSize: 13),
+          ),
+        ),
+      ),
+    );
+    final quality = Obx(
+      () {
+        final quality = liveRoomCtr.currentQn.value;
+        if (quality == null) {
+          return const SizedBox.shrink();
+        }
+        return PopupMenuButton<LiveQuality>(
+          tooltip: '画质',
+          padding: .zero,
+          initialValue: quality,
+          onSelected: liveRoomCtr.changeQn,
+          color: Colors.black.withValues(alpha: 0.8),
+          itemBuilder: (context) {
+            return liveRoomCtr.acceptQnList
+                .map(
+                  (e) => PopupMenuItem<LiveQuality>(
+                    height: 35,
+                    padding: const EdgeInsets.only(left: 30),
+                    value: e,
+                    child: Text(
+                      e.desc,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                )
+                .toList();
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: Text(
+              quality.desc,
+              style: const TextStyle(color: Colors.white, fontSize: 13),
+            ),
+          ),
+        );
+      },
+    );
+    if (context.findAncestorWidgetOfExactType<GlassPlayerChrome>() != null) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: GlassPlayerTransportRow(
+          play: SizedBox.square(
+            dimension: 44,
+            child: PlayOrPauseButton(plPlayerController: plPlayerController),
+          ),
+          time: Align(
+            alignment: Alignment.centerLeft,
+            child: glassPlayerButton('刷新', Icons.refresh, widget.onRefresh),
+          ),
+          actions: [
+            fit,
+            quality,
+            glassPlayerButton(
+              '退出全屏',
+              Icons.fullscreen_exit,
+              () => plPlayerController.triggerFullScreen(status: false),
+            ),
+          ],
+        ),
+      );
+    }
     return Padding(
       padding: const .symmetric(horizontal: 14, vertical: 13),
       child: Material(
@@ -71,19 +165,7 @@ class _BottomControlState extends State<BottomControl> with HeaderMixin {
                 Icons.block,
                 color: Colors.white,
               ),
-              onTap: () {
-                if (kDebugMode || liveRoomCtr.isLogin) {
-                  Get.toNamed(
-                    '/liveDmBlockPage',
-                    parameters: {
-                      'roomId': liveRoomCtr.roomId.toString(),
-                    },
-                    arguments: liveRoomCtr,
-                  );
-                } else {
-                  SmartDialog.showToast('账号未登录');
-                }
-              },
+              onTap: liveRoomCtr.showDanmakuBlockSettings,
             ),
             const SizedBox(width: 3),
             Obx(
@@ -104,16 +186,7 @@ class _BottomControlState extends State<BottomControl> with HeaderMixin {
                           CustomIcons.dm_off,
                           color: Colors.white,
                         ),
-                  onTap: () {
-                    final newVal = !enableShowLiveDanmaku;
-                    plPlayerController.enableShowLiveDanmaku.value = newVal;
-                    if (!plPlayerController.tempPlayerConf) {
-                      GStorage.setting.put(
-                        SettingBoxKey.enableShowLiveDanmaku,
-                        newVal,
-                      );
-                    }
-                  },
+                  onTap: plPlayerController.toggleLiveDanmaku,
                 );
               },
             ),
@@ -127,80 +200,8 @@ class _BottomControlState extends State<BottomControl> with HeaderMixin {
               ),
               onTap: () => showSetDanmaku(isLive: true),
             ),
-            Obx(
-              () => PopupMenuButton<VideoFitType>(
-                tooltip: '画面比例',
-                initialValue: plPlayerController.videoFit.value,
-                color: Colors.black.withValues(alpha: 0.8),
-                itemBuilder: (context) {
-                  return VideoFitType.values
-                      .map(
-                        (boxFit) => PopupMenuItem<VideoFitType>(
-                          height: 35,
-                          padding: const EdgeInsets.only(left: 30),
-                          value: boxFit,
-                          onTap: () =>
-                              plPlayerController.toggleVideoFit(boxFit),
-                          child: Text(
-                            boxFit.desc,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ),
-                      )
-                      .toList();
-                },
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  child: Text(
-                    plPlayerController.videoFit.value.desc,
-                    style: const TextStyle(color: Colors.white, fontSize: 13),
-                  ),
-                ),
-              ),
-            ),
-            Obx(
-              () {
-                final quality = liveRoomCtr.currentQn.value;
-                if (quality == null) {
-                  return const SizedBox.shrink();
-                }
-                return PopupMenuButton<LiveQuality>(
-                  tooltip: '画质',
-                  padding: .zero,
-                  initialValue: quality,
-                  onSelected: liveRoomCtr.changeQn,
-                  color: Colors.black.withValues(alpha: 0.8),
-                  itemBuilder: (context) {
-                    return liveRoomCtr.acceptQnList
-                        .map(
-                          (e) => PopupMenuItem<LiveQuality>(
-                            height: 35,
-                            padding: const EdgeInsets.only(left: 30),
-                            value: e,
-                            child: Text(
-                              e.desc,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ),
-                        )
-                        .toList();
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                    child: Text(
-                      quality.desc,
-                      style: const TextStyle(color: Colors.white, fontSize: 13),
-                    ),
-                  ),
-                );
-              },
-            ),
+            fit,
+            quality,
             if (!plPlayerController.isDesktopPip)
               ComBtn(
                 height: 30,

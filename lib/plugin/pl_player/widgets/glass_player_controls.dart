@@ -360,6 +360,17 @@ class _PlayerControlPlacement extends SingleChildLayoutDelegate {
       data != oldDelegate.data || top != oldDelegate.top;
 }
 
+Widget glassPlayerButton(String label, IconData icon, VoidCallback onPressed) =>
+    SizedBox.square(
+      dimension: 44,
+      child: IconButton(
+        tooltip: label,
+        onPressed: onPressed,
+        padding: EdgeInsets.zero,
+        icon: Icon(icon, size: 22, color: Colors.white),
+      ),
+    );
+
 class GlassPlayerHeader extends StatelessWidget {
   const GlassPlayerHeader({
     super.key,
