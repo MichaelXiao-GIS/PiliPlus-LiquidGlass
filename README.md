@@ -16,7 +16,9 @@
 
 本仓库重点维护 iPhone 测试版，并针对 iOS 27.1 与 iPhone Duo 的窗口、安全区和旋转布局进行适配。其他平台的源码继承自上游；本页展示和发布的 Liquid Glass 改动以 iOS 为主。
 
-当前源码已同步上游 [PiliPlus 2.2.0.2](https://github.com/bggRGjQaUbCoE/PiliPlus/releases/tag/2.2.0.2)，在 2.2.0 的功能基础上补充选集、评论分页、课堂视频、投屏依赖和弹幕跳转等更新。test23 同时恢复首页及动态页点击 iOS 状态栏回到顶部；源码验证与构建状态见 [test23 更新记录](docs/UPSTREAM_2.2.0.2_TEST23.md)。test24 使用无底块单色 SF Symbols，设置及动态详情顶部支持内容透入模糊，Duo 展开竖屏导航栏与状态区并排，并修复切屏时的滚动恢复；见 [test24 验证记录](docs/DUO_UI_TEST24.md)。test25 将设置和动态详情顶区升级为向下渐隐的半透明背景模糊，见 [test25 验证记录](docs/HEADER_BLUR_TEST25.md)。下载和验证信息见下文。
+本项目基于 [PiliPlus 2.2.0.2](https://github.com/bggRGjQaUbCoE/PiliPlus/releases/tag/2.2.0.2)。上游改进了视频选集和番剧下载入口，修复了部分视频评论加载不全的问题。
+
+本版调整了首页「推荐」的横屏布局。13 英寸 iPad Pro 默认每排显示 4 个视频，展开的 iPhone Duo 每排显示 3 个。
 
 ## 本分支的主要改动
 

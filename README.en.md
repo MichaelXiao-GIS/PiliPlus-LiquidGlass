@@ -16,7 +16,9 @@
 
 This repository focuses on iPhone test builds, including window, safe-area and rotation handling for iOS 27.1 and iPhone Duo. Source code for other platforms is inherited from upstream; the Liquid Glass changes and releases presented here focus on iOS.
 
-The working source includes upstream [PiliPlus 2.2.0.2](https://github.com/bggRGjQaUbCoE/PiliPlus/releases/tag/2.2.0.2), including episode selection, comment pagination, course-video, casting dependency and danmaku-link updates. Test23 also restores native iOS status-bar scroll-to-top for Home and Dynamics. See the [test23 integration record](docs/UPSTREAM_2.2.0.2_TEST23.md) for validation and build status; Test24 adds monochrome SF Symbols without icon tiles, translucent headers in Settings and Dynamic Detail, a toolbar beside the system status region on open Duo portrait, and Duo scroll restoration fixes. See the [test24 validation record](docs/DUO_UI_TEST24.md); Test25 adds a progressive translucent backdrop that fades below the Settings and Dynamic Detail headers. See the [test25 validation record](docs/HEADER_BLUR_TEST25.md); download information is below.
+This fork is based on [PiliPlus 2.2.0.2](https://github.com/bggRGjQaUbCoE/PiliPlus/releases/tag/2.2.0.2). That release updated the episode picker and the download option for anime. It also fixed an issue that prevented some videos from showing all comments.
+
+In landscape, the Home recommendations now show four videos per row on a 13-inch iPad Pro and three on an unfolded iPhone Duo by default.
 
 ## Changes in this fork
 
