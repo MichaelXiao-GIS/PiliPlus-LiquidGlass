@@ -296,6 +296,7 @@ class MyApp extends StatelessWidget {
     final (light, dark) = getAllTheme();
     return GetMaterialApp(
       title: Constants.appName,
+      debugShowCheckedModeBanner: !GlassCapabilities.isIOS,
       theme: light,
       darkTheme: dark,
       themeMode: ThemeUtils.themeMode = Pref.themeMode,
