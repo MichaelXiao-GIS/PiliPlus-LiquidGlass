@@ -30,6 +30,10 @@ class _RcmdPageState extends State<RcmdPage>
   Widget build(BuildContext context) {
     super.build(context);
     final colorScheme = ColorScheme.of(context);
+    final gridDelegate = Grid.recommendationDelegate(
+      context,
+      preferredWidth: Pref.recommendCardWidth,
+    );
     return Container(
       clipBehavior: .hardEdge,
       margin: const .symmetric(horizontal: Style.safeSpace),
@@ -44,7 +48,11 @@ class _RcmdPageState extends State<RcmdPage>
             SliverPadding(
               padding: const .only(top: Style.cardSpace, bottom: 100),
               sliver: Obx(
-                () => _buildBody(colorScheme, controller.loadingState.value),
+                () => _buildBody(
+                  colorScheme,
+                  controller.loadingState.value,
+                  gridDelegate,
+                ),
               ),
             ),
           ],
@@ -53,20 +61,19 @@ class _RcmdPageState extends State<RcmdPage>
     );
   }
 
-  late final gridDelegate = SliverGridDelegateWithExtentAndRatio(
-    mainAxisSpacing: Style.cardSpace,
-    crossAxisSpacing: Style.cardSpace,
-    maxCrossAxisExtent: Pref.recommendCardWidth,
-    childAspectRatio: Style.aspectRatio,
-    mainAxisExtent: MediaQuery.textScalerOf(context).scale(90),
-  );
-
   Widget _buildBody(
     ColorScheme colorScheme,
     LoadingState<List<dynamic>?> loadingState,
+    SliverGridDelegateWithExtentAndRatio gridDelegate,
   ) {
     return switch (loadingState) {
-      Loading() => _buildSkeleton,
+      Loading() => SliverGrid(
+        gridDelegate: gridDelegate,
+        delegate: const SliverSingleChildDelegate(
+          count: 10,
+          child: VideoCardVSkeleton(),
+        ),
+      ),
       Success(:final response) =>
         response != null && response.isNotEmpty
             ? SliverGrid.builder(
@@ -132,12 +139,4 @@ class _RcmdPageState extends State<RcmdPage>
       ),
     };
   }
-
-  Widget get _buildSkeleton => SliverGrid(
-    gridDelegate: gridDelegate,
-    delegate: const SliverSingleChildDelegate(
-      count: 10,
-      child: VideoCardVSkeleton(),
-    ),
-  );
 }

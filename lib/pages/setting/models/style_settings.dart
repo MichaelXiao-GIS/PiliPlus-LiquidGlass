@@ -723,7 +723,9 @@ Future<void> _showCardWidthDialog(
       title: const Text('列表最大列宽度（默认240dp）'),
       value1: Pref.recommendCardWidth,
       value2: Pref.smallCardWidth,
-      description1: const Text('主页推荐流'),
+      description1: Text(
+        GlassCapabilities.isIOS ? '主页推荐流（大屏横屏按 1.8 倍列宽显示）' : '主页推荐流',
+      ),
       description2: const Text('其他'),
       min: 150.0,
       max: 500.0,

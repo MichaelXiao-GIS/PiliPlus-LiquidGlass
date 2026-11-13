@@ -6,10 +6,10 @@
 
 从本仓库的 [Releases](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases) 选择最新测试版，下载名称以 `.ipa` 结尾的附件。
 
-当前版本为 [测试版 26](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases/tag/v2.2.0-liquid-glass.test26)：
+当前版本为 [测试版 27](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases/tag/v2.2.0-liquid-glass.test27)：
 
-- 应用版本 2.2.0，构建号 26。直播横屏使用与普通视频相同的分组控件，短信登录可重新申请失效的极验配置。
-- 文件名：`PiliPlus-LiquidGlass-2.2.0-test26-ios-arm64.ipa`。
+- 应用版本 2.2.0，构建号 27。iPad 与展开的 iPhone Duo 横屏时，首页推荐流默认显示更大的卡片。
+- 文件名：`PiliPlus-LiquidGlass-2.2.0-test27-ios-arm64.ipa`。
 - 真机 arm64 Release 构建，使用 iOS 27.2 SDK，最低支持 iOS 15。
 - 原生 Liquid Glass 在 iOS 26 及以上启用；旧系统使用兼容材质。
 - 安装包只有打包用的 ad-hoc 签名，没有 Apple 开发者证书及设备描述文件，安装前需要重新签名。

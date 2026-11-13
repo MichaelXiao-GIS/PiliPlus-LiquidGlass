@@ -2,6 +2,8 @@ import 'dart:math';
 
 import 'package:PiliPlus/common/skeleton/video_card_h.dart';
 import 'package:PiliPlus/common/sliver_single_child_delegate.dart';
+import 'package:PiliPlus/common/style.dart';
+import 'package:PiliPlus/common/widgets/liquid_glass/glass_platform.dart';
 import 'package:PiliPlus/utils/storage_pref.dart';
 import 'package:flutter/rendering.dart';
 import 'package:material_ui/material_ui.dart';
@@ -20,6 +22,25 @@ mixin GridMixin {
 
 abstract final class Grid {
   static final double smallCardWidth = Pref.smallCardWidth;
+
+  static SliverGridDelegateWithExtentAndRatio recommendationDelegate(
+    BuildContext context, {
+    required double preferredWidth,
+  }) {
+    final size = MediaQuery.sizeOf(context);
+    final spacious =
+        GlassCapabilities.isIOS &&
+        size.width > size.height &&
+        size.shortestSide >= 600;
+    final gap = spacious ? 14.0 : Style.cardSpace;
+    return SliverGridDelegateWithExtentAndRatio(
+      maxCrossAxisExtent: spacious ? preferredWidth * 1.8 : preferredWidth,
+      mainAxisSpacing: gap,
+      crossAxisSpacing: gap,
+      childAspectRatio: Style.aspectRatio,
+      mainAxisExtent: MediaQuery.textScalerOf(context).scale(90),
+    );
+  }
 
   static SliverGridDelegateWithMaxCrossAxisExtent videoCardHDelegate({
     double mainAxisExtent = 110,
