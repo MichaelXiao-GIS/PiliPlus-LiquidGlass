@@ -34,7 +34,7 @@ abstract final class Grid {
         size.shortestSide >= 600;
     final gap = spacious ? 14.0 : Style.cardSpace;
     return SliverGridDelegateWithExtentAndRatio(
-      maxCrossAxisExtent: spacious ? preferredWidth * 1.8 : preferredWidth,
+      maxCrossAxisExtent: spacious ? preferredWidth * 1.4 : preferredWidth,
       mainAxisSpacing: gap,
       crossAxisSpacing: gap,
       childAspectRatio: Style.aspectRatio,

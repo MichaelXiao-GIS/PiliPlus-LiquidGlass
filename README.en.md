@@ -49,7 +49,7 @@ These are actual **2.1.6 / test build 18** simulator screenshots showing the exp
 
 ## Download and install
 
-Get the IPA from this repository's [Releases](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases). The current version is [PiliPlus Liquid Glass test build 27](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases/tag/v2.2.0-liquid-glass.test27), app version 2.2.0, build 27. This build includes upstream 2.2.0.2 and preserves the integration of [upstream PiliPlus 2.2.0](https://github.com/bggRGjQaUbCoE/PiliPlus/releases/tag/2.2.0), including episode/PV switching, subscription ordering, folded comments, recommendation filtering and download improvements. Check Releases for subsequent updates.
+Get the IPA from this repository's [Releases](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases). The current version is [PiliPlus Liquid Glass test build 28](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases/tag/v2.2.0-liquid-glass.test28), app version 2.2.0, build 28. This build includes upstream 2.2.0.2 and preserves the integration of [upstream PiliPlus 2.2.0](https://github.com/bggRGjQaUbCoE/PiliPlus/releases/tag/2.2.0), including episode/PV switching, subscription ordering, folded comments, recommendation filtering and download improvements. Check Releases for subsequent updates.
 
 - **Package:** an arm64 Release build for iPhone, requiring iOS 15 or later.
 - **Glass effects:** native Liquid Glass on iOS 26 and later, with a compatible material on older systems.

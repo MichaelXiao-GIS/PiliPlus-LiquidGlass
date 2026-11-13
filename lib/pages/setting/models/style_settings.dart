@@ -724,7 +724,7 @@ Future<void> _showCardWidthDialog(
       value1: Pref.recommendCardWidth,
       value2: Pref.smallCardWidth,
       description1: Text(
-        GlassCapabilities.isIOS ? '主页推荐流（大屏横屏按 1.8 倍列宽显示）' : '主页推荐流',
+        GlassCapabilities.isIOS ? '主页推荐流（大屏横屏按 1.4 倍列宽显示）' : '主页推荐流',
       ),
       description2: const Text('其他'),
       min: 150.0,

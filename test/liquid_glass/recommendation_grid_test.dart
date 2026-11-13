@@ -1,5 +1,4 @@
 import 'package:PiliPlus/utils/grid.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -47,14 +46,14 @@ void main() {
         );
       }
 
-      await layout(const Size(1376, 1032), ios ? 3 : 6, ios ? 14 : 8);
-      await layout(const Size(951, 669), ios ? 2 : 4, ios ? 14 : 8);
+      await layout(const Size(1376, 1032), ios ? 4 : 6, ios ? 14 : 8);
+      await layout(const Size(951, 669), ios ? 3 : 4, ios ? 14 : 8);
       await layout(const Size(669, 951), 3, 8);
       await layout(const Size(678, 466), 3, 8);
-      await layout(const Size(1376, 1032), ios ? 3 : 6, ios ? 14 : 8);
+      await layout(const Size(1376, 1032), ios ? 4 : 6, ios ? 14 : 8);
       preferredWidth = 160;
       await tester.pumpWidget(feed());
-      await layout(const Size(1376, 1032), ios ? 5 : 8, ios ? 14 : 8);
+      await layout(const Size(1376, 1032), ios ? 6 : 8, ios ? 14 : 8);
     }, variant: TargetPlatformVariant.only(platform));
   }
 }
