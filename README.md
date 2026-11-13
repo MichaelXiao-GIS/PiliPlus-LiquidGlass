@@ -18,7 +18,7 @@
 
 本项目基于 [PiliPlus 2.2.0.2](https://github.com/bggRGjQaUbCoE/PiliPlus/releases/tag/2.2.0.2)。上游改进了视频选集和番剧下载入口，修复了部分视频评论加载不全的问题。
 
-本版调整了首页「推荐」的横屏布局。13 英寸 iPad Pro 默认每排显示 4 个视频，展开的 iPhone Duo 每排显示 3 个。
+本版更新调整了首页「推荐」的横屏布局。
 
 ## 本分支的主要改动
 
