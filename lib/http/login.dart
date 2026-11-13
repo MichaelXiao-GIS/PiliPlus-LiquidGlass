@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:PiliPlus/common/constants.dart';
 import 'package:PiliPlus/http/api.dart';
+import 'package:PiliPlus/http/browser_ua.dart';
 import 'package:PiliPlus/http/init.dart';
 import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/models_new/login_devices/data.dart';
@@ -353,7 +354,20 @@ abstract final class LoginHttp {
 
   // 风控验证手机前的极验验证码
   static Future preCapture() async {
-    final res = await Request().post(Api.preCapture);
+    final res = await Request().post(
+      Api.preCapture,
+      // This is a pre-login registration. Account headers can select a
+      // different (retired) captcha configuration and override the browser UA.
+      data: '',
+      options: Options(
+        extra: {'account': const NoAccount()},
+        contentType: Headers.formUrlEncodedContentType,
+        headers: {
+          'user-agent': BrowserUa.mob,
+          'referer': 'https://passport.bilibili.com/',
+        },
+      ),
+    );
 
     if (res.data['code'] == 0) {
       return {'status': true, 'data': res.data['data']};

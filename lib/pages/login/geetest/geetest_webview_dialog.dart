@@ -139,7 +139,7 @@ class _GeetestWebviewDialogState extends State<GeetestWebviewDialog> {
             forceDark: ForceDark.AUTO,
             useHybridComposition: true,
             algorithmicDarkeningAllowed: true,
-            useShouldOverrideUrlLoading: true,
+            useShouldOverrideUrlLoading: false,
             userAgent: BrowserUa.mob,
             mixedContentMode: .MIXED_CONTENT_ALWAYS_ALLOW,
 
@@ -162,11 +162,11 @@ class _GeetestWebviewDialogState extends State<GeetestWebviewDialog> {
             horizontalScrollBarEnabled: false,
             verticalScrollBarEnabled: false,
             overScrollMode: .NEVER,
-
-            pageZoom: Platform.isIOS ? 3 : 1,
           ),
-          initialData: InAppWebViewInitialData(data: html),
-          onWebViewCreated: (ctr) {
+          onReceivedError: (_, request, _) {
+            if (request.isForMainFrame == true) _finish(const GeetestFailure());
+          },
+          onWebViewCreated: (ctr) async {
             ctr
               ..addJavaScriptHandler(
                 handlerName: 'success',
@@ -190,6 +190,16 @@ class _GeetestWebviewDialogState extends State<GeetestWebviewDialog> {
                 handlerName: 'close',
                 callback: (args) => _finish(),
               );
+            // Wait until the native view and result handlers exist before
+            // starting scripts that can immediately reject the registration.
+            try {
+              await ctr.loadData(
+                data: html,
+                baseUrl: WebUri('https://captcha.invalid/'),
+              );
+            } catch (_) {
+              _finish(const GeetestFailure());
+            }
           },
         ),
         Positioned(
