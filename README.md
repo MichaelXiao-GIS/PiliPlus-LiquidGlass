@@ -18,7 +18,7 @@
 
 本项目基于 [PiliPlus 2.2.0.2](https://github.com/bggRGjQaUbCoE/PiliPlus/releases/tag/2.2.0.2)。上游改进了视频选集和番剧下载入口，修复了部分视频评论加载不全的问题。
 
-在 iPhone 首页向下浏览时，底栏会收成当前标签的图标。往回滑时，图标会平滑展开，重新显示所有标签。 [查看底栏动画](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases/download/v2.2.0-liquid-glass.test34/home-scroll-test34.mp4)
+在 iPhone 首页向下浏览时，底栏会平滑缩到原来的 76%，只显示图标。首页、动态和我的仍可直接点按，往回滑时底栏会展开，重新显示文字。[查看底栏动画](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases/download/v2.2.0-liquid-glass.test35/home-scroll-test35.mp4)
 
 ## 本分支的主要改动
 
@@ -42,7 +42,7 @@
 
 [查看 Duo 横屏慢拖标签时的系统选框](assets/screenshots/liquid_glass/duo-tab-drag-test31.jpg)。
 
-下方 Duo 横屏截图来自测试版 31，iPad 和普通 iPhone 截图来自测试版 30。
+iPhone 首页两张图展示测试版 35 的底栏。Duo 横屏截图来自测试版 31，iPad 和设置页截图来自测试版 30。
 
 <table>
   <tr>
@@ -62,15 +62,15 @@
     <th>iPhone · 设置</th>
   </tr>
   <tr>
-    <td><a href="assets/screenshots/liquid_glass/home-expanded-test30.jpg"><img src="assets/screenshots/liquid_glass/home-expanded-test30.jpg" width="280" alt="首页顶部展开的搜索框" /></a></td>
-    <td><a href="assets/screenshots/liquid_glass/home-scrolled-test30.jpg"><img src="assets/screenshots/liquid_glass/home-scrolled-test30.jpg" width="280" alt="滚动推荐列表后收起的搜索框和底栏" /></a></td>
+    <td><a href="assets/screenshots/liquid_glass/home-expanded-test35.jpg"><img src="assets/screenshots/liquid_glass/home-expanded-test35.jpg" width="280" alt="展开的底栏显示首页、动态和我的图标与文字" /></a></td>
+    <td><a href="assets/screenshots/liquid_glass/home-scrolled-test35.jpg"><img src="assets/screenshots/liquid_glass/home-scrolled-test35.jpg" width="280" alt="向下浏览后的底栏缩至 76%，保留三个图标" /></a></td>
     <td><a href="assets/screenshots/liquid_glass/settings-test30.jpg"><img src="assets/screenshots/liquid_glass/settings-test30.jpg" width="280" alt="分组显示的设置和单色图标" /></a></td>
   </tr>
 </table>
 
 ## 下载与安装
 
-前往本仓库的 [Releases](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases) 下载 IPA。当前版本为 [PiliPlus Liquid Glass 测试版 34](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases/tag/v2.2.0-liquid-glass.test34)（应用版本 2.2.0，构建号 34）。后续更新以 Releases 为准。
+前往本仓库的 [Releases](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases) 下载 IPA。当前版本为 [PiliPlus Liquid Glass 测试版 35](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases/tag/v2.2.0-liquid-glass.test35)（应用版本 2.2.0，构建号 35）。后续更新以 Releases 为准。
 
 - **安装包**：iPhone arm64 Release，最低支持 iOS 15。
 - **玻璃效果**：iOS 26 及以上使用原生 Liquid Glass；较旧系统使用兼容材质。

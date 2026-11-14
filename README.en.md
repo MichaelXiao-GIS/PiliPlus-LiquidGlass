@@ -18,7 +18,7 @@ This repository focuses on iPhone test builds, including window, safe-area and r
 
 This fork is based on [PiliPlus 2.2.0.2](https://github.com/bggRGjQaUbCoE/PiliPlus/releases/tag/2.2.0.2). That release updated the episode picker and the download option for anime. It also fixed an issue that prevented some videos from showing all comments.
 
-On iPhone, scrolling down the Home feed folds the tab bar into the current tab’s icon. Scrolling back up smoothly expands it to show all tabs again. [Watch the Simulator recording](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases/download/v2.2.0-liquid-glass.test34/home-scroll-test34.mp4)
+On iPhone, scrolling down the Home feed smoothly shrinks the bottom tab bar to 76% of its usual size. All icons stay visible and tappable. Scroll back up to expand the bar and see the labels again. [Watch the Simulator recording](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases/download/v2.2.0-liquid-glass.test35/home-scroll-test35.mp4)
 
 ## Changes in this fork
 
@@ -42,7 +42,7 @@ Test build 31 on the Duo simulator, with a sample avatar and an offline inbox.
 
 [View the system selection while dragging a Duo side tab](assets/screenshots/liquid_glass/duo-tab-drag-test31.jpg).
 
-The Duo landscape screenshot below is from build 31. The iPad and standard iPhone screenshots are from build 30.
+The two iPhone Home screenshots show the tab bar in build 35. The Duo landscape screenshot is from build 31, and the iPad and Settings screenshots are from build 30.
 
 <table>
   <tr>
@@ -62,15 +62,15 @@ The Duo landscape screenshot below is from build 31. The iPad and standard iPhon
     <th>iPhone · Settings</th>
   </tr>
   <tr>
-    <td><a href="assets/screenshots/liquid_glass/home-expanded-test30.jpg"><img src="assets/screenshots/liquid_glass/home-expanded-test30.jpg" width="280" alt="Expanded search field at the top of Home" /></a></td>
-    <td><a href="assets/screenshots/liquid_glass/home-scrolled-test30.jpg"><img src="assets/screenshots/liquid_glass/home-scrolled-test30.jpg" width="280" alt="Compact search field and bottom bar after scrolling the feed" /></a></td>
+    <td><a href="assets/screenshots/liquid_glass/home-expanded-test35.jpg"><img src="assets/screenshots/liquid_glass/home-expanded-test35.jpg" width="280" alt="Expanded tab bar showing icons and labels for Home, Activity, and Profile" /></a></td>
+    <td><a href="assets/screenshots/liquid_glass/home-scrolled-test35.jpg"><img src="assets/screenshots/liquid_glass/home-scrolled-test35.jpg" width="280" alt="After scrolling down, the tab bar shows all three icons at 76% size" /></a></td>
     <td><a href="assets/screenshots/liquid_glass/settings-test30.jpg"><img src="assets/screenshots/liquid_glass/settings-test30.jpg" width="280" alt="Grouped settings with monochrome icons" /></a></td>
   </tr>
 </table>
 
 ## Download and install
 
-Download the IPA from [PiliPlus Liquid Glass test build 34](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases/tag/v2.2.0-liquid-glass.test34), app version 2.2.0, build 34.
+Download the IPA from [PiliPlus Liquid Glass test build 35](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases/tag/v2.2.0-liquid-glass.test35), app version 2.2.0, build 35.
 
 - **Package:** an arm64 Release build for iPhone, requiring iOS 15 or later.
 - **Glass effects:** native Liquid Glass on iOS 26 and later, with a compatible material on older systems.
