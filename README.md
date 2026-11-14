@@ -18,7 +18,7 @@
 
 本项目基于 [PiliPlus 2.2.0.2](https://github.com/bggRGjQaUbCoE/PiliPlus/releases/tag/2.2.0.2)。上游改进了视频选集和番剧下载入口，修复了部分视频评论加载不全的问题。
 
-在 iOS 上，“回复我的”“@我”“收到的赞”和“系统通知”现在与消息主页一样，列表滚动到顶栏背后时会逐渐模糊。[查看模拟器截图](assets/screenshots/liquid_glass/message-replies-test33.jpg)
+在 iPhone 首页向下浏览时，底栏会收成当前标签的图标。往回滑时，图标会平滑展开，重新显示所有标签。 [查看底栏动画](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases/download/v2.2.0-liquid-glass.test34/home-scroll-test34.mp4)
 
 ## 本分支的主要改动
 
@@ -70,7 +70,7 @@
 
 ## 下载与安装
 
-前往本仓库的 [Releases](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases) 下载 IPA。当前版本为 [PiliPlus Liquid Glass 测试版 33](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases/tag/v2.2.0-liquid-glass.test33)（应用版本 2.2.0，构建号 33）。后续更新以 Releases 为准。
+前往本仓库的 [Releases](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases) 下载 IPA。当前版本为 [PiliPlus Liquid Glass 测试版 34](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases/tag/v2.2.0-liquid-glass.test34)（应用版本 2.2.0，构建号 34）。后续更新以 Releases 为准。
 
 - **安装包**：iPhone arm64 Release，最低支持 iOS 15。
 - **玻璃效果**：iOS 26 及以上使用原生 Liquid Glass；较旧系统使用兼容材质。

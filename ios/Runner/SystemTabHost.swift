@@ -7,6 +7,7 @@ final class SystemTabHost: UITabBarController, UITabBarControllerDelegate {
   private weak var overlay: TabOverlayView?
   private weak var flutter: FlutterViewController?
   private weak var observingPage: SystemTabPage?
+  private weak var restorationMask: CAShapeLayer?
   private var semanticsObservation: NSKeyValueObservation?
   private(set) var nativeTabRailFrame: CGRect?
   private(set) var nativeTabTopInset: CGFloat = 0
@@ -150,6 +151,7 @@ final class SystemTabHost: UITabBarController, UITabBarControllerDelegate {
       next[id] = page
     }
     if ids != orderedIDs {
+      finishRestoration()
       orderedIDs = ids
       pages = next
       setViewControllers(ids.compactMap { next[$0] }, animated: false)
@@ -163,7 +165,10 @@ final class SystemTabHost: UITabBarController, UITabBarControllerDelegate {
     if let items = args["destinations"] as? [[String: Any]], !items.isEmpty {
       guard prepare(args), let index = args["selectedIndex"] as? Int,
             orderedIDs.indices.contains(index), pages[orderedIDs[index]] != nil else { return false }
-      if selectedIndex != index { selectedIndex = index }
+      if selectedIndex != index {
+        finishRestoration()
+        selectedIndex = index
+      }
     } else if visible {
       return false
     }
@@ -179,6 +184,7 @@ final class SystemTabHost: UITabBarController, UITabBarControllerDelegate {
       tabBar.isHidden = !visible
       view.setNeedsLayout()
     }
+    if !visible { finishRestoration() }
     overlay?.isHidden = !visible
     connectScrollGesture()
     includeSystemAccessibility()
@@ -189,6 +195,7 @@ final class SystemTabHost: UITabBarController, UITabBarControllerDelegate {
   func tabBarController(_ tabBarController: UITabBarController, didSelect viewController: UIViewController) {
     guard let page = viewController as? SystemTabPage,
           let index = viewControllers?.firstIndex(of: page) else { return }
+    finishRestoration()
     connectScrollGesture()
     didChoose(index)
   }
@@ -209,15 +216,99 @@ final class SystemTabHost: UITabBarController, UITabBarControllerDelegate {
           orderedIDs.indices.contains(selectedIndex), args["destinationId"] as? String == orderedIDs[selectedIndex],
           let offset = args["offset"] as? Double, let maximum = args["max"] as? Double,
           offset.isFinite, maximum.isFinite else { return }
-    let reversed = page.scrollMetrics(offset: offset, maximum: maximum)
-    // Flutter can stop a fraction of a logical point above its minimum. UIKit
-    // must expand here even when its independent native deceleration differs.
-    if reversed {
-      tabBarMinimizeBehavior = .never
-      view.layoutIfNeeded()
-      // Leave the default gesture policy armed before the next physical pan.
-      DispatchQueue.main.async { [weak self] in self?.tabBarMinimizeBehavior = .onScrollDown }
+    // A finger can reverse again while the bar is still unfolding. Keep
+    // presenting that animation until it finishes; UIKit owns the next collapse.
+    guard page.scrollMetrics(offset: offset, maximum: maximum) else { return }
+    guard restorationMask == nil else { return }
+    // Changing the policy immediately expands UIKit's bar. Keep its live
+    // controls and reveal them from the button the user was looking at.
+    let compact = UIAccessibility.isReduceMotionEnabled ? [] : bottomButtons()
+    tabBarMinimizeBehavior = .never
+    view.layoutIfNeeded()
+    if compact.count == 1, let start = compact.first {
+      animateRestoration(from: start)
     }
+    DispatchQueue.main.async { [weak self] in self?.tabBarMinimizeBehavior = .onScrollDown }
+  }
+
+  private func bottomButtons() -> [CGRect] {
+    guard traitCollection.userInterfaceIdiom == .phone else { return [] }
+    if #available(iOS 27.1, *), traitCollection.verticalBarEdge != .unspecified { return [] }
+    let barFrame = tabBar.convert(tabBar.bounds, to: view)
+    var buttons = [CGRect]()
+    func collect(_ node: UIView) {
+      guard !node.isHidden, node.alpha > 0.01 else { return }
+      if node is UIControl || node.accessibilityTraits.contains(.button) {
+        let rect = node.convert(node.bounds, to: view)
+        if !rect.isEmpty, rect.midY > view.bounds.midY, view.bounds.contains(rect),
+           barFrame.contains(CGPoint(x: rect.midX, y: rect.midY)), rect.width < barFrame.width,
+           rect.height <= barFrame.height {
+          if !buttons.contains(where: { abs($0.midX - rect.midX) < 1 }) { buttons.append(rect) }
+          return
+        }
+      }
+      node.subviews.forEach(collect)
+    }
+    collect(view)
+    return buttons.sorted { $0.midX < $1.midX }
+  }
+
+  private func animateRestoration(from compact: CGRect) {
+    let buttons = bottomButtons()
+    guard buttons.count == orderedIDs.count, buttons.count > 1,
+          buttons.indices.contains(selectedIndex) else { return }
+    let index = view.effectiveUserInterfaceLayoutDirection == .rightToLeft
+      ? buttons.count - 1 - selectedIndex : selectedIndex
+    let selected = buttons[index]
+    let dx = compact.midX - selected.midX
+    let dy = compact.midY - selected.midY
+    let start = compact.offsetBy(dx: -dx, dy: -dy)
+    // Include the material rim outside the tappable bounds.
+    let end = buttons.reduce(CGRect.null) { $0.union($1) }.insetBy(dx: -10, dy: -10)
+    let mask = CAShapeLayer()
+    mask.path = UIBezierPath(roundedRect: end, cornerRadius: end.height / 2).cgPath
+    let reveal = CABasicAnimation(keyPath: "path")
+    reveal.fromValue = UIBezierPath(roundedRect: start, cornerRadius: start.height / 2).cgPath
+    reveal.toValue = mask.path
+    let slide = CABasicAnimation(keyPath: "position")
+    let position = view.layer.position
+    slide.fromValue = CGPoint(x: position.x + dx, y: position.y + dy)
+    slide.toValue = position
+    let duration = 0.25
+    let timing = CAMediaTimingFunction(name: .easeOut)
+    CATransaction.begin()
+    CATransaction.setDisableActions(true)
+    CATransaction.setCompletionBlock { [weak self] in
+      if self?.view.layer.mask === mask { self?.view.layer.mask = nil }
+    }
+    restorationMask = mask
+    view.layer.mask = mask
+    reveal.duration = duration
+    reveal.timingFunction = timing
+    slide.duration = duration
+    slide.timingFunction = timing
+    mask.add(reveal, forKey: "expand")
+    view.layer.add(slide, forKey: "restoreTabPosition")
+    CATransaction.commit()
+  }
+
+  private func finishRestoration() {
+    guard let mask = restorationMask, view.layer.mask === mask else { return }
+    view.layer.removeAnimation(forKey: "restoreTabPosition")
+    view.layer.mask = nil
+    restorationMask = nil
+  }
+
+  /// The presentation layer follows the moving controls between display
+  /// frames. Route touches only to the visible portion of the live tab bar.
+  func hitPointDuringRestoration(_ point: CGPoint, in overlay: UIView) -> CGPoint? {
+    guard let mask = restorationMask, view.layer.mask === mask,
+          let visible = view.layer.presentation() else { return point }
+    let local = overlay.layer.convert(point, to: view.layer)
+    let displayed = CGPoint(x: local.x + view.layer.position.x - visible.position.x,
+                            y: local.y + view.layer.position.y - visible.position.y)
+    if let path = mask.presentation()?.path, !path.contains(displayed) { return nil }
+    return view.convert(displayed, to: overlay)
   }
 }
 
@@ -227,7 +318,9 @@ private final class TabOverlayView: UIView {
   weak var controller: SystemTabHost?
 
   override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
-    guard let controller, !isHidden, let hit = super.hitTest(point, with: event) else { return nil }
+    guard let controller, !isHidden,
+          let location = controller.hitPointDuringRestoration(point, in: self),
+          let hit = super.hitTest(location, with: event) else { return nil }
     let bar = controller.tabBar
     if hit.isDescendant(of: bar) { return hit }
     // iPad hosts top tab controls in a separate container. Its destination
@@ -249,9 +342,9 @@ private final class TabOverlayView: UIView {
 private final class SystemTabPage: UIViewController {
   private let scroll = UIScrollView()
   private var maximum: CGFloat = 0
+
   private var directionAnchor: CGFloat = 0
   private var prefersExpanded = true
-
   let avatar = TabAvatar()
 
   override func loadView() {
@@ -280,7 +373,12 @@ private final class SystemTabPage: UIViewController {
 
   override func viewDidLayoutSubviews() {
     super.viewDidLayoutSubviews()
-    scroll.contentSize = CGSize(width: scroll.bounds.width, height: scroll.bounds.height + maximum)
+    updateContentSize()
+  }
+
+  private func updateContentSize() {
+    let size = CGSize(width: scroll.bounds.width, height: scroll.bounds.height + maximum)
+    if scroll.contentSize != size { scroll.contentSize = size }
   }
 
   func scrollMetrics(offset: CGFloat, maximum: CGFloat) -> Bool {
@@ -295,11 +393,17 @@ private final class SystemTabPage: UIViewController {
       directionAnchor = offset
     }
     self.maximum = max(0, maximum)
-    scroll.contentSize = CGSize(width: scroll.bounds.width, height: scroll.bounds.height + self.maximum)
+    updateContentSize()
     let pan = scroll.panGestureRecognizer
-    pan.isEnabled = pan.view !== scroll && self.maximum > 0
-    if !scroll.isTracking && !scroll.isDragging {
-      scroll.contentOffset.y = min(self.maximum, max(0, offset))
+    let enabled = pan.view !== scroll && self.maximum > 0
+    if pan.isEnabled != enabled { pan.isEnabled = enabled }
+    // The recognizer lives on Flutter's view, so inspect its state as well as
+    // UIScrollView's flags. Preserve native tracking and deceleration while
+    // the Flutter feed reports its own independent scroll position.
+    if pan.state != .began && pan.state != .changed &&
+       !scroll.isTracking && !scroll.isDragging && !scroll.isDecelerating {
+      let target = min(self.maximum, max(0, offset))
+      if scroll.contentOffset.y != target { scroll.contentOffset.y = target }
     }
     return !wasExpanded && prefersExpanded
   }
