@@ -27,6 +27,54 @@ DisplayFeature _fold(Rect bounds) => DisplayFeature(
 );
 
 void main() {
+  test('only a free control band below a verified right corner can expand', () {
+    const size = Size(951, 669);
+    const corner = DisplayFeature(
+      bounds: Rect.fromLTRB(867, 0, 951, 124),
+      type: DisplayFeatureType.cutout,
+      state: DisplayFeatureState.unknown,
+    );
+    const data = MediaQueryData(
+      size: size,
+      viewPadding: EdgeInsets.only(right: 84, bottom: 34),
+      displayFeatures: [corner],
+    );
+    const window = GlassWindowGeometry(size: size, verticalBarEdge: 'right');
+    double inset(MediaQueryData view) =>
+        window.bottomControlRightInset(view, top: 565);
+    expect(inset(data), 12);
+    expect(window.bottomControlRightInset(data, top: 100), 84);
+    expect(inset(data.copyWith(displayFeatures: [])), 84);
+    expect(
+      inset(
+        data.copyWith(
+          displayFeatures: [
+            corner,
+            _fold(const Rect.fromLTWH(886, 550, 8, 100)),
+          ],
+        ),
+      ),
+      84,
+    );
+    expect(inset(data.copyWith(size: const Size(678, 466))), 84);
+    expect(
+      const GlassWindowGeometry(
+        size: size,
+        verticalBarEdge: 'left',
+      ).bottomControlRightInset(data, top: 565),
+      84,
+    );
+    expect(
+      const GlassWindowGeometry(
+        size: size,
+        verticalBarEdge: 'right',
+        statusBarFrame: Rect.fromLTWH(900, 0, 51, 669),
+      ).bottomControlRightInset(data, top: 565),
+      84,
+    );
+    expect(inset(data.copyWith(viewPadding: EdgeInsets.zero)), 0);
+  });
+
   // The inner display is regular even below the old 700pt breakpoint.
   for (final (size, horizontal, vertical, bottom) in [
     (const Size(626, 890), 2, 2, false),

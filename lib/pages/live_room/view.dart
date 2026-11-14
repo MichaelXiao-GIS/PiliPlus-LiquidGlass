@@ -11,6 +11,7 @@ import 'package:PiliPlus/common/widgets/flutter/pop_scope.dart';
 import 'package:PiliPlus/common/widgets/gesture/horizontal_drag_gesture_recognizer.dart';
 import 'package:PiliPlus/common/widgets/image/network_img_layer.dart';
 import 'package:PiliPlus/common/widgets/keep_alive_wrapper.dart';
+import 'package:PiliPlus/common/widgets/liquid_glass/glass_platform.dart';
 import 'package:PiliPlus/common/widgets/route_aware_mixin.dart';
 import 'package:PiliPlus/common/widgets/scaffold/simple_scaffold.dart';
 import 'package:PiliPlus/common/widgets/scroll_physics.dart'
@@ -228,6 +229,8 @@ class _LiveRoomPageState extends State<LiveRoomPage>
         ..danmakuController?.clear();
     }
   }
+
+  static const _inputHeight = 70.0;
 
   late double maxWidth;
   late double maxHeight;
@@ -497,7 +500,7 @@ class _LiveRoomPageState extends State<LiveRoomPage>
           child: SizedBox(
             width: maxWidth,
             height: max(0, bottomHeight),
-            child: _buildBottomWidget,
+            child: _buildBottomWidget(),
           ),
         ),
       ],
@@ -505,7 +508,7 @@ class _LiveRoomPageState extends State<LiveRoomPage>
   }
 
   Widget _buildPP(bool isFullScreen) {
-    final bottomHeight = 70 + padding.bottom;
+    final bottomHeight = _inputHeight + padding.bottom;
     final videoHeight = isFullScreen
         ? maxHeight - (isWindowMode && !isPortrait ? 0 : padding.top)
         : maxHeight - bottomHeight;
@@ -539,7 +542,7 @@ class _LiveRoomPageState extends State<LiveRoomPage>
           height: bottomHeight,
           child: Offstage(
             offstage: isFullScreen,
-            child: _buildInputWidget,
+            child: _buildInputWidget(),
           ),
         ),
       ],
@@ -735,19 +738,35 @@ class _LiveRoomPageState extends State<LiveRoomPage>
   }
 
   Widget _buildBodyH(bool isFullScreen) {
-    double videoWidth =
+    final inputRightInset =
+        !isFullScreen && GlassCapabilities.isIOS && padding.right > 0
+        ? GlassCapabilities.of(context).window.bottomControlRightInset(
+            MediaQuery.of(context),
+            top: maxHeight - padding.bottom - _inputHeight,
+          )
+        : padding.right;
+    final extraWidth = padding.right - inputRightInset;
+    final availableWidth = maxWidth - padding.horizontal;
+    final targetVideoWidth =
         clampDouble(maxHeight / maxWidth * 1.08, 0.56, 0.7) * maxWidth;
-    final rightWidth = min(400.0, maxWidth - videoWidth - padding.horizontal);
-    videoWidth = maxWidth - rightWidth - padding.horizontal;
+    // Keep the send label usable when a lower corner blocks the right inset.
+    final minChatWidth = GlassCapabilities.isIOS
+        ? min(availableWidth / 2, max(0.0, 216.0 - extraWidth))
+        : 0.0;
+    final rightWidth = clampDouble(
+      availableWidth - targetVideoWidth,
+      minChatWidth,
+      400,
+    );
     final videoHeight = maxHeight - padding.top - kToolbarHeight;
-    final width = isFullScreen ? maxWidth : videoWidth;
+    final width = isFullScreen ? maxWidth : availableWidth - rightWidth;
     final height = isFullScreen
         ? maxHeight - (isWindowMode && !isPortrait ? 0 : padding.top)
         : videoHeight;
     return Padding(
       padding: isFullScreen
           ? EdgeInsets.zero
-          : EdgeInsets.only(left: padding.left, right: padding.right),
+          : EdgeInsets.only(left: padding.left, right: inputRightInset),
       child: Row(
         children: [
           Container(
@@ -764,9 +783,9 @@ class _LiveRoomPageState extends State<LiveRoomPage>
           Offstage(
             offstage: isFullScreen,
             child: SizedBox(
-              width: rightWidth,
+              width: rightWidth + extraWidth,
               height: videoHeight,
-              child: _buildBottomWidget,
+              child: _buildBottomWidget(chatRightInset: extraWidth),
             ),
           ),
         ],
@@ -774,11 +793,16 @@ class _LiveRoomPageState extends State<LiveRoomPage>
     );
   }
 
-  Widget get _buildBottomWidget => Column(
+  Widget _buildBottomWidget({double chatRightInset = 0}) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      Expanded(child: _buildChatWidget()),
-      _buildInputWidget,
+      Expanded(
+        child: Padding(
+          padding: EdgeInsets.only(right: chatRightInset),
+          child: _buildChatWidget(),
+        ),
+      ),
+      _buildInputWidget(roomy: chatRightInset >= 44),
     ],
   );
 
@@ -810,10 +834,11 @@ class _LiveRoomPageState extends State<LiveRoomPage>
     );
   }
 
-  Widget get _buildInputWidget {
+  Widget _buildInputWidget({bool roomy = false}) {
+    final buttonSize = roomy ? 44.0 : 34.0;
     final child = Container(
       padding: .only(top: 5, left: 10, right: 10, bottom: padding.bottom),
-      height: 70 + padding.bottom,
+      height: _inputHeight + padding.bottom,
       decoration: const BoxDecoration(
         borderRadius: .vertical(top: .circular(20)),
         border: Border(top: BorderSide(color: Color(0x1AFFFFFF))),
@@ -827,15 +852,15 @@ class _LiveRoomPageState extends State<LiveRoomPage>
           child: Align(
             alignment: .topCenter,
             child: Row(
-              spacing: 6,
+              spacing: roomy ? 8 : 6,
               children: [
                 Obx(
                   () {
                     final enableShowLiveDanmaku =
                         plPlayerController.enableShowLiveDanmaku.value;
                     return SizedBox(
-                      width: 34,
-                      height: 34,
+                      width: buttonSize,
+                      height: buttonSize,
                       child: IconButton(
                         style: IconButton.styleFrom(padding: .zero),
                         onPressed: () {
@@ -891,9 +916,9 @@ class _LiveRoomPageState extends State<LiveRoomPage>
                             onTapCancel: isLogin
                                 ? _liveRoomController.onLikeTapUp
                                 : null,
-                            child: const SizedBox.square(
-                              dimension: 34,
-                              child: Icon(
+                            child: SizedBox.square(
+                              dimension: buttonSize,
+                              child: const Icon(
                                 size: 22,
                                 color: baseWhite,
                                 Icons.thumb_up_off_alt,
@@ -901,7 +926,7 @@ class _LiveRoomPageState extends State<LiveRoomPage>
                             ),
                           ),
                           Positioned(
-                            left: 30,
+                            left: buttonSize - 4,
                             top: -12,
                             child: Obx(() {
                               final likeClickTime =
@@ -936,8 +961,8 @@ class _LiveRoomPageState extends State<LiveRoomPage>
                   },
                 ),
                 SizedBox(
-                  width: 34,
-                  height: 34,
+                  width: buttonSize,
+                  height: buttonSize,
                   child: IconButton(
                     style: IconButton.styleFrom(padding: EdgeInsets.zero),
                     onPressed: () => _liveRoomController.onSendDanmaku(true),

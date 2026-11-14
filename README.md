@@ -18,7 +18,7 @@
 
 本项目基于 [PiliPlus 2.2.0.2](https://github.com/bggRGjQaUbCoE/PiliPlus/releases/tag/2.2.0.2)。上游改进了视频选集和番剧下载入口，修复了部分视频评论加载不全的问题。
 
-本版更新调整了首页「推荐」的横屏布局。
+横屏看直播时，iPhone Duo 的弹幕发送栏更宽，文字和表情更容易点到。
 
 ## 本分支的主要改动
 
@@ -62,7 +62,7 @@
 
 ## 下载与安装
 
-前往本仓库的 [Releases](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases) 下载 IPA。当前版本为 [PiliPlus Liquid Glass 测试版 28](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases/tag/v2.2.0-liquid-glass.test28)（应用版本 2.2.0，构建号 28）。后续更新以 Releases 为准。
+前往本仓库的 [Releases](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases) 下载 IPA。当前版本为 [PiliPlus Liquid Glass 测试版 29](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases/tag/v2.2.0-liquid-glass.test29)（应用版本 2.2.0，构建号 29）。后续更新以 Releases 为准。
 
 - **安装包**：iPhone arm64 Release，最低支持 iOS 15。
 - **玻璃效果**：iOS 26 及以上使用原生 Liquid Glass；较旧系统使用兼容材质。

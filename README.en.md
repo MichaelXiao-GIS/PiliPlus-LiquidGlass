@@ -18,7 +18,7 @@ This repository focuses on iPhone test builds, including window, safe-area and r
 
 This fork is based on [PiliPlus 2.2.0.2](https://github.com/bggRGjQaUbCoE/PiliPlus/releases/tag/2.2.0.2). That release updated the episode picker and the download option for anime. It also fixed an issue that prevented some videos from showing all comments.
 
-In landscape, the Home recommendations now show four videos per row on a 13-inch iPad Pro and three on an unfolded iPhone Duo by default.
+On iPhone Duo, the chat bar is wider when watching a live stream in landscape. The text and emoji buttons are easier to tap.
 
 ## Changes in this fork
 
@@ -62,7 +62,7 @@ Simulator screenshots from test build 28.
 
 ## Download and install
 
-Get the IPA from this repository's [Releases](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases). The current version is [PiliPlus Liquid Glass test build 28](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases/tag/v2.2.0-liquid-glass.test28), app version 2.2.0, build 28. This build includes upstream 2.2.0.2 and preserves the integration of [upstream PiliPlus 2.2.0](https://github.com/bggRGjQaUbCoE/PiliPlus/releases/tag/2.2.0), including episode/PV switching, subscription ordering, folded comments, recommendation filtering and download improvements. Check Releases for subsequent updates.
+Get the IPA from this repository's [Releases](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases). The current version is [PiliPlus Liquid Glass test build 29](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases/tag/v2.2.0-liquid-glass.test29), app version 2.2.0, build 29. This build includes upstream 2.2.0.2 and preserves the integration of [upstream PiliPlus 2.2.0](https://github.com/bggRGjQaUbCoE/PiliPlus/releases/tag/2.2.0), including episode/PV switching, subscription ordering, folded comments, recommendation filtering and download improvements. Check Releases for subsequent updates.
 
 - **Package:** an arm64 Release build for iPhone, requiring iOS 15 or later.
 - **Glass effects:** native Liquid Glass on iOS 26 and later, with a compatible material on older systems.

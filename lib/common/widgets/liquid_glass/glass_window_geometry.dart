@@ -140,6 +140,31 @@ class GlassWindowGeometry {
     return rect;
   }
 
+  /// Right inset for a bottom control below a corner-mounted status area.
+  double bottomControlRightInset(MediaQueryData data, {required double top}) {
+    final inset = data.viewPadding.right;
+    if (inset <= 12 || verticalBarEdge != 'right' || !matches(data)) {
+      return inset;
+    }
+    final size = data.size;
+    final lane = Rect.fromLTWH(size.width - inset, 0, inset, size.height);
+    final hasCornerCutout = data.displayFeatures.any(
+      (f) =>
+          f.type == DisplayFeatureType.cutout &&
+          f.bounds.overlaps(lane) &&
+          f.bounds.top <= 1 &&
+          f.bounds.right >= size.width - 1 &&
+          f.bounds.bottom <= top,
+    );
+    final bottomLane = Rect.fromLTRB(lane.left, top, lane.right, lane.bottom);
+    if (!hasCornerCutout ||
+        statusBarBounds(data).overlaps(bottomLane) ||
+        data.displayFeatures.any((f) => f.bounds.overlaps(bottomLane))) {
+      return inset;
+    }
+    return 12;
+  }
+
   bool railOnLeft(MediaQueryData data) =>
       matches(data) && verticalBarEdge == 'left';
 
