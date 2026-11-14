@@ -2,12 +2,11 @@ import 'package:PiliPlus/common/skeleton/msg_feed_sys_msg_.dart';
 import 'package:PiliPlus/common/sliver_single_child_delegate.dart';
 import 'package:PiliPlus/common/widgets/dialog/dialog.dart';
 import 'package:PiliPlus/common/widgets/flutter/list_tile.dart';
-import 'package:PiliPlus/common/widgets/flutter/refresh_indicator.dart';
 import 'package:PiliPlus/common/widgets/gesture/tap_gesture_recognizer.dart';
 import 'package:PiliPlus/common/widgets/loading_widget/http_error.dart';
-import 'package:PiliPlus/common/widgets/scaffold/simple_scaffold.dart';
 import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/models_new/msg/msg_sys/data.dart';
+import 'package:PiliPlus/pages/msg_feed_top/message_feed_scaffold.dart';
 import 'package:PiliPlus/pages/msg_feed_top/sys_msg/controller.dart';
 import 'package:PiliPlus/utils/app_scheme.dart';
 import 'package:PiliPlus/utils/id_utils.dart';
@@ -34,23 +33,11 @@ class _SysMsgPageState extends State<SysMsgPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return SimpleScaffold(
+    return MessageFeedScaffold(
       appBar: AppBar(title: const Text('系统通知')),
-      body: refreshIndicator(
-        onRefresh: _sysMsgController.onRefresh,
-        child: CustomScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          slivers: [
-            SliverPadding(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.viewPaddingOf(context).bottom + 100,
-              ),
-              sliver: Obx(
-                () => _buildBody(theme, _sysMsgController.loadingState.value),
-              ),
-            ),
-          ],
-        ),
+      onRefresh: _sysMsgController.onRefresh,
+      sliver: Obx(
+        () => _buildBody(theme, _sysMsgController.loadingState.value),
       ),
     );
   }

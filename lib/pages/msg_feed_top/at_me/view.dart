@@ -2,16 +2,15 @@ import 'package:PiliPlus/common/skeleton/msg_feed_top.dart';
 import 'package:PiliPlus/common/sliver_single_child_delegate.dart';
 import 'package:PiliPlus/common/widgets/dialog/dialog.dart';
 import 'package:PiliPlus/common/widgets/flutter/list_tile.dart';
-import 'package:PiliPlus/common/widgets/flutter/refresh_indicator.dart';
 import 'package:PiliPlus/common/widgets/image/network_img_layer.dart';
 import 'package:PiliPlus/common/widgets/loading_widget/http_error.dart';
-import 'package:PiliPlus/common/widgets/scaffold/simple_scaffold.dart';
 import 'package:PiliPlus/grpc/bilibili/app/im/v1.pbenum.dart'
     show IMSettingType;
 import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/models/common/image_type.dart';
 import 'package:PiliPlus/models_new/msg/msg_at/item.dart';
 import 'package:PiliPlus/pages/msg_feed_top/at_me/controller.dart';
+import 'package:PiliPlus/pages/msg_feed_top/message_feed_scaffold.dart';
 import 'package:PiliPlus/pages/whisper_settings/view.dart';
 import 'package:PiliPlus/utils/app_scheme.dart';
 import 'package:PiliPlus/utils/date_utils.dart';
@@ -32,7 +31,7 @@ class _AtMePageState extends State<AtMePage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return SimpleScaffold(
+    return MessageFeedScaffold(
       appBar: AppBar(
         title: const Text('@我的'),
         actions: [
@@ -51,22 +50,8 @@ class _AtMePageState extends State<AtMePage> {
           const SizedBox(width: 10),
         ],
       ),
-      body: refreshIndicator(
-        onRefresh: _atMeController.onRefresh,
-        child: CustomScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          slivers: [
-            SliverPadding(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.viewPaddingOf(context).bottom + 100,
-              ),
-              sliver: Obx(
-                () => _buildBody(theme, _atMeController.loadingState.value),
-              ),
-            ),
-          ],
-        ),
-      ),
+      onRefresh: _atMeController.onRefresh,
+      sliver: Obx(() => _buildBody(theme, _atMeController.loadingState.value)),
     );
   }
 

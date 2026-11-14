@@ -18,7 +18,7 @@ This repository focuses on iPhone test builds, including window, safe-area and r
 
 This fork is based on [PiliPlus 2.2.0.2](https://github.com/bggRGjQaUbCoE/PiliPlus/releases/tag/2.2.0.2). That release updated the episode picker and the download option for anime. It also fixed an issue that prevented some videos from showing all comments.
 
-On iPhone Duo, the Profile tab shows your avatar when signed in. Messages and Search line up with the tab bar below. On larger landscape screens, the Library title and its buttons sit farther from the edges. [View screenshot](assets/screenshots/liquid_glass/library-landscape-test32.jpg)
+On iOS, replies, mentions, likes, and system notifications now scroll behind the same translucent header as the inbox. [View simulator screenshot](assets/screenshots/liquid_glass/message-replies-test33.jpg)
 
 ## Changes in this fork
 
@@ -70,7 +70,7 @@ The Duo landscape screenshot below is from build 31. The iPad and standard iPhon
 
 ## Download and install
 
-Download the IPA from [PiliPlus Liquid Glass test build 32](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases/tag/v2.2.0-liquid-glass.test32), app version 2.2.0, build 32.
+Download the IPA from [PiliPlus Liquid Glass test build 33](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases/tag/v2.2.0-liquid-glass.test33), app version 2.2.0, build 33.
 
 - **Package:** an arm64 Release build for iPhone, requiring iOS 15 or later.
 - **Glass effects:** native Liquid Glass on iOS 26 and later, with a compatible material on older systems.
