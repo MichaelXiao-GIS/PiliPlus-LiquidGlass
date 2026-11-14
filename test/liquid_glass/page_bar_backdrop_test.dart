@@ -5,11 +5,55 @@ import 'package:PiliPlus/common/widgets/liquid_glass/ios_settings_symbol.dart';
 import 'package:PiliPlus/common/widgets/scaffold/simple_scaffold.dart';
 import 'package:PiliPlus/utils/ios/ios_theme.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/rendering.dart' show RenderRepaintBoundary;
+import 'package:flutter/rendering.dart'
+    show RenderObject, RenderRepaintBoundary;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
 void main() {
+  testWidgets('overlapping scaffold slots expose semantics in paint order', (
+    tester,
+  ) async {
+    const body = ValueKey('body');
+    const bar = ValueKey('toolbar');
+    const fab = ValueKey('fab');
+    Widget button(Key key) => Semantics(
+      key: key,
+      container: true,
+      button: true,
+      label: key.toString(),
+      child: const SizedBox(width: 48, height: 48),
+    );
+    await tester.pumpWidget(
+      Directionality(
+        textDirection: TextDirection.ltr,
+        child: ScaffoldLayout(
+          overlayAppBar: true,
+          body: button(body),
+          appBar: button(bar),
+          fab: button(fab),
+        ),
+      ),
+    );
+    final scaffold = tester.renderObject(find.byType(ScaffoldLayout));
+    final children = <RenderObject>[];
+    scaffold.visitChildrenForSemantics(children.add);
+    final widgets = [body, bar, fab].map((key) => find.byKey(key));
+    expect(children, orderedEquals(widgets.map(tester.renderObject)));
+    expect(
+      tester
+          .getRect(find.byKey(body))
+          .contains(tester.getCenter(find.byKey(bar))),
+      isTrue,
+    );
+    expect(
+      tester
+          .getRect(find.byKey(body))
+          .contains(tester.getCenter(find.byKey(fab))),
+      isTrue,
+    );
+  });
+
   testWidgets('nested comment controls stop below the translucent toolbar', (
     tester,
   ) async {

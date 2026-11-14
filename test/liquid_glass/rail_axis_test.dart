@@ -18,7 +18,11 @@ const _items = [
   GlassDestination(label: '我的', symbol: 'person', icon: Icon(Icons.person)),
 ];
 
-Widget _host(MediaQueryData data, TextDirection direction) => MaterialApp(
+Widget _host(
+  MediaQueryData data,
+  TextDirection direction, {
+  bool systemTabs = false,
+}) => MaterialApp(
   home: MediaQuery(
     data: data,
     child: GlassPlatformScope(
@@ -28,6 +32,7 @@ Widget _host(MediaQueryData data, TextDirection direction) => MaterialApp(
           floatingSideBar: true,
           bottomNav: null,
           sideBar: GlassNavigationRail(
+            showDestinations: !systemTabs,
             destinations: _items,
             selectedIndex: 0,
             onSelected: (_) {},
@@ -61,6 +66,48 @@ Widget _host(MediaQueryData data, TextDirection direction) => MaterialApp(
 );
 
 void main() {
+  for (final edge in ['left', 'right']) {
+    testWidgets('upper actions use the measured $edge system capsule', (
+      tester,
+    ) async {
+      const size = Size(582.5, 847.5);
+      await tester.binding.setSurfaceSize(size);
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final x = edge == 'left' ? 24.0 : 394.0;
+      final window = {
+        'width': 466,
+        'height': 678,
+        'scale': 3,
+        'verticalBarEdge': edge,
+        'nativeTabRailFrame': {'x': x, 'y': 485, 'width': 48, 'height': 170},
+      };
+      final messenger = tester.binding.defaultBinaryMessenger
+        ..setMockMethodCallHandler(_channel, (_) async => {'window': window});
+      addTearDown(() => messenger.setMockMethodCallHandler(_channel, null));
+      await tester.pumpWidget(
+        _host(
+          const MediaQueryData(size: size, devicePixelRatio: 2.4),
+          TextDirection.rtl,
+          systemTabs: true,
+        ),
+      );
+      await tester.pumpAndSettle();
+      final upper = tester.getRect(find.byType(GlassSurface));
+      expect(upper.left, closeTo(x * 1.25, 0.001));
+      expect(upper.right, closeTo((x + 48) * 1.25, 0.001));
+      expect(
+        tester.getCenter(find.byKey(const ValueKey('search'))).dx,
+        upper.center.dx,
+      );
+      final content = tester.getRect(find.byKey(const ValueKey('content')));
+      if (edge == 'left') {
+        expect(content.left, closeTo(upper.right + 8, 0.001));
+      } else {
+        expect(content.right, closeTo(upper.left - 8, 0.001));
+      }
+    }, variant: TargetPlatformVariant.only(TargetPlatform.iOS));
+  }
+
   for (final edge in ['left', 'right']) {
     for (final direction in TextDirection.values) {
       for (final factor in [1.0, 1.25]) {

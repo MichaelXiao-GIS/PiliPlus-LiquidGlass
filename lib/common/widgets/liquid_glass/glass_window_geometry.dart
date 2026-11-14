@@ -20,6 +20,7 @@ class GlassWindowGeometry {
     this.verticalSizeClass = 0,
     this.safeArea = EdgeInsets.zero,
     this.nativeTabTopInset = 0,
+    this.nativeTabRailFrame = Rect.zero,
     this.features = const [],
     this.verticalBarEdge,
     this.statusBarFrame = Rect.zero,
@@ -30,10 +31,17 @@ class GlassWindowGeometry {
         value is num && value.isFinite ? value.toDouble() : 0;
     final safe = map['safeArea'] as Map? ?? const {};
     final status = map['statusBarFrame'] as Map? ?? const {};
+    final rail = map['nativeTabRailFrame'] as Map? ?? const {};
     return GlassWindowGeometry(
       size: Size(number(map['width']), number(map['height'])),
       scale: number(map['scale']),
       nativeTabTopInset: number(map['nativeTabTopInset']),
+      nativeTabRailFrame: Rect.fromLTWH(
+        number(rail['x']),
+        number(rail['y']),
+        number(rail['width']),
+        number(rail['height']),
+      ),
       horizontalSizeClass: (map['horizontalSizeClass'] as num?)?.toInt() ?? 0,
       verticalSizeClass: (map['verticalSizeClass'] as num?)?.toInt() ?? 0,
       verticalBarEdge: map['verticalBarEdge'] as String?,
@@ -78,6 +86,7 @@ class GlassWindowGeometry {
   final int verticalSizeClass;
   final EdgeInsets safeArea;
   final double nativeTabTopInset;
+  final Rect nativeTabRailFrame;
   final List<DisplayFeature> features;
 
   /// Physical edge, resolved by UIKit so RTL never moves the hardware bar.
@@ -170,6 +179,24 @@ class GlassWindowGeometry {
 
   bool railOnLeft(MediaQueryData data) =>
       matches(data) && verticalBarEdge == 'left';
+
+  Rect? tabRailBounds(MediaQueryData data) {
+    if (!matches(data) ||
+        (verticalBarEdge != 'left' && verticalBarEdge != 'right')) {
+      return null;
+    }
+    final rect = _scaleRect(nativeTabRailFrame, _factor(data));
+    if (rect.isEmpty ||
+        rect.height <= rect.width ||
+        rect.left < 0 ||
+        rect.right > data.size.width ||
+        rect.top < 0 ||
+        rect.bottom > data.size.height ||
+        (rect.center.dx < data.size.width / 2) != (verticalBarEdge == 'left')) {
+      return null;
+    }
+    return rect;
+  }
 
   double _factor(MediaQueryData data) => scale / data.devicePixelRatio;
 

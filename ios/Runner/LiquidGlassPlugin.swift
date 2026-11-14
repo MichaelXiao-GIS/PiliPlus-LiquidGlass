@@ -33,6 +33,7 @@ final class LiquidGlassPlugin: NSObject, FlutterPlugin {
     self.channel = channel
     self.hostProvider = hostProvider
     super.init()
+    geometry.railFrame = { [weak self] in self?.nativeTabHost?.nativeTabRailFrame }
     geometry.topInset = { [weak self] in self?.nativeTabHost?.nativeTabTopInset ?? 0 }
     geometry.isUserInteractionEnabled = false
     geometry.accessibilityElementsHidden = true
@@ -143,6 +144,7 @@ final class LiquidGlassPlugin: NSObject, FlutterPlugin {
 /// Uses the Flutter view's window, never a global screen or device model name.
 private final class GlassGeometryView: UIView {
   var onChange: (([String: Any]) -> Void)?
+  var railFrame: (() -> CGRect?)?
   var topInset: (() -> CGFloat)?
   private var previous: NSDictionary?
 
@@ -197,6 +199,11 @@ private final class GlassGeometryView: UIView {
                    "right": safeAreaInsets.right, "bottom": safeAreaInsets.bottom],
       "regions": regions,
     ]
+    if let frame = railFrame?(), let window {
+      let local = convert(frame, from: window)
+      result["nativeTabRailFrame"] = ["x": local.minX, "y": local.minY,
+                                      "width": local.width, "height": local.height]
+    }
     if let edge = verticalBarEdge { result["verticalBarEdge"] = edge }
     result["statusBarFrame"] = ["x": statusFrame.minX, "y": statusFrame.minY,
                                 "width": statusFrame.width, "height": statusFrame.height]
@@ -473,6 +480,7 @@ private final class GlassControlView: UIView, UIGestureRecognizerDelegate {
       buttons[index].configure(
         title: item["label"] as? String ?? "",
         symbol: item["symbol"] as? String ?? "circle",
+        avatarData: (item["avatar"] as? FlutterStandardTypedData)?.data,
         badge: item["badge"] as? String,
         selected: index == (previewIndex ?? selectedIndex), tint: tint, textScale: scale,
         compactProgress: compact, showSelection: previewIndex == nil,
@@ -615,6 +623,7 @@ private final class GlassControlView: UIView, UIGestureRecognizerDelegate {
 }
 
 private final class GlassTabButton: UIControl {
+  private let avatar = TabAvatar()
   private let imageView = UIImageView()
   private let label = UILabel()
   private let badgeLabel = UILabel()
@@ -642,7 +651,7 @@ private final class GlassTabButton: UIControl {
   required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
   func configure(
-    title: String, symbol: String, badge: String?, selected: Bool,
+    title: String, symbol: String, avatarData: Data?, badge: String?, selected: Bool,
     tint: UIColor, textScale: Double, compactProgress: Double,
     showSelection: Bool, committed: Bool
   ) {
@@ -658,7 +667,7 @@ private final class GlassTabButton: UIControl {
     label.isHidden = self.compactProgress >= 1
     imageView.tintColor = selected ? tint : .label
     let selectedSymbol = "\(symbol).fill"
-    imageView.image = (selected ? UIImage(systemName: selectedSymbol) : nil) ??
+    imageView.image = avatar.image(for: avatarData) ?? (selected ? UIImage(systemName: selectedSymbol) : nil) ??
       UIImage(systemName: symbol)
     backgroundColor = selected && showSelection ? .tertiarySystemFill : .clear
     badgeLabel.isHidden = badge == nil

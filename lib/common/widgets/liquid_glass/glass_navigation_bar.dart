@@ -12,15 +12,30 @@ class GlassDestination {
   const GlassDestination({
     required this.label,
     required this.symbol,
-    required this.icon,
-    this.selectedIcon,
+    required this._icon,
+    this._selectedIcon,
+    this.avatar,
     this.badge,
   });
 
   final String label;
   final String symbol;
-  final Widget icon;
-  final Widget? selectedIcon;
+  final Widget _icon;
+  final Widget? _selectedIcon;
+  final Uint8List? avatar;
+
+  Widget get icon => avatar == null ? _icon : _avatarIcon();
+  Widget? get selectedIcon => avatar == null ? _selectedIcon : _avatarIcon();
+
+  Widget _avatarIcon() => ClipOval(
+    child: Image.memory(
+      avatar!,
+      width: 25,
+      height: 25,
+      fit: BoxFit.cover,
+      excludeFromSemantics: true,
+    ),
+  );
 
   /// null hides the badge, an empty string represents an unread dot.
   final String? badge;
@@ -78,6 +93,7 @@ class _GlassNavigationBarState extends State<GlassNavigationBar>
           'label': destination.label,
           'symbol': destination.symbol,
           'badge': destination.badge,
+          'avatar': ?destination.avatar,
         },
     ],
   };

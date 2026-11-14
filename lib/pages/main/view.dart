@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:PiliPlus/common/style.dart';
 import 'package:PiliPlus/common/widgets/floating_navigation_bar.dart';
@@ -18,11 +20,13 @@ import 'package:PiliPlus/pages/home/view.dart';
 import 'package:PiliPlus/pages/main/controller.dart';
 import 'package:PiliPlus/utils/android/bindings.g.dart';
 import 'package:PiliPlus/utils/app_scheme.dart';
+import 'package:PiliPlus/utils/cache_manager.dart';
 import 'package:PiliPlus/utils/desktop/tray_controller.dart';
 import 'package:PiliPlus/utils/desktop/window_controller.dart';
 import 'package:PiliPlus/utils/extension/context_ext.dart';
 import 'package:PiliPlus/utils/extension/size_ext.dart';
 import 'package:PiliPlus/utils/extension/theme_ext.dart';
+import 'package:PiliPlus/utils/image_utils.dart';
 import 'package:PiliPlus/utils/mobile_observer.dart';
 import 'package:PiliPlus/utils/platform_utils.dart';
 import 'package:PiliPlus/utils/storage.dart';
@@ -46,6 +50,73 @@ class _MainAppState extends PopScopeState<MainApp>
   late ColorScheme _colorScheme;
   Brightness? _brightness;
   bool _nativeTabsInstalled = false;
+  Worker? _avatarAccountObserver;
+  String? _avatarSource;
+  Uint8List? _avatarPng;
+  bool _avatarFailed = false;
+
+  bool get _railHasMine =>
+      _mainController.navigationBars.contains(NavigationBarType.mine);
+
+  String? get _railAvatarSource {
+    final account = _mainController.accountService;
+    if (_mainController.useBottomNav ||
+        !_railHasMine ||
+        !account.isLogin.value) {
+      return null;
+    }
+    final face = account.face.value;
+    return face.isEmpty ? null : face;
+  }
+
+  void _updateRailAvatar({bool retry = false}) {
+    if (!GlassCapabilities.isIOS) return;
+    final source = _railAvatarSource;
+    if (source == _avatarSource && !(retry && _avatarFailed)) return;
+    _avatarSource = source;
+    _avatarPng = null;
+    _avatarFailed = false;
+    if (source != null) unawaited(_loadRailAvatar(source));
+  }
+
+  Future<void> _loadRailAvatar(String source) async {
+    try {
+      final file = await CacheManager.manager.getSingleFile(
+        ImageUtils.thumbnailUrl(source),
+      );
+      if (!mounted || source != _avatarSource) return;
+      final buffer = await ui.ImmutableBuffer.fromFilePath(file.path);
+      final codec = await ui.instantiateImageCodecWithSize(
+        buffer,
+        getTargetSize: (width, height) => width >= height
+            ? ui.TargetImageSize(width: width.clamp(1, 84))
+            : ui.TargetImageSize(height: height.clamp(1, 84)),
+      );
+      try {
+        final frame = await codec.getNextFrame();
+        try {
+          final data = await frame.image.toByteData(
+            format: ui.ImageByteFormat.png,
+          );
+          if (mounted && data != null && _avatarSource == source) {
+            setState(
+              () => _avatarPng = data.buffer.asUint8List(
+                data.offsetInBytes,
+                data.lengthInBytes,
+              ),
+            );
+          }
+        } finally {
+          frame.image.dispose();
+        }
+      } finally {
+        codec.dispose();
+      }
+    } catch (_) {
+      // Offline or undecodable avatars use the destination's normal symbol.
+      if (mounted && _avatarSource == source) _avatarFailed = true;
+    }
+  }
 
   @override
   bool get initCanPop => false;
@@ -54,6 +125,12 @@ class _MainAppState extends PopScopeState<MainApp>
   void initState() {
     super.initState();
     addObserverMobile(this);
+    if (GlassCapabilities.isIOS) {
+      final account = _mainController.accountService;
+      _avatarAccountObserver = everAll([account.face, account.isLogin], (_) {
+        if (mounted) setState(_updateRailAvatar);
+      });
+    }
     if (Platform.isMacOS) {
       HardwareKeyboard.instance.addHandler(_handleKeyEvent);
     }
@@ -83,6 +160,7 @@ class _MainAppState extends PopScopeState<MainApp>
       }
     }
     _updateNavigationLayout();
+    _updateRailAvatar();
   }
 
   bool get _systemVerticalEdge {
@@ -120,6 +198,7 @@ class _MainAppState extends PopScopeState<MainApp>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
+      _updateRailAvatar(retry: true);
       _mainController
         ..checkUnreadDynamic()
         ..checkDefaultSearch(true)
@@ -129,6 +208,7 @@ class _MainAppState extends PopScopeState<MainApp>
 
   @override
   void dispose() {
+    _avatarAccountObserver?.dispose();
     if (Platform.isMacOS) {
       HardwareKeyboard.instance.removeHandler(_handleKeyEvent);
     }
@@ -184,6 +264,12 @@ class _MainAppState extends PopScopeState<MainApp>
         },
         icon: type.icon,
         selectedIcon: type.selectIcon,
+        avatar:
+            type == NavigationBarType.mine &&
+                _avatarSource != null &&
+                _avatarSource == _railAvatarSource
+            ? _avatarPng
+            : null,
         badge:
             type == NavigationBarType.dynamics &&
                 _mainController.dynamicBadgeMode != .hidden &&
@@ -450,11 +536,12 @@ class _MainAppState extends PopScopeState<MainApp>
           () => GlassNavigationRail(
             showDestinations: !showNativeTabs,
             actions: [
-              userAvatar(
-                colorScheme: _colorScheme,
-                mainController: _mainController,
-                showBackground: false,
-              ),
+              if (!_railHasMine)
+                userAvatar(
+                  colorScheme: _colorScheme,
+                  mainController: _mainController,
+                  showBackground: false,
+                ),
               if (_mainController.accountService.isLogin.value)
                 msgBadge(_mainController),
               IconButton(
@@ -464,7 +551,7 @@ class _MainAppState extends PopScopeState<MainApp>
               ),
             ],
             compactLeading: PopupMenuButton<int>(
-              tooltip: '搜索与账号',
+              tooltip: _railHasMine ? '更多操作' : '搜索与账号',
               icon: Badge(
                 isLabelVisible: _mainController.msgUnReadCount.value != null,
                 child: const Icon(Icons.more_horiz),
@@ -481,7 +568,8 @@ class _MainAppState extends PopScopeState<MainApp>
               },
               itemBuilder: (_) => [
                 const PopupMenuItem(value: 0, child: Text('搜索')),
-                const PopupMenuItem(value: 1, child: Text('我的')),
+                if (!_railHasMine)
+                  const PopupMenuItem(value: 1, child: Text('我的')),
                 if (_mainController.accountService.isLogin.value)
                   PopupMenuItem(
                     value: 2,
@@ -500,7 +588,10 @@ class _MainAppState extends PopScopeState<MainApp>
         );
       }
       padding = GlassCapabilities.isIOS
-          ? GlassNavigationRail.contentInsetsOf(context)
+          ? GlassNavigationRail.contentInsetsOf(
+              context,
+              useSystemRail: showNativeTabs,
+            )
           : .only(top: _padding.top, right: _padding.right);
     }
 
@@ -555,6 +646,7 @@ class _MainAppState extends PopScopeState<MainApp>
                       'symbol': destinations[i].symbol,
                       'selectedSymbol': '${destinations[i].symbol}.fill',
                       'badge': destinations[i].badge,
+                      'avatar': ?destinations[i].avatar,
                     },
                 ],
                 onSelected: _mainController.setIndex,
@@ -566,6 +658,7 @@ class _MainAppState extends PopScopeState<MainApp>
                     setState(() {
                       _nativeTabsInstalled = installed;
                       _updateNavigationLayout();
+                      _updateRailAvatar();
                     });
                   }
                 },

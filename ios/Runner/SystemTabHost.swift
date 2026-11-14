@@ -8,6 +8,7 @@ final class SystemTabHost: UITabBarController, UITabBarControllerDelegate {
   private weak var flutter: FlutterViewController?
   private weak var observingPage: SystemTabPage?
   private var semanticsObservation: NSKeyValueObservation?
+  private(set) var nativeTabRailFrame: CGRect?
   private(set) var nativeTabTopInset: CGFloat = 0
   var geometryChanged: (() -> Void)?
   private let didChoose: (Int) -> Void
@@ -65,10 +66,10 @@ final class SystemTabHost: UITabBarController, UITabBarControllerDelegate {
 
   override func viewDidLayoutSubviews() {
     super.viewDidLayoutSubviews()
-    updateTopClearance()
+    updateBarGeometry()
   }
 
-  private func updateTopClearance() {
+  private func updateBarGeometry() {
     guard let flutter, let overlay, let window = overlay.window else { return }
     var top: CGFloat = 0
     if !overlay.isHidden && traitCollection.userInterfaceIdiom == .pad {
@@ -83,9 +84,47 @@ final class SystemTabHost: UITabBarController, UITabBarControllerDelegate {
         }
       }
     }
-    guard abs(top - nativeTabTopInset) > 0.5 else { return }
+    var rail: CGRect?
+    if #available(iOS 27.1, *), !overlay.isHidden, !isTabBarHidden,
+       traitCollection.verticalBarEdge != .unspecified {
+      rail = verticalRailFrame(in: window)
+    }
+    guard abs(top - nativeTabTopInset) > 0.5 || rail != nativeTabRailFrame else { return }
     nativeTabTopInset = top
+    nativeTabRailFrame = rail
     geometryChanged?()
+  }
+
+  @available(iOS 27.1, *)
+  private func verticalRailFrame(in window: UIWindow) -> CGRect? {
+    // The public tabBar can span the entire reserved side lane. Find the
+    // nearest common container of the visible destination buttons instead.
+    // This uses UIView geometry and semantics without depending on UIKit's
+    // internal view classes or the thickness of its material border.
+    let rtl = view.effectiveUserInterfaceLayoutDirection == .rightToLeft
+    let left = (traitCollection.verticalBarEdge == .leading) != rtl
+    let count = orderedIDs.count
+    guard count > 1 else { return nil }
+    var rail: CGRect?
+    func inspect(_ node: UIView) -> Set<CGFloat> {
+      guard !node.isHidden, node.alpha > 0.01 else { return [] }
+      let frame = node.convert(node.bounds, to: window)
+      let onSide = (frame.midX < window.bounds.midX) == left
+      var centers = Set<CGFloat>()
+      for child in node.subviews { centers.formUnion(inspect(child)) }
+      if centers.isEmpty, !frame.isEmpty, onSide,
+         node is UIControl || node.accessibilityTraits.contains(.button) {
+        centers.insert(frame.midY)
+      }
+      if centers.count == count, onSide, frame.height > frame.width,
+         !frame.isEmpty, window.bounds.contains(frame),
+         frame.width < (rail?.width ?? .greatestFiniteMagnitude) {
+        rail = frame
+      }
+      return centers
+    }
+    _ = inspect(view)
+    return rail
   }
 
   private func prepare(_ args: [String: Any]) -> Bool {
@@ -99,8 +138,14 @@ final class SystemTabHost: UITabBarController, UITabBarControllerDelegate {
       let name = item["symbol"] as? String ?? "circle"
       let button: UITabBarItem = page.tabBarItem
       button.title = item["title"] as? String
-      button.image = UIImage(systemName: name)
-      button.selectedImage = UIImage(systemName: item["selectedSymbol"] as? String ?? name)
+      let data = (item["avatar"] as? FlutterStandardTypedData)?.data
+      if let avatar = page.avatar.image(for: data) {
+        button.image = avatar
+        button.selectedImage = avatar
+      } else {
+        button.image = UIImage(systemName: name)
+        button.selectedImage = UIImage(systemName: item["selectedSymbol"] as? String ?? name)
+      }
       button.badgeValue = item["badge"] as? String
       next[id] = page
     }
@@ -137,7 +182,7 @@ final class SystemTabHost: UITabBarController, UITabBarControllerDelegate {
     overlay?.isHidden = !visible
     connectScrollGesture()
     includeSystemAccessibility()
-    updateTopClearance()
+    updateBarGeometry()
     return true
   }
 
@@ -207,6 +252,8 @@ private final class SystemTabPage: UIViewController {
   private var directionAnchor: CGFloat = 0
   private var prefersExpanded = true
 
+  let avatar = TabAvatar()
+
   override func loadView() {
     view = scroll
     scroll.backgroundColor = .clear
@@ -255,5 +302,29 @@ private final class SystemTabPage: UIViewController {
       scroll.contentOffset.y = min(self.maximum, max(0, offset))
     }
     return !wasExpanded && prefersExpanded
+  }
+}
+
+/// Retains the small decoded icon while its account image remains current.
+final class TabAvatar {
+  private var avatarBytes: Data?
+  private var avatar: UIImage?
+
+  func image(for data: Data?) -> UIImage? {
+    guard avatarBytes != data else { return avatar }
+    avatarBytes = data
+    avatar = nil
+    guard let data, let source = UIImage(data: data), source.size.width > 0, source.size.height > 0 else { return nil }
+    let diameter: CGFloat = 26
+    let size = CGSize(width: diameter, height: diameter)
+    let zoom = diameter / min(source.size.width, source.size.height)
+    let crop = CGRect(x: (diameter - source.size.width * zoom) / 2,
+                      y: (diameter - source.size.height * zoom) / 2,
+                      width: source.size.width * zoom, height: source.size.height * zoom)
+    avatar = UIGraphicsImageRenderer(size: size).image { _ in
+      UIBezierPath(ovalIn: CGRect(origin: .zero, size: size)).addClip()
+      source.draw(in: crop)
+    }.withRenderingMode(.alwaysOriginal)
+    return avatar
   }
 }

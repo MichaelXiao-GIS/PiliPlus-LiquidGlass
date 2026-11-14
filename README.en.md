@@ -18,7 +18,7 @@ This repository focuses on iPhone test builds, including window, safe-area and r
 
 This fork is based on [PiliPlus 2.2.0.2](https://github.com/bggRGjQaUbCoE/PiliPlus/releases/tag/2.2.0.2). That release updated the episode picker and the download option for anime. It also fixed an issue that prevented some videos from showing all comments.
 
-The iOS app uses the system tab bar. On Home, the bottom bar collapses and expands as you scroll. In landscape on iPhone Duo, dragging through the side tabs enlarges the selection and reveals their names.
+On iPhone Duo, the Profile tab shows your avatar when signed in. Messages and Search line up with the tab bar below. As you scroll through your inbox, messages blur behind the header.
 
 ## Changes in this fork
 
@@ -34,9 +34,15 @@ Video, anime, live streams, feeds, comments, favorites, history and offline cach
 
 ## Current interface
 
-Simulator screenshots from test build 30.
+Test build 31 on the Duo simulator, with a sample avatar and an offline inbox.
 
-[View the system selection while dragging a Duo side tab](assets/screenshots/liquid_glass/duo-tab-drag-test30.jpg).
+| Home sidebar | Scrolled inbox |
+| --- | --- |
+| [<img src="assets/screenshots/liquid_glass/duo-sidebar-test31.jpg" width="280" alt="The top actions align with the lower tab bar, which contains the profile avatar" />](assets/screenshots/liquid_glass/duo-sidebar-test31.jpg) | [<img src="assets/screenshots/liquid_glass/messages-test31.jpg" width="280" alt="Messages scroll behind the translucent header" />](assets/screenshots/liquid_glass/messages-test31.jpg) |
+
+[View the system selection while dragging a Duo side tab](assets/screenshots/liquid_glass/duo-tab-drag-test31.jpg).
+
+The Duo landscape screenshot below is from build 31. The iPad and standard iPhone screenshots are from build 30.
 
 <table>
   <tr>
@@ -45,7 +51,7 @@ Simulator screenshots from test build 30.
   </tr>
   <tr>
     <td><a href="assets/screenshots/liquid_glass/ipad-landscape-test30.jpg"><img src="assets/screenshots/liquid_glass/ipad-landscape-test30.jpg" width="420" alt="Home recommendations with four videos per row" /></a></td>
-    <td><a href="assets/screenshots/liquid_glass/duo-landscape-test30.jpg"><img src="assets/screenshots/liquid_glass/duo-landscape-test30.jpg" width="420" alt="Home recommendations with three videos per row" /></a></td>
+    <td><a href="assets/screenshots/liquid_glass/duo-landscape-test31.jpg"><img src="assets/screenshots/liquid_glass/duo-landscape-test31.jpg" width="420" alt="Home recommendations with three videos per row" /></a></td>
   </tr>
 </table>
 
@@ -64,7 +70,7 @@ Simulator screenshots from test build 30.
 
 ## Download and install
 
-Get the IPA from this repository's [Releases](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases). The current version is [PiliPlus Liquid Glass test build 30](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases/tag/v2.2.0-liquid-glass.test30), app version 2.2.0, build 30. This build includes upstream 2.2.0.2 and preserves the integration of [upstream PiliPlus 2.2.0](https://github.com/bggRGjQaUbCoE/PiliPlus/releases/tag/2.2.0), including episode/PV switching, subscription ordering, folded comments, recommendation filtering and download improvements. Check Releases for subsequent updates.
+Download the IPA from [PiliPlus Liquid Glass test build 31](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases/tag/v2.2.0-liquid-glass.test31), app version 2.2.0, build 31.
 
 - **Package:** an arm64 Release build for iPhone, requiring iOS 15 or later.
 - **Glass effects:** native Liquid Glass on iOS 26 and later, with a compatible material on older systems.

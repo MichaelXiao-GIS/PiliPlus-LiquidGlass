@@ -1,6 +1,8 @@
 import 'package:PiliPlus/common/skeleton/whisper_item.dart';
 import 'package:PiliPlus/common/sliver_single_child_delegate.dart';
 import 'package:PiliPlus/common/widgets/flutter/refresh_indicator.dart';
+import 'package:PiliPlus/common/widgets/liquid_glass/glass_page_bar.dart';
+import 'package:PiliPlus/common/widgets/liquid_glass/glass_scroll_chrome.dart';
 import 'package:PiliPlus/common/widgets/loading_widget/http_error.dart';
 import 'package:PiliPlus/common/widgets/scaffold/simple_scaffold.dart';
 import 'package:PiliPlus/grpc/bilibili/app/im/v1.pb.dart';
@@ -29,6 +31,7 @@ class _WhisperPageState extends State<WhisperPage> {
     final theme = Theme.of(context);
     final padding = MediaQuery.viewPaddingOf(context);
     return SimpleScaffold(
+      overlayAppBar: true,
       appBar: AppBar(
         title: const Text('消息'),
         actions: [
@@ -93,17 +96,21 @@ class _WhisperPageState extends State<WhisperPage> {
           const SizedBox(width: 5),
         ],
       ),
-      body: refreshIndicator(
-        onRefresh: _controller.onRefresh,
-        child: CustomScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          slivers: [
-            _buildTopItems(theme, padding),
-            SliverPadding(
-              padding: EdgeInsets.only(bottom: padding.bottom + 100),
-              sliver: Obx(() => _buildBody(_controller.loadingState.value)),
-            ),
-          ],
+      body: GlassScrollInsets(
+        top: GlassPageBar.topInset(context),
+        child: refreshIndicator(
+          onRefresh: _controller.onRefresh,
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              const GlassScrollSpacer(),
+              _buildTopItems(theme, padding),
+              SliverPadding(
+                padding: EdgeInsets.only(bottom: padding.bottom + 100),
+                sliver: Obx(() => _buildBody(_controller.loadingState.value)),
+              ),
+            ],
+          ),
         ),
       ),
     );

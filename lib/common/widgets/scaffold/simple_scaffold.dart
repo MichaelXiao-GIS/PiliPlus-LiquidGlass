@@ -3,7 +3,8 @@ import 'dart:math' as math;
 import 'package:PiliPlus/common/widgets/slotted_layout_helper.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_page_bar.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_platform.dart';
-import 'package:flutter/rendering.dart' show ChildLayoutHelper;
+import 'package:flutter/rendering.dart'
+    show ChildLayoutHelper, RenderObjectVisitor;
 import 'package:material_ui/material_ui.dart';
 
 class SimpleScaffold extends StatelessWidget {
@@ -143,6 +144,14 @@ class _RenderScaffoldLayout extends RenderBox
         ),
       );
     }
+  }
+
+  @override
+  void visitChildrenForSemantics(RenderObjectVisitor visitor) {
+    // Flutter reverses paint order for accessibility hit testing.
+    visitor(body);
+    if (appBar case final bar?) visitor(bar);
+    if (fab case final button?) visitor(button);
   }
 
   @override

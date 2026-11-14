@@ -77,18 +77,22 @@ class GlassNavigationRail extends StatelessWidget {
               (inset >= gutter ? (inset + width) / 2 : inset + width + 8);
   }
 
-  static EdgeInsets contentInsetsOf(BuildContext context) {
+  static EdgeInsets contentInsetsOf(
+    BuildContext context, {
+    bool useSystemRail = true,
+  }) {
     final data = MediaQuery.of(context);
     final safe = data.viewPadding;
     final window = GlassCapabilities.of(context).window;
     final left = window.railOnLeft(data);
     final inset = left ? safe.left : safe.right;
-    final x = _leftOf(data, window);
+    final rail = useSystemRail ? window.tabRailBounds(data) : null;
+    final x = rail?.left ?? _leftOf(data, window);
     // Reserve the actual rail bounds plus its content-side gap. A status
     // column shifted inward may extend beyond the system's safe-area lane.
     final reserved = math.max(
       inset,
-      left ? x + width + 8 : data.size.width - x + 8,
+      left ? x + (rail?.width ?? width) + 8 : data.size.width - x + 8,
     );
     // Reserve the bar's horizontal lane, but let scrolling content paint
     // through the bottom safe area. Controls still use the full safe insets.
@@ -103,11 +107,13 @@ class GlassNavigationRail extends StatelessWidget {
     final safe = data.viewPadding;
     final window = GlassCapabilities.of(context).window;
     final colors = ColorScheme.of(context);
-    final x = _leftOf(data, window);
+    final rail = showDestinations ? null : window.tabRailBounds(data);
+    final x = rail?.left ?? _leftOf(data, window);
+    final railWidth = rail?.width ?? width;
     var band = Rect.fromLTRB(
       x,
       safe.top + 12,
-      x + width,
+      x + railWidth,
       math.max(safe.top + 12, data.size.height - safe.bottom - 12),
     );
     final status = window.statusBarBounds(data);
@@ -121,13 +127,18 @@ class GlassNavigationRail extends StatelessWidget {
     }
     final region = glassControlRegion(data, band, Axis.vertical);
     final navHeight = destinations.length * _buttonSize + _inset * 2;
-    final leadingHeight = actions.length * _buttonSize + _inset * 2;
-    final expanded = region.height >= navHeight + leadingHeight + 20;
-    final toolbarHeight = expanded ? leadingHeight : width;
+    final actionSize = math.min(_buttonSize, railWidth);
+    final endInset = (railWidth - actionSize) / 2;
+    final leadingHeight = actions.length * actionSize + endInset * 2;
+    final roomAboveTabs = rail == null
+        ? region.height - navHeight - 20
+        : math.min(region.bottom, rail.top - 12) - region.top;
+    final expanded = roomAboveTabs >= leadingHeight;
+    final toolbarHeight = expanded ? leadingHeight : railWidth;
     final available = math.max(0.0, region.height - toolbarHeight - 12);
     final height = math.min(navHeight, available);
     Widget surface(Widget child) => GlassSurface(
-      radius: width / 2,
+      radius: railWidth / 2,
       child: MediaQuery.removePadding(
         context: context,
         removeLeft: true,
@@ -146,18 +157,18 @@ class GlassNavigationRail extends StatelessWidget {
         Positioned(
           left: region.left,
           top: region.top,
-          width: width,
+          width: railWidth,
           height: toolbarHeight,
           child: surface(
             Padding(
-              padding: const EdgeInsets.all(_inset),
+              padding: EdgeInsets.symmetric(vertical: endInset),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   for (final action in expanded ? actions : [compactLeading])
                     SizedBox(
-                      width: _buttonSize,
-                      height: _buttonSize,
+                      width: actionSize,
+                      height: actionSize,
                       child: Center(child: action),
                     ),
                 ],
@@ -171,7 +182,7 @@ class GlassNavigationRail extends StatelessWidget {
             top: region.bottom - height,
             width: width,
             height: height,
-            child: height >= navHeight
+            child: height >= navHeight && destinations.length > 1
                 ? GlassNavigationBar(
                     axis: Axis.vertical,
                     compact: true,
