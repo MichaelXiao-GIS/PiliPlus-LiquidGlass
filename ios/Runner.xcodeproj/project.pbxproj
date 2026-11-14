@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		C8E4BA112FCB1A0000C0D3E1 /* LiquidGlassPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8E4BA102FCB1A0000C0D3E1 /* LiquidGlassPlugin.swift */; };
+		C8E4BA212FCB1A0000C0D3E1 /* SystemTabHost.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8E4BA202FCB1A0000C0D3E1 /* SystemTabHost.swift */; };
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
 		2431C9E3151C7449D0D1C0F4 /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 63F2789C7C1DF3CD2B80A936 /* Pods_Runner.framework */; };
 		3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */; };
@@ -34,6 +35,7 @@
 
 /* Begin PBXFileReference section */
 		C8E4BA102FCB1A0000C0D3E1 /* LiquidGlassPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiquidGlassPlugin.swift; sourceTree = "<group>"; };
+		C8E4BA202FCB1A0000C0D3E1 /* SystemTabHost.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemTabHost.swift; sourceTree = "<group>"; };
 		1498D2321E8E86230040F4C2 /* GeneratedPluginRegistrant.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GeneratedPluginRegistrant.h; sourceTree = "<group>"; };
 		1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GeneratedPluginRegistrant.m; sourceTree = "<group>"; };
 		32E2926120A1A8DC0E629BC6 /* Pods-Runner.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.profile.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.profile.xcconfig"; sourceTree = "<group>"; };
@@ -118,6 +120,7 @@
 				A6C2F8E82FCB1A0000C0D3E1 /* SceneDelegate.swift */,
 				B7D3A9F02FCB1A0000C0D3E1 /* PipPlugin.swift */,
 				C8E4BA102FCB1A0000C0D3E1 /* LiquidGlassPlugin.swift */,
+				C8E4BA202FCB1A0000C0D3E1 /* SystemTabHost.swift */,
 				74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */,
 			);
 			path = Runner;
@@ -305,6 +308,7 @@
 				A6C2F8E92FCB1A0000C0D3E1 /* SceneDelegate.swift in Sources */,
 				B7D3A9F12FCB1A0000C0D3E1 /* PipPlugin.swift in Sources */,
 				C8E4BA112FCB1A0000C0D3E1 /* LiquidGlassPlugin.swift in Sources */,
+				C8E4BA212FCB1A0000C0D3E1 /* SystemTabHost.swift in Sources */,
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

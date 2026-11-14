@@ -27,6 +27,59 @@ DisplayFeature _fold(Rect bounds) => DisplayFeature(
 );
 
 void main() {
+  testWidgets(
+    'top system tabs clear root content once at the current window scale',
+    (tester) async {
+      final window = GlassWindowGeometry.fromMap(const {
+        'width': 1376,
+        'height': 1032,
+        'scale': 2,
+        'nativeTabTopInset': 84,
+      });
+      const data = MediaQueryData(
+        size: Size(688, 516),
+        devicePixelRatio: 4,
+        viewPadding: EdgeInsets.only(top: 12),
+        padding: EdgeInsets.only(top: 12),
+      );
+      Future<void> check(double inset, double expected) async {
+        await tester.pumpWidget(
+          MediaQuery(
+            data: data,
+            child: Center(
+              child: SizedBox.fromSize(
+                size: data.size,
+                child: GlassContentViewport(
+                  origin: Offset.zero,
+                  topTabInset: inset,
+                  child: Builder(
+                    builder: (context) {
+                      final viewport = MediaQuery.of(context);
+                      expect(viewport.viewPadding.top, expected);
+                      expect(viewport.padding.top, expected);
+                      expect(viewport.size, data.size);
+                      return const SizedBox();
+                    },
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      }
+
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = data.size;
+      addTearDown(tester.view.reset);
+      await check(window.topTabInsetOf(data), 42);
+      await check(8, 12);
+      await check(
+        window.topTabInsetOf(data.copyWith(size: const Size(516, 688))),
+        12,
+      );
+    },
+  );
+
   test('only a free control band below a verified right corner can expand', () {
     const size = Size(951, 669);
     const corner = DisplayFeature(

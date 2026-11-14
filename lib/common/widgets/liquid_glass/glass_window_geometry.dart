@@ -19,6 +19,7 @@ class GlassWindowGeometry {
     this.horizontalSizeClass = 0,
     this.verticalSizeClass = 0,
     this.safeArea = EdgeInsets.zero,
+    this.nativeTabTopInset = 0,
     this.features = const [],
     this.verticalBarEdge,
     this.statusBarFrame = Rect.zero,
@@ -32,6 +33,7 @@ class GlassWindowGeometry {
     return GlassWindowGeometry(
       size: Size(number(map['width']), number(map['height'])),
       scale: number(map['scale']),
+      nativeTabTopInset: number(map['nativeTabTopInset']),
       horizontalSizeClass: (map['horizontalSizeClass'] as num?)?.toInt() ?? 0,
       verticalSizeClass: (map['verticalSizeClass'] as num?)?.toInt() ?? 0,
       verticalBarEdge: map['verticalBarEdge'] as String?,
@@ -75,6 +77,7 @@ class GlassWindowGeometry {
   final int horizontalSizeClass;
   final int verticalSizeClass;
   final EdgeInsets safeArea;
+  final double nativeTabTopInset;
   final List<DisplayFeature> features;
 
   /// Physical edge, resolved by UIKit so RTL never moves the hardware bar.
@@ -176,6 +179,10 @@ class GlassWindowGeometry {
       size.height > 0 &&
       (size.width * _factor(data) - data.size.width).abs() < 2 &&
       (size.height * _factor(data) - data.size.height).abs() < 2;
+
+  /// Absolute bottom of UIKit's top tab region in this Flutter viewport.
+  double topTabInsetOf(MediaQueryData data) =>
+      matches(data) ? nativeTabTopInset * _factor(data) : 0;
 
   bool bottomNavigation(MediaQueryData data) {
     if (matches(data) && verticalBarEdge != null) {
@@ -321,9 +328,11 @@ class GlassContentViewport extends StatelessWidget {
   const GlassContentViewport({
     super.key,
     required this.origin,
+    this.topTabInset = 0,
     required this.child,
   });
   final Offset origin;
+  final double topTabInset;
   final Widget child;
 
   @override
@@ -340,21 +349,30 @@ class GlassContentViewport extends StatelessWidget {
           math.max(data.size.height, viewport.bottom),
         ),
       );
+      final local = source.removeDisplayFeatures(viewport);
+      final tabBottom = math.max(0.0, topTabInset - origin.dy);
       return MediaQuery(
-        data: source
-            .removeDisplayFeatures(viewport)
-            .copyWith(
-              size: viewport.size,
-              displayFeatures: [
-                for (final feature in data.displayFeatures)
-                  if (viewport.overlaps(feature.bounds))
-                    DisplayFeature(
-                      bounds: viewport.intersect(feature.bounds).shift(-origin),
-                      type: feature.type,
-                      state: feature.state,
-                    ),
-              ],
-            ),
+        data: local.copyWith(
+          size: viewport.size,
+          // UIKit may already reserve the same points. Only the main feed
+          // receives this additional obstruction; pushed detail pages use
+          // the ordinary window safe area.
+          viewPadding: local.viewPadding.copyWith(
+            top: math.max(local.viewPadding.top, tabBottom),
+          ),
+          padding: local.padding.copyWith(
+            top: math.max(local.padding.top, tabBottom - local.viewInsets.top),
+          ),
+          displayFeatures: [
+            for (final feature in data.displayFeatures)
+              if (viewport.overlaps(feature.bounds))
+                DisplayFeature(
+                  bounds: viewport.intersect(feature.bounds).shift(-origin),
+                  type: feature.type,
+                  state: feature.state,
+                ),
+          ],
+        ),
         child: child,
       );
     },

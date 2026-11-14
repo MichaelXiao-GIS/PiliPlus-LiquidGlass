@@ -5,7 +5,8 @@ import UIKit
 final class LiquidGlassPlugin: NSObject, FlutterPlugin {
   private let channel: FlutterMethodChannel
   private let geometry = GlassGeometryView()
-  private let hostProvider: () -> UIView?
+  private let hostProvider: () -> FlutterViewController?
+  private weak var nativeTabHost: SystemTabHost?
 
   static func register(with registrar: FlutterPluginRegistrar) {
     let channel = FlutterMethodChannel(
@@ -13,7 +14,7 @@ final class LiquidGlassPlugin: NSObject, FlutterPlugin {
     )
     // The implicit engine registers plugins before its view controller exists.
     let plugin = LiquidGlassPlugin(channel: channel) { [weak registrar] in
-      registrar?.viewController?.view
+      registrar?.viewController as? FlutterViewController
     }
     registrar.addMethodCallDelegate(plugin, channel: channel)
     registrar.register(
@@ -28,10 +29,11 @@ final class LiquidGlassPlugin: NSObject, FlutterPlugin {
     )
   }
 
-  private init(channel: FlutterMethodChannel, hostProvider: @escaping () -> UIView?) {
+  private init(channel: FlutterMethodChannel, hostProvider: @escaping () -> FlutterViewController?) {
     self.channel = channel
     self.hostProvider = hostProvider
     super.init()
+    geometry.topInset = { [weak self] in self?.nativeTabHost?.nativeTabTopInset ?? 0 }
     geometry.isUserInteractionEnabled = false
     geometry.accessibilityElementsHidden = true
     geometry.backgroundColor = .clear
@@ -57,7 +59,7 @@ final class LiquidGlassPlugin: NSObject, FlutterPlugin {
   deinit { NotificationCenter.default.removeObserver(self) }
 
   @objc private func attachGeometry() {
-    guard let host = hostProvider() else { return }
+    guard let host = hostProvider()?.view else { return }
     if geometry.superview !== host {
       geometry.frame = host.bounds
       geometry.autoresizingMask = [.flexibleWidth, .flexibleHeight]
@@ -70,6 +72,36 @@ final class LiquidGlassPlugin: NSObject, FlutterPlugin {
   }
 
   func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+    if call.method == "setNativeTabs" {
+      guard let args = call.arguments as? [String: Any] else {
+        result(false)
+        return
+      }
+      if let host = nativeTabHost {
+        result(host.configure(args))
+      } else if args["visible"] as? Bool == true,
+                let flutter = hostProvider(), let window = flutter.viewIfLoaded?.window,
+                window.rootViewController === flutter, flutter.presentedViewController == nil {
+        let host = SystemTabHost { [weak self] index in
+          self?.channel.invokeMethod("nativeTabSelected", arguments: index)
+        }
+        guard host.configure(args) else { result(false); return }
+        nativeTabHost = host
+        host.geometryChanged = { [weak self] in self?.geometry.setNeedsLayout() }
+        host.install(in: flutter)
+        result(true)
+      } else {
+        result(args["visible"] as? Bool != true)
+      }
+      return
+    }
+    if call.method == "nativeTabScroll" {
+      if let args = call.arguments as? [String: Any] {
+        nativeTabHost?.scrollMetrics(args)
+      }
+      result(nil)
+      return
+    }
     if call.method == "symbolImage" {
       let args = call.arguments as? [String: Any] ?? [:]
       let name = args["name"] as? String ?? "questionmark"
@@ -100,6 +132,7 @@ final class LiquidGlassPlugin: NSObject, FlutterPlugin {
     if #available(iOS 26.0, *) { nativeGlass = true } else { nativeGlass = false }
     result([
       "nativeGlass": nativeGlass,
+      "nativeTabs": true,
       "reduceTransparency": UIAccessibility.isReduceTransparencyEnabled,
       "reduceMotion": UIAccessibility.isReduceMotionEnabled,
       "window": geometry.snapshot(),
@@ -110,6 +143,7 @@ final class LiquidGlassPlugin: NSObject, FlutterPlugin {
 /// Uses the Flutter view's window, never a global screen or device model name.
 private final class GlassGeometryView: UIView {
   var onChange: (([String: Any]) -> Void)?
+  var topInset: (() -> CGFloat)?
   private var previous: NSDictionary?
 
   override init(frame: CGRect) {
@@ -156,6 +190,7 @@ private final class GlassGeometryView: UIView {
     var result: [String: Any] = [
       "width": bounds.width, "height": bounds.height,
       "scale": traitCollection.displayScale,
+      "nativeTabTopInset": topInset?() ?? 0,
       "horizontalSizeClass": traitCollection.horizontalSizeClass.rawValue,
       "verticalSizeClass": traitCollection.verticalSizeClass.rawValue,
       "safeArea": ["left": safeAreaInsets.left, "top": safeAreaInsets.top,

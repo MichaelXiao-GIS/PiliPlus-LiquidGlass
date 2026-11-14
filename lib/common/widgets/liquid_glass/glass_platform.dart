@@ -8,12 +8,17 @@ import 'package:PiliPlus/common/widgets/liquid_glass/glass_window_geometry.dart'
 class GlassCapabilities {
   const GlassCapabilities({
     this.nativeGlass = false,
+    this.nativeTabs = false,
     this.reduceTransparency = false,
     this.reduceMotion = false,
     this.window = const GlassWindowGeometry(),
   });
 
   final bool nativeGlass;
+  final bool nativeTabs;
+
+  static const channel = MethodChannel('piliplus/liquid_glass');
+  static ValueChanged<int>? onNativeTabSelected;
   final bool reduceTransparency;
   final bool reduceMotion;
   final GlassWindowGeometry window;
@@ -45,7 +50,7 @@ class GlassPlatformScope extends StatefulWidget {
 
 class _GlassPlatformScopeState extends State<GlassPlatformScope>
     with WidgetsBindingObserver {
-  static const _channel = MethodChannel('piliplus/liquid_glass');
+  static const _channel = GlassCapabilities.channel;
   GlassCapabilities _value = const GlassCapabilities();
 
   @override
@@ -54,6 +59,9 @@ class _GlassPlatformScopeState extends State<GlassPlatformScope>
     if (GlassCapabilities.isIOS) {
       WidgetsBinding.instance.addObserver(this);
       _channel.setMethodCallHandler((call) async {
+        if (call.method == 'nativeTabSelected' && call.arguments is int) {
+          GlassCapabilities.onNativeTabSelected?.call(call.arguments as int);
+        }
         if (call.method == 'accessibilityChanged') await _refresh();
         if (call.method == 'layoutChanged' &&
             call.arguments is Map &&
@@ -61,6 +69,7 @@ class _GlassPlatformScopeState extends State<GlassPlatformScope>
           setState(
             () => _value = GlassCapabilities(
               nativeGlass: _value.nativeGlass,
+              nativeTabs: _value.nativeTabs,
               reduceTransparency: _value.reduceTransparency,
               reduceMotion: _value.reduceMotion,
               window: GlassWindowGeometry.fromMap(call.arguments as Map),
@@ -81,6 +90,7 @@ class _GlassPlatformScopeState extends State<GlassPlatformScope>
       setState(() {
         _value = GlassCapabilities(
           nativeGlass: data['nativeGlass'] == true,
+          nativeTabs: data['nativeTabs'] == true,
           reduceTransparency: data['reduceTransparency'] == true,
           reduceMotion: data['reduceMotion'] == true,
           window: GlassWindowGeometry.fromMap(

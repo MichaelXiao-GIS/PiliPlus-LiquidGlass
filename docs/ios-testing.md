@@ -6,10 +6,10 @@
 
 从本仓库的 [Releases](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases) 选择最新测试版，下载名称以 `.ipa` 结尾的附件。
 
-当前版本为 [测试版 29](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases/tag/v2.2.0-liquid-glass.test29)：
+当前版本为 [测试版 30](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases/tag/v2.2.0-liquid-glass.test30)：
 
-- 应用版本 2.2.0，构建号 29。Duo 横屏直播间的弹幕发送栏可向右延伸，输入和表情操作更宽松。
-- 文件名：`PiliPlus-LiquidGlass-2.2.0-test29-ios-arm64.ipa`。
+- 应用版本 2.2.0，构建号 30。iOS 主导航改用系统标签栏。
+- 文件名：`PiliPlus-LiquidGlass-2.2.0-test30-ios-arm64.ipa`。
 - 真机 arm64 Release 构建，使用 iOS 27.2 SDK，最低支持 iOS 15。
 - 原生 Liquid Glass 在 iOS 26 及以上启用；旧系统使用兼容材质。
 - 安装包只有打包用的 ad-hoc 签名，没有 Apple 开发者证书及设备描述文件，安装前需要重新签名。
@@ -44,8 +44,8 @@ shasum -a 256 -c SHA256SUMS.txt
 
 ## 界面与使用
 
-- 首页上滑时搜索框收拢、顶区渐变模糊，悬浮底栏缩小为图标；回到顶部恢复展开。
-- 底栏和侧栏均支持水滴状滑动指示器，点击导航的原有行为保留。
+- iOS 26 及以上，向下浏览首页时，系统底栏收成当前标签的图标。向上浏览时，底栏重新展开。
+- 在 Duo 横屏侧栏上慢拖时，选框放大并显示标签名称，松开后切换页面。
 - iPhone Duo 按窗口、折叠区域和旋转方向调整布局；如需自动旋转，请在外观设置中开启“横屏适配”。
 - 全屏播放器保留 CC 字幕、倍速、画质和播放控制，其他操作集中在“更多”菜单。
 - iOS 页面过渡默认启用，原有动画选项仍可在外观设置中选择。

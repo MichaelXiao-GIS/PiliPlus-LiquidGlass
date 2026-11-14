@@ -18,14 +18,14 @@ This repository focuses on iPhone test builds, including window, safe-area and r
 
 This fork is based on [PiliPlus 2.2.0.2](https://github.com/bggRGjQaUbCoE/PiliPlus/releases/tag/2.2.0.2). That release updated the episode picker and the download option for anime. It also fixed an issue that prevented some videos from showing all comments.
 
-On iPhone Duo, the chat bar is wider when watching a live stream in landscape. The text and emoji buttons are easier to tap.
+The iOS app uses the system tab bar. On Home, the bottom bar collapses and expands as you scroll. In landscape on iPhone Duo, dragging through the side tabs enlarges the selection and reveals their names.
 
 ## Changes in this fork
 
 | Area | Experience |
 | --- | --- |
 | Home and search | A transparent header gains a soft blur while scrolling. The search field narrows and moves upward along a continuous arc, then expands at the top. Category tabs remain distinct. |
-| Glass navigation | A centered floating tab bar hides its labels while scrolling. Both the bottom bar and sidebar support a droplet-shaped indicator that follows a sliding gesture. |
+| Glass navigation | iOS 26 and later use the system glass tab bar. Home, Activity, and Profile keep their scroll positions when you switch tabs. |
 | Landscape and Duo | Navigation adapts to the window, fold regions and camera position, reducing unused strips and content occlusion. |
 | Video player | Separate title, shortcut and centered progress controls retain CC subtitles, speed and quality controls. The More menu groups secondary actions. |
 | Settings and transitions | Grouped settings, light and dark themes, and iOS page transitions by default. Existing animation choices, text scaling and system accessibility preferences are retained. |
@@ -34,7 +34,9 @@ Video, anime, live streams, feeds, comments, favorites, history and offline cach
 
 ## Current interface
 
-Simulator screenshots from test build 28.
+Simulator screenshots from test build 30.
+
+[View the system selection while dragging a Duo side tab](assets/screenshots/liquid_glass/duo-tab-drag-test30.jpg).
 
 <table>
   <tr>
@@ -42,8 +44,8 @@ Simulator screenshots from test build 28.
     <th>iPhone Duo · Unfolded landscape</th>
   </tr>
   <tr>
-    <td><a href="assets/screenshots/liquid_glass/ipad-landscape-test28.jpg"><img src="assets/screenshots/liquid_glass/ipad-landscape-test28.jpg" width="420" alt="Home recommendations with four videos per row" /></a></td>
-    <td><a href="assets/screenshots/liquid_glass/duo-landscape-test28.jpg"><img src="assets/screenshots/liquid_glass/duo-landscape-test28.jpg" width="420" alt="Home recommendations with three videos per row" /></a></td>
+    <td><a href="assets/screenshots/liquid_glass/ipad-landscape-test30.jpg"><img src="assets/screenshots/liquid_glass/ipad-landscape-test30.jpg" width="420" alt="Home recommendations with four videos per row" /></a></td>
+    <td><a href="assets/screenshots/liquid_glass/duo-landscape-test30.jpg"><img src="assets/screenshots/liquid_glass/duo-landscape-test30.jpg" width="420" alt="Home recommendations with three videos per row" /></a></td>
   </tr>
 </table>
 
@@ -54,15 +56,15 @@ Simulator screenshots from test build 28.
     <th>iPhone · Settings</th>
   </tr>
   <tr>
-    <td><a href="assets/screenshots/liquid_glass/home-expanded-test28.jpg"><img src="assets/screenshots/liquid_glass/home-expanded-test28.jpg" width="280" alt="Expanded search field at the top of Home" /></a></td>
-    <td><a href="assets/screenshots/liquid_glass/home-scrolled-test28.jpg"><img src="assets/screenshots/liquid_glass/home-scrolled-test28.jpg" width="280" alt="Compact search field and bottom bar after scrolling the feed" /></a></td>
-    <td><a href="assets/screenshots/liquid_glass/settings-test28.jpg"><img src="assets/screenshots/liquid_glass/settings-test28.jpg" width="280" alt="Grouped settings with monochrome icons" /></a></td>
+    <td><a href="assets/screenshots/liquid_glass/home-expanded-test30.jpg"><img src="assets/screenshots/liquid_glass/home-expanded-test30.jpg" width="280" alt="Expanded search field at the top of Home" /></a></td>
+    <td><a href="assets/screenshots/liquid_glass/home-scrolled-test30.jpg"><img src="assets/screenshots/liquid_glass/home-scrolled-test30.jpg" width="280" alt="Compact search field and bottom bar after scrolling the feed" /></a></td>
+    <td><a href="assets/screenshots/liquid_glass/settings-test30.jpg"><img src="assets/screenshots/liquid_glass/settings-test30.jpg" width="280" alt="Grouped settings with monochrome icons" /></a></td>
   </tr>
 </table>
 
 ## Download and install
 
-Get the IPA from this repository's [Releases](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases). The current version is [PiliPlus Liquid Glass test build 29](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases/tag/v2.2.0-liquid-glass.test29), app version 2.2.0, build 29. This build includes upstream 2.2.0.2 and preserves the integration of [upstream PiliPlus 2.2.0](https://github.com/bggRGjQaUbCoE/PiliPlus/releases/tag/2.2.0), including episode/PV switching, subscription ordering, folded comments, recommendation filtering and download improvements. Check Releases for subsequent updates.
+Get the IPA from this repository's [Releases](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases). The current version is [PiliPlus Liquid Glass test build 30](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases/tag/v2.2.0-liquid-glass.test30), app version 2.2.0, build 30. This build includes upstream 2.2.0.2 and preserves the integration of [upstream PiliPlus 2.2.0](https://github.com/bggRGjQaUbCoE/PiliPlus/releases/tag/2.2.0), including episode/PV switching, subscription ordering, folded comments, recommendation filtering and download improvements. Check Releases for subsequent updates.
 
 - **Package:** an arm64 Release build for iPhone, requiring iOS 15 or later.
 - **Glass effects:** native Liquid Glass on iOS 26 and later, with a compatible material on older systems.

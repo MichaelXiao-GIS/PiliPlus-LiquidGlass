@@ -11,6 +11,7 @@ import 'package:PiliPlus/common/widgets/liquid_glass/glass_platform.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_scroll_chrome.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_status_bar_scroll_to_top.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_window_geometry.dart';
+import 'package:PiliPlus/common/widgets/liquid_glass/native_main_tabs.dart';
 import 'package:PiliPlus/common/widgets/route_aware_mixin.dart';
 import 'package:PiliPlus/models/common/nav_bar_config.dart';
 import 'package:PiliPlus/pages/home/view.dart';
@@ -26,6 +27,7 @@ import 'package:PiliPlus/utils/mobile_observer.dart';
 import 'package:PiliPlus/utils/platform_utils.dart';
 import 'package:PiliPlus/utils/storage.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:get/get.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:nativeapi/nativeapi.dart' as nativeapi;
@@ -43,6 +45,7 @@ class _MainAppState extends PopScopeState<MainApp>
   late EdgeInsets _padding;
   late ColorScheme _colorScheme;
   Brightness? _brightness;
+  bool _nativeTabsInstalled = false;
 
   @override
   bool get initCanPop => false;
@@ -79,9 +82,21 @@ class _MainAppState extends PopScopeState<MainApp>
         );
       }
     }
+    _updateNavigationLayout();
+  }
+
+  bool get _systemVerticalEdge {
+    final window = GlassCapabilities.of(context).window;
+    return window.matches(MediaQuery.of(context)) &&
+        (window.verticalBarEdge == 'left' || window.verticalBarEdge == 'right');
+  }
+
+  void _updateNavigationLayout() {
     if (!_mainController.useSideBar) {
       _mainController.useBottomNav = GlassCapabilities.isIOS
-          ? GlassCapabilities.bottomNavigation(context)
+          ? (_nativeTabsInstalled && GlassCapabilities.of(context).nativeTabs
+                ? !_systemVerticalEdge
+                : GlassCapabilities.bottomNavigation(context))
           : MediaQuery.sizeOf(context).isPortrait;
     }
   }
@@ -396,11 +411,18 @@ class _MainAppState extends PopScopeState<MainApp>
       );
     }
 
+    final capabilities = GlassCapabilities.of(context);
+    final nativeTabs =
+        GlassCapabilities.isIOS &&
+        capabilities.nativeTabs &&
+        _mainController.navigationBars.length > 1 &&
+        (!_mainController.useSideBar || _systemVerticalEdge);
+    final showNativeTabs = nativeTabs && _nativeTabsInstalled;
     Widget? sideBar;
     Widget? bottomNav;
     final EdgeInsets padding;
     if (_mainController.useBottomNav) {
-      bottomNav = _bottomNav;
+      bottomNav = showNativeTabs ? null : _bottomNav;
       if (bottomNav != null) {
         bottomNav = MediaQuery.removePadding(
           context: context,
@@ -426,6 +448,7 @@ class _MainAppState extends PopScopeState<MainApp>
       if (GlassCapabilities.isIOS) {
         sideBar = Obx(
           () => GlassNavigationRail(
+            showDestinations: !showNativeTabs,
             actions: [
               userAvatar(
                 colorScheme: _colorScheme,
@@ -490,6 +513,11 @@ class _MainAppState extends PopScopeState<MainApp>
           padding: padding,
           child: GlassCapabilities.isIOS
               ? GlassContentViewport(
+                  topTabInset: showNativeTabs && _mainController.useBottomNav
+                      ? capabilities.window.topTabInsetOf(
+                          MediaQuery.of(context),
+                        )
+                      : 0,
                   origin: Offset(
                     padding.left,
                     padding.top,
@@ -502,6 +530,50 @@ class _MainAppState extends PopScopeState<MainApp>
     );
 
     if (GlassCapabilities.isIOS) {
+      child = Stack(
+        fit: StackFit.expand,
+        children: [
+          child,
+          Positioned(
+            width: 0,
+            height: 0,
+            child: Obx(() {
+              final index = _mainController.selectedIndex.value;
+              final types = _mainController.navigationBars;
+              final destinations = _iosDestinations;
+              return NativeMainTabs(
+                enabled: nativeTabs,
+                selectedIndex: index,
+                axis: _systemVerticalEdge ? Axis.vertical : Axis.horizontal,
+                tint: _colorScheme.primary.toARGB32(),
+                dark: _colorScheme.brightness == Brightness.dark,
+                destinations: [
+                  for (var i = 0; i < types.length; i++)
+                    {
+                      'id': types[i].name,
+                      'title': destinations[i].label,
+                      'symbol': destinations[i].symbol,
+                      'selectedSymbol': '${destinations[i].symbol}.fill',
+                      'badge': destinations[i].badge,
+                    },
+                ],
+                onSelected: _mainController.setIndex,
+                position: () =>
+                    _mainController.scrollChrome[types[index]]?.position,
+                modalOverlayVisible: SmartDialog.checkExist,
+                onInstalled: (installed) {
+                  if (mounted) {
+                    setState(() {
+                      _nativeTabsInstalled = installed;
+                      _updateNavigationLayout();
+                    });
+                  }
+                },
+              );
+            }),
+          ),
+        ],
+      );
       child = GlassStatusBarScrollToTop(
         position: () {
           if (_mainController.mainTabBarView &&
