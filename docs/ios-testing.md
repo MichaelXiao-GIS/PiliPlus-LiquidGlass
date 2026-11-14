@@ -6,10 +6,10 @@
 
 从本仓库的 [Releases](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases) 选择最新测试版，下载名称以 `.ipa` 结尾的附件。
 
-当前版本为 [测试版 31](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases/tag/v2.2.0-liquid-glass.test31)：
+当前版本为 [测试版 32](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases/tag/v2.2.0-liquid-glass.test32)：
 
-- 应用版本 2.2.0，构建号 31。iPhone Duo 侧栏合并头像入口，上下控件等宽，消息页顶栏支持半透明模糊。
-- 文件名：`PiliPlus-LiquidGlass-2.2.0-test31-ios-arm64.ipa`。
+- 应用版本 2.2.0，构建号 32。大屏横屏时，资料库标题和右上按钮向内收，标题略微缩小。
+- 文件名：`PiliPlus-LiquidGlass-2.2.0-test32-ios-arm64.ipa`。
 - 真机 arm64 Release 构建，使用 iOS 27.2 SDK，最低支持 iOS 15。
 - 原生 Liquid Glass 在 iOS 26 及以上启用；旧系统使用兼容材质。
 - 安装包只有打包用的 ad-hoc 签名，没有 Apple 开发者证书及设备描述文件，安装前需要重新签名。

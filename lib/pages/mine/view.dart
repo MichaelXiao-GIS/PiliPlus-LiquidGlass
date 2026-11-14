@@ -82,10 +82,28 @@ class _MediaPageState extends CommonPageState<MinePage>
   Widget build(BuildContext context) {
     super.build(context);
     final secondary = theme.colorScheme.secondary;
-    final header = Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: _buildHeaderActions,
+    final ios = GlassCapabilities.isIOS;
+    final size = MediaQuery.sizeOf(context);
+    final wideLandscape =
+        ios && size.width > size.height && size.shortestSide >= 600;
+    final titleSize = wideLandscape ? 32.0 : 34.0;
+    final headerPadding = EdgeInsets.only(
+      top: wideLandscape ? 18 : 10,
+      bottom: 10,
     );
+    final header = Padding(
+      padding: headerPadding,
+      child: _buildHeaderActions(
+        titleSize: titleSize,
+        horizontalInset: wideLandscape ? 28 : 16,
+      ),
+    );
+    final headerExtent =
+        (MediaQuery.textScalerOf(context).scale(titleSize) * 1.2).clamp(
+          48.0,
+          double.infinity,
+        ) +
+        headerPadding.vertical;
     final body = Material(
       key: _bodyKey,
       type: MaterialType.transparency,
@@ -118,26 +136,16 @@ class _MediaPageState extends CommonPageState<MinePage>
       ),
     );
     if (GlassScrollPage.enabled(context) && !widget.showBackBtn) {
-      final titleHeight = (MediaQuery.textScalerOf(context).scale(34) * 1.2)
-          .clamp(48.0, double.infinity);
       return GlassScrollPage(
         header: header,
-        headerExtent: titleHeight + 20,
+        headerExtent: headerExtent,
         body: body,
       );
     }
     return Column(
       children: [
-        if (GlassCapabilities.isIOS)
-          GlassControlBand(
-            height:
-                (MediaQuery.textScalerOf(context).scale(34) * 1.2).clamp(
-                  48.0,
-                  double.infinity,
-                ) +
-                20,
-            child: header,
-          )
+        if (ios)
+          GlassControlBand(height: headerExtent, child: header)
         else
           header,
         Expanded(child: body),
@@ -179,20 +187,23 @@ class _MediaPageState extends CommonPageState<MinePage>
     );
   }
 
-  Widget get _buildHeaderActions {
+  Widget _buildHeaderActions({
+    required double titleSize,
+    required double horizontalInset,
+  }) {
     if (GlassCapabilities.isIOS) {
       return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: EdgeInsets.symmetric(horizontal: horizontalInset),
         child: Row(
           children: [
             if (widget.showBackBtn) const BackButton(),
             Expanded(
               child: Semantics(
                 header: true,
-                child: const Text(
+                child: Text(
                   '资料库',
                   style: TextStyle(
-                    fontSize: 34,
+                    fontSize: titleSize,
                     height: 1.2,
                     fontWeight: FontWeight.w700,
                     letterSpacing: -0.8,

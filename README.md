@@ -18,7 +18,7 @@
 
 本项目基于 [PiliPlus 2.2.0.2](https://github.com/bggRGjQaUbCoE/PiliPlus/releases/tag/2.2.0.2)。上游改进了视频选集和番剧下载入口，修复了部分视频评论加载不全的问题。
 
-iPhone Duo 侧栏下方的“我的”会显示登录头像，上方的消息和搜索与下栏对齐。浏览消息列表时，内容会透过顶栏柔和模糊。
+iPhone Duo 侧栏下方的“我的”会显示登录头像，上方的消息和搜索与下栏对齐。大屏横屏时，资料库标题和右上按钮离边缘更远。[查看效果](assets/screenshots/liquid_glass/library-landscape-test32.jpg)
 
 ## 本分支的主要改动
 
@@ -70,7 +70,7 @@ iPhone Duo 侧栏下方的“我的”会显示登录头像，上方的消息和
 
 ## 下载与安装
 
-前往本仓库的 [Releases](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases) 下载 IPA。当前版本为 [PiliPlus Liquid Glass 测试版 31](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases/tag/v2.2.0-liquid-glass.test31)（应用版本 2.2.0，构建号 31）。后续更新以 Releases 为准。
+前往本仓库的 [Releases](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases) 下载 IPA。当前版本为 [PiliPlus Liquid Glass 测试版 32](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases/tag/v2.2.0-liquid-glass.test32)（应用版本 2.2.0，构建号 32）。后续更新以 Releases 为准。
 
 - **安装包**：iPhone arm64 Release，最低支持 iOS 15。
 - **玻璃效果**：iOS 26 及以上使用原生 Liquid Glass；较旧系统使用兼容材质。
