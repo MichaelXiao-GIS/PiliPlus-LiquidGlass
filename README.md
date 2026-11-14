@@ -2,7 +2,7 @@
   <img src="assets/images/logo/logo.png" width="96" height="96" alt="PiliPlus 标志" />
   <h1>PiliPlus Liquid Glass</h1>
   <p>基于 PiliPlus 的 iOS 界面改造分支</p>
-  <p>原生玻璃质感 · 随滚动收拢的导航 · iPhone 与 iPhone Duo 布局适配</p>
+  <p>原生玻璃质感 · iPad 与 iPhone Duo 布局适配</p>
 
 中文 · [English](README.en.md)
 
