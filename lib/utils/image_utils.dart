@@ -210,6 +210,40 @@ abstract final class ImageUtils {
     r'(@(\d+[a-z]_?)*)(\..*)?$',
     caseSensitive: false,
   );
+
+  static final _feedImage = RegExp(
+    r'^https://i[0-2]\.hdslb\.com/bfs/(?:archive|new_dyn|album)/[\w-]+\.(?:jpe?g|png)$',
+    caseSensitive: false,
+  );
+
+  /// Request only the pixels that a video card or a grid preview will display.
+  static String feedThumbnailUrl(
+    String src, {
+    required int pixelWidth,
+    required double aspectRatio,
+    required bool centerCrop,
+    int minQuality = 1,
+  }) {
+    final url = src.http2https;
+    // Resizing a signed URL would invalidate it. Full-size callers opt out.
+    if (minQuality == 100 || url.contains('?') || url.contains('#')) return url;
+    if (!_feedImage.hasMatch(url) ||
+        pixelWidth <= 0 ||
+        pixelWidth > 4096 ||
+        aspectRatio <= 0 ||
+        !aspectRatio.isFinite) {
+      return thumbnailUrl(url, minQuality);
+    }
+    // Nearby window sizes share a disk-cache entry during iPad resizing.
+    final width = ((pixelWidth + 63) ~/ 64) * 64;
+    final height = width / aspectRatio;
+    if (centerCrop && (height < 1 || height > 4096)) {
+      return thumbnailUrl(url, minQuality);
+    }
+    final size = centerCrop ? '${width}w_${height.round()}h_1c' : '${width}w';
+    return thumbnailUrl('$url@$size', minQuality);
+  }
+
   static String thumbnailUrl(String? src, [int maxQuality = 1]) {
     if (src != null && maxQuality != 100) {
       maxQuality = math.max(maxQuality, GlobalData().imgQuality);

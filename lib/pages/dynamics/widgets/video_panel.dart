@@ -51,6 +51,7 @@ Widget videoSeasonWidget(
             children: [
               LayoutBuilder(
                 builder: (context, constraints) => NetworkImgLayer(
+                  feedThumbnail: true,
                   width: constraints.maxWidth,
                   height: constraints.maxWidth / Style.aspectRatio,
                   src: cover,

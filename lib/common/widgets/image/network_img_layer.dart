@@ -22,6 +22,7 @@ class NetworkImgLayer extends StatelessWidget {
     this.fit = .cover,
     this.alignment = .center,
     this.cacheWidth,
+    this.feedThumbnail = false,
   });
 
   final String? src;
@@ -36,6 +37,7 @@ class NetworkImgLayer extends StatelessWidget {
   final BoxFit fit;
   final Alignment alignment;
   final bool? cacheWidth;
+  final bool feedThumbnail;
 
   static Color? reduceLuxColor = Pref.reduceLuxColor;
   static bool reduce = false;
@@ -63,6 +65,7 @@ class NetworkImgLayer extends StatelessWidget {
     BuildContext context, {
     required bool isEmote,
     required bool isAvatar,
+    bool allowSizing = true,
   }) {
     int? memCacheWidth, memCacheHeight;
     if (cacheWidth ?? width <= height) {
@@ -70,9 +73,19 @@ class NetworkImgLayer extends StatelessWidget {
     } else {
       memCacheHeight = height.cacheSize(context);
     }
+    final sized = feedThumbnail && allowSizing;
+    final imageUrl = sized
+        ? ImageUtils.feedThumbnailUrl(
+            src!,
+            pixelWidth: width.cacheSize(context) ?? 0,
+            aspectRatio: width / height,
+            centerCrop: alignment == Alignment.center,
+            minQuality: quality,
+          )
+        : ImageUtils.thumbnailUrl(src, quality);
     return CachedNetworkImage(
       gaplessPlayback: true,
-      imageUrl: ImageUtils.thumbnailUrl(src, quality),
+      imageUrl: imageUrl,
       width: width,
       height: height,
       memCacheWidth: memCacheWidth,
@@ -85,8 +98,21 @@ class NetworkImgLayer extends StatelessWidget {
       placeholder: (_, _) =>
           getPlaceHolder?.call() ??
           _placeholder(context, isEmote: isEmote, isAvatar: isAvatar),
-      errorBuilder: (_, _, _) =>
-          _placeholder(context, isEmote: isEmote, isAvatar: isAvatar),
+      errorBuilder: (_, _, _) {
+        // A previous build may have only the original size cached offline.
+        if (sized &&
+            !imageUrl.contains('?') &&
+            !imageUrl.contains('#') &&
+            imageUrl != ImageUtils.thumbnailUrl(src, quality)) {
+          return _buildImage(
+            context,
+            isEmote: isEmote,
+            isAvatar: isAvatar,
+            allowSizing: false,
+          );
+        }
+        return _placeholder(context, isEmote: isEmote, isAvatar: isAvatar);
+      },
       colorBlendMode: reduce ? BlendMode.modulate : null,
       color: reduce ? reduceLuxColor : null,
     );

@@ -237,6 +237,7 @@ class ImageGridView extends StatelessWidget {
               children: [
                 NetworkImgLayer(
                   src: item.url,
+                  feedThumbnail: true,
                   width: width,
                   height: height,
                   borderRadius: borderRadius,
