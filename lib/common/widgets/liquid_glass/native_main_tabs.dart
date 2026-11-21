@@ -62,6 +62,9 @@ class _NativeMainTabsState extends State<NativeMainTabs>
   ModalRoute<dynamic>? _route;
   double _scale = 1;
   bool _configured = false;
+  bool _configuring = false;
+  bool _scrollInFlight = false;
+  (String, (double, double, double))? _pendingScroll;
   Timer? _retry;
   int _attempt = 0;
   bool _visible = false;
@@ -138,9 +141,11 @@ class _NativeMainTabsState extends State<NativeMainTabs>
       _visible = visible;
       _dirty = false;
       _lastScroll = null;
+      _pendingScroll = null;
+      _configuring = true;
       unawaited(_configure(++_revision, visible));
     }
-    if (!visible || !_configured) return;
+    if (!visible || !_configured || _configuring) return;
     final position = widget.position();
     final (double, double, double) metrics;
     if (position != null &&
@@ -164,13 +169,18 @@ class _NativeMainTabsState extends State<NativeMainTabs>
     _lastScroll = metrics;
     final destinationId =
         widget.destinations[widget.selectedIndex]['id'] as String;
-    unawaited(_scroll(destinationId, metrics));
+    // Keep the latest displayed position if the platform channel falls behind.
+    // Replaying queued intermediate frames makes native chrome lag the feed.
+    _pendingScroll = (destinationId, metrics);
+    if (!_scrollInFlight) unawaited(_flushScroll());
   }
 
-  Future<void> _scroll(
-    String destinationId,
-    (double, double, double) metrics,
-  ) async {
+  Future<void> _flushScroll() async {
+    final pending = _pendingScroll;
+    if (pending == null) return;
+    _pendingScroll = null;
+    _scrollInFlight = true;
+    final (destinationId, metrics) = pending;
     try {
       await GlassCapabilities.channel.invokeMethod<void>('nativeTabScroll', {
         'destinationId': destinationId,
@@ -182,6 +192,15 @@ class _NativeMainTabsState extends State<NativeMainTabs>
       // Scrolling in Flutter continues if the native controller was dismissed.
     } on MissingPluginException {
       // The host may already have been torn down.
+    } finally {
+      _scrollInFlight = false;
+      if (mounted &&
+          _visible &&
+          _configured &&
+          !_configuring &&
+          _pendingScroll != null) {
+        unawaited(_flushScroll());
+      }
     }
   }
 
@@ -219,6 +238,7 @@ class _NativeMainTabsState extends State<NativeMainTabs>
       // A host can lack this method even if it provides the glass material.
     }
     if (!mounted || revision != _revision) return;
+    _configuring = false;
     if (installed) {
       _resetRetries();
     } else if (visible && _attempt < 4 && _retry == null) {
@@ -234,11 +254,13 @@ class _NativeMainTabsState extends State<NativeMainTabs>
       _configured = active;
       widget.onInstalled(active);
     }
+    if (active && visible) WidgetsBinding.instance.ensureVisualUpdate();
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _pendingScroll = null;
     _resetRetries();
     if (GlassCapabilities.onNativeTabSelected == _select) {
       GlassCapabilities.onNativeTabSelected = null;

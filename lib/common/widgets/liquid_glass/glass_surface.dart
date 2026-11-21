@@ -111,7 +111,9 @@ class _NativeGlassSurfaceState extends State<_NativeGlassSurface> {
   @override
   void didUpdateWidget(covariant _NativeGlassSurface oldWidget) {
     super.didUpdateWidget(oldWidget);
-    _update();
+    if (widget.radius != oldWidget.radius || widget.dark != oldWidget.dark) {
+      _update();
+    }
   }
 
   Future<void> _update() async {

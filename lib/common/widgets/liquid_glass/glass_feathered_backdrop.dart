@@ -23,21 +23,25 @@ class GlassFeatheredBackdrop extends StatelessWidget {
   final double featherExtent;
   final double sigma;
   final double tintOpacity;
-  static const bands = 16;
+  // Each band samples the moving feed through a separate backdrop filter.
+  // Keep those samples within the short feather and blend the tint continuously.
+  static const bands = 4;
 
   Widget _filter(double opacity) => ClipRect(
     child: BackdropFilter(
       enabled: !opaque && blur > 0,
-      filter: ImageFilter.compose(
-        outer: ColorFilter.mode(
-          Colors.white.withValues(alpha: opacity),
-          BlendMode.modulate,
-        ),
-        inner: ImageFilter.blur(
-          sigmaX: sigma * blur * opacity,
-          sigmaY: sigma * blur * opacity,
-        ),
-      ),
+      filter: opacity == 1
+          ? ImageFilter.blur(sigmaX: sigma * blur, sigmaY: sigma * blur)
+          : ImageFilter.compose(
+              outer: ColorFilter.mode(
+                Colors.white.withValues(alpha: opacity),
+                BlendMode.modulate,
+              ),
+              inner: ImageFilter.blur(
+                sigmaX: sigma * blur * opacity,
+                sigmaY: sigma * blur * opacity,
+              ),
+            ),
       child: const SizedBox.expand(),
     ),
   );

@@ -7,22 +7,29 @@ import 'package:material_ui/material_ui.dart';
 /// not change the state: only returning near the top expands the navigation.
 class GlassScrollController extends ChangeNotifier {
   double _blur = 0;
-  bool _compact = false;
+  final _compact = ValueNotifier(false);
   ScrollPosition? Function()? _readPosition;
 
   double get blur => _blur;
-  bool get compact => _compact;
+  bool get compact => _compact.value;
+  Listenable get compactChanges => _compact;
 
   /// Only the selected, still-mounted vertical feed can answer a native tap.
   ScrollPosition? get position => _readPosition?.call();
 
   void update(double offset) {
     final blur = (offset / 64).clamp(0.0, 1.0);
-    final compact = _compact ? offset > 12 : offset >= 64;
-    if (blur == _blur && compact == _compact) return;
+    final compact = _compact.value ? offset > 12 : offset >= 64;
+    if (blur == _blur && compact == _compact.value) return;
     _blur = blur;
-    _compact = compact;
+    _compact.value = compact;
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _compact.dispose();
+    super.dispose();
   }
 }
 
@@ -50,9 +57,11 @@ class GlassScrollScope extends InheritedWidget {
       controller != oldWidget.controller || compact != oldWidget.compact;
 }
 
-/// The inset is part of the scroll content, so it scrolls away while the
-/// viewport itself continues behind the status bar and the pinned controls.
-class GlassScrollInsets extends InheritedWidget {
+enum GlassScrollInset { top, pinnedTop }
+
+/// The content inset stays stable while the height of a pinned header animates.
+
+class GlassScrollInsets extends InheritedModel<GlassScrollInset> {
   const GlassScrollInsets({
     super.key,
     required this.top,
@@ -64,17 +73,31 @@ class GlassScrollInsets extends InheritedWidget {
   final double pinnedTop;
 
   static double topOf(BuildContext context) =>
-      context.dependOnInheritedWidgetOfExactType<GlassScrollInsets>()?.top ?? 0;
+      InheritedModel.inheritFrom<GlassScrollInsets>(
+        context,
+        aspect: GlassScrollInset.top,
+      )?.top ??
+      0;
 
   static double pinnedTopOf(BuildContext context) =>
-      context
-          .dependOnInheritedWidgetOfExactType<GlassScrollInsets>()
-          ?.pinnedTop ??
+      InheritedModel.inheritFrom<GlassScrollInsets>(
+        context,
+        aspect: GlassScrollInset.pinnedTop,
+      )?.pinnedTop ??
       0;
 
   @override
   bool updateShouldNotify(GlassScrollInsets oldWidget) =>
       top != oldWidget.top || pinnedTop != oldWidget.pinnedTop;
+
+  @override
+  bool updateShouldNotifyDependent(
+    GlassScrollInsets oldWidget,
+    Set<GlassScrollInset> dependencies,
+  ) =>
+      (top != oldWidget.top && dependencies.contains(GlassScrollInset.top)) ||
+      (pinnedTop != oldWidget.pinnedTop &&
+          dependencies.contains(GlassScrollInset.pinnedTop));
 }
 
 class GlassScrollSpacer extends StatelessWidget {

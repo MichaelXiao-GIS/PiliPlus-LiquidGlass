@@ -158,8 +158,19 @@ class _HomePageState extends CommonPageState<HomePage>
       final tabsExtent = _homeController.tabs.length > 1
           ? GlassTabBar.heightOf(context)
           : 6.0;
+      final actions = Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          msgBadge(_mainController),
+          const SizedBox(width: 6),
+          userAvatar(
+            colorScheme: _colorScheme,
+            mainController: _mainController,
+          ),
+        ],
+      );
       return ListenableBuilder(
-        listenable: chrome,
+        listenable: chrome.compactChanges,
         child: pages,
         builder: (context, body) => IosHomeHeaderMotion(
           compact: chrome.compact,
@@ -179,17 +190,7 @@ class _HomePageState extends CommonPageState<HomePage>
                       ? {'hintText': _homeController.defaultSearch.value}
                       : null,
                 ),
-                actions: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    msgBadge(_mainController),
-                    const SizedBox(width: 6),
-                    userAvatar(
-                      colorScheme: _colorScheme,
-                      mainController: _mainController,
-                    ),
-                  ],
-                ),
+                actions: actions,
                 tabs: tabBar,
                 tabsExtent: tabsExtent,
               ),

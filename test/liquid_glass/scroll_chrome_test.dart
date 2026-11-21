@@ -44,6 +44,8 @@ void main() {
   test('top bounce stays expanded and small offset changes do not flicker', () {
     final chrome = GlassScrollController();
     addTearDown(chrome.dispose);
+    final changes = <bool>[];
+    chrome.compactChanges.addListener(() => changes.add(chrome.compact));
     for (final offset in [-90.0, 0.0, 40.0, 63.0]) {
       chrome.update(offset);
       expect(chrome.compact, isFalse);
@@ -58,6 +60,39 @@ void main() {
     expect(chrome.compact, isFalse);
     chrome.update(-40);
     expect(chrome.blur, 0);
+    expect(changes, [true, false]);
+  });
+
+  testWidgets('pinned header animation only rebuilds pinned inset readers', (
+    tester,
+  ) async {
+    var contentBuilds = 0;
+    var pinnedBuilds = 0;
+    final readers = Column(
+      children: [
+        Builder(
+          builder: (context) {
+            contentBuilds++;
+            return Text('content ${GlassScrollInsets.topOf(context)}');
+          },
+        ),
+        Builder(
+          builder: (context) {
+            pinnedBuilds++;
+            return Text('pinned ${GlassScrollInsets.pinnedTopOf(context)}');
+          },
+        ),
+      ],
+    );
+    Widget insets(double pinned) => Directionality(
+      textDirection: TextDirection.ltr,
+      child: GlassScrollInsets(top: 150, pinnedTop: pinned, child: readers),
+    );
+    await tester.pumpWidget(insets(150));
+    await tester.pumpWidget(insets(135));
+    expect(contentBuilds, 1);
+    expect(pinnedBuilds, 2);
+    expect(find.text('pinned 135.0'), findsOneWidget);
   });
 
   testWidgets('content scrolls behind the status area and navigation shrinks', (

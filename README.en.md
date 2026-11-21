@@ -18,7 +18,7 @@ This repository focuses on iPhone test builds, including window, safe-area and r
 
 This fork is based on [PiliPlus 2.2.0.2](https://github.com/bggRGjQaUbCoE/PiliPlus/releases/tag/2.2.0.2). That release updated the episode picker and the download option for anime. It also fixed an issue that prevented some videos from showing all comments.
 
-On iPhone, scrolling down the Home feed smoothly shrinks the bottom tab bar to 76% of its usual size. All icons stay visible and tappable. Scroll back up to expand the bar and see the labels again. [Watch the Simulator recording](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases/download/v2.2.0-liquid-glass.test35/home-scroll-test35.mp4)
+Build 36 reduces the work needed to draw the header as you scroll Home and Activity. On iPhone, scrolling down the Home feed smoothly shrinks the bottom tab bar to 76% of its usual size. All icons stay visible and tappable. Scroll back up to expand the bar and see the labels again. [Watch the Simulator recording](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases/download/v2.2.0-liquid-glass.test35/home-scroll-test35.mp4)
 
 ## Changes in this fork
 
@@ -70,7 +70,7 @@ The two iPhone Home screenshots show the tab bar in build 35. The Duo landscape 
 
 ## Download and install
 
-Download the IPA from [PiliPlus Liquid Glass test build 35](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases/tag/v2.2.0-liquid-glass.test35), app version 2.2.0, build 35.
+Download the IPA from [PiliPlus Liquid Glass test build 36](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases/tag/v2.2.0-liquid-glass.test36), app version 2.2.0, build 36.
 
 - **Package:** an arm64 Release build for iPhone, requiring iOS 15 or later.
 - **Glass effects:** native Liquid Glass on iOS 26 and later, with a compatible material on older systems.

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:PiliPlus/common/widgets/liquid_glass/glass_platform.dart';
 import 'package:PiliPlus/common/widgets/liquid_glass/native_main_tabs.dart';
 import 'package:flutter/services.dart';
@@ -5,6 +7,99 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
 void main() {
+  testWidgets(
+    'coalesces delayed scroll reports and drops covered feed updates',
+    (
+      tester,
+    ) async {
+      final messenger =
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+      final calls = <MethodCall>[];
+      final replies = <Completer<void>>[];
+      final installation = Completer<bool>();
+      var covered = false;
+      messenger.setMockMethodCallHandler(GlassCapabilities.channel, (
+        call,
+      ) async {
+        calls.add(call);
+        if (call.method == 'setNativeTabs') {
+          return installation.future;
+        }
+        final reply = Completer<void>();
+        replies.add(reply);
+        await reply.future;
+        return null;
+      });
+      addTearDown(() {
+        messenger.setMockMethodCallHandler(GlassCapabilities.channel, null);
+      });
+      final scroll = ScrollController();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Stack(
+            children: [
+              ListView(
+                controller: scroll,
+                children: const [SizedBox(height: 4000)],
+              ),
+              NativeMainTabs(
+                enabled: true,
+                destinations: const [
+                  {'id': 'home'},
+                ],
+                selectedIndex: 0,
+                axis: Axis.horizontal,
+                tint: 0xff000000,
+                dark: false,
+                onSelected: (_) {},
+                position: () => scroll.position,
+                modalOverlayVisible: () => covered,
+                onInstalled: (_) {},
+              ),
+            ],
+          ),
+        ),
+      );
+      scroll.jumpTo(100);
+      await tester.pump();
+      expect(replies, isEmpty);
+      installation.complete(true);
+      await tester.pump();
+      await tester.pump();
+      expect(replies, hasLength(1));
+      for (final offset in [200.0, 300.0, 400.0]) {
+        scroll.jumpTo(offset);
+        await tester.pump();
+      }
+      expect(replies, hasLength(1));
+      expect(
+        calls.where((call) => call.method == 'setNativeTabs'),
+        hasLength(1),
+      );
+      replies.first.complete();
+      await tester.pump();
+      expect(replies, hasLength(2));
+      expect(calls.last.arguments['offset'], 400.0);
+      scroll.jumpTo(500);
+      await tester.pump();
+      covered = true;
+      tester.binding.scheduleFrame();
+      await tester.pump();
+      replies.last.complete();
+      await tester.pump();
+      expect(replies, hasLength(2));
+      covered = false;
+      tester.binding.scheduleFrame();
+      await tester.pump();
+      await tester.pump();
+      expect(replies, hasLength(3));
+      expect(calls.last.arguments['offset'], 500.0);
+      replies.last.complete();
+      await tester.pumpWidget(const SizedBox());
+      scroll.dispose();
+    },
+  );
+
   testWidgets(
     'syncs selected feed metrics and excludes dialogs and local overlays',
     (tester) async {

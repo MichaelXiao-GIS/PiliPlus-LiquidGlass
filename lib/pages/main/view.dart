@@ -294,7 +294,7 @@ class _MainAppState extends PopScopeState<MainApp>
             final chrome = _mainController
                 .scrollChrome[_mainController.navigationBars[index]]!;
             return ListenableBuilder(
-              listenable: chrome,
+              listenable: chrome.compactChanges,
               builder: (context, _) => GlassNavigationBar(
                 selectedIndex: index,
                 onSelected: _mainController.setIndex,

@@ -8,6 +8,7 @@ final class SystemTabHost: UITabBarController, UITabBarControllerDelegate {
   private weak var flutter: FlutterViewController?
   private weak var observingPage: SystemTabPage?
   private var compactTabs = false
+  private var usesCompactBottomBar = false
   private var resizing = false
   private var semanticsObservation: NSKeyValueObservation?
   private(set) var nativeTabRailFrame: CGRect?
@@ -44,7 +45,7 @@ final class SystemTabHost: UITabBarController, UITabBarControllerDelegate {
     didMove(toParent: flutter)
     self.overlay = overlay
     self.flutter = flutter
-    connectScrollGesture()
+    if #available(iOS 26.0, *) { updateScrollPolicy() }
     // Flutter publishes its semantics container lazily and replaces it when
     // accessibility is enabled again. Preserve that container as element zero.
     semanticsObservation = flutter.view.observe(\.accessibilityElements, options: [.initial, .new]) {
@@ -75,6 +76,7 @@ final class SystemTabHost: UITabBarController, UITabBarControllerDelegate {
   override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
     super.viewWillTransition(to: size, with: coordinator)
     resizing = true
+    usesCompactBottomBar = false
     setCompact(false, animated: false)
     coordinator.animate(alongsideTransition: nil) { [weak self] _ in
       self?.resizing = false
@@ -93,6 +95,8 @@ final class SystemTabHost: UITabBarController, UITabBarControllerDelegate {
   @available(iOS 26.0, *)
   private func updateScrollPolicy() {
     let usesCompact = hasCompactBottomBar
+    // Placement changes with UIKit layout, not with each Flutter scroll sample.
+    usesCompactBottomBar = usesCompact
     let policy: UITabBarController.MinimizeBehavior = usesCompact ? .never : .onScrollDown
     if tabBarMinimizeBehavior != policy { tabBarMinimizeBehavior = policy }
     if !usesCompact { setCompact(false, animated: false) }
@@ -252,7 +256,7 @@ final class SystemTabHost: UITabBarController, UITabBarControllerDelegate {
     }
     if !visible { setCompact(false, animated: false) }
     overlay?.isHidden = !visible
-    connectScrollGesture()
+    if #available(iOS 26.0, *) { updateScrollPolicy() }
     includeSystemAccessibility()
     updateBarGeometry()
     return true
@@ -270,7 +274,7 @@ final class SystemTabHost: UITabBarController, UITabBarControllerDelegate {
   /// recognizer observes Flutter touches without cancelling their delivery.
   private func connectScrollGesture() {
     guard #available(iOS 26.0, *), let flutter, let overlay else { return }
-    let next = overlay.isHidden || hasCompactBottomBar ? nil : selectedViewController as? SystemTabPage
+    let next = overlay.isHidden || usesCompactBottomBar ? nil : selectedViewController as? SystemTabPage
     guard next !== observingPage else { return }
     observingPage?.observeGestures(in: nil)
     next?.observeGestures(in: flutter.view)
@@ -283,7 +287,7 @@ final class SystemTabHost: UITabBarController, UITabBarControllerDelegate {
           let offset = args["offset"] as? Double, let maximum = args["max"] as? Double,
           offset.isFinite, maximum.isFinite else { return }
     let reversed = page.trackDirection(offset: offset)
-    if hasCompactBottomBar {
+    if usesCompactBottomBar {
       setCompact(!page.prefersExpanded, animated: true)
       return
     }
@@ -405,8 +409,11 @@ private final class SystemTabPage: UIViewController {
   }
 
   func syncScrollView(offset: CGFloat, maximum: CGFloat) {
-    self.maximum = max(0, maximum)
-    updateContentSize()
+    let nextMaximum = max(0, maximum)
+    if self.maximum != nextMaximum {
+      self.maximum = nextMaximum
+      updateContentSize()
+    }
     let pan = scroll.panGestureRecognizer
     let enabled = pan.view !== scroll && self.maximum > 0
     if pan.isEnabled != enabled { pan.isEnabled = enabled }
