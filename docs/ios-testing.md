@@ -8,7 +8,7 @@
 
 当前版本为 [测试版 37](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases/tag/v2.2.0-liquid-glass.test37)：
 
-- 应用版本 2.2.0，构建号 37。首页封面和动态预览会按卡片大小取图。
+- 应用版本 2.2.0，构建号 37。首页封面和动态预览会按卡片大小取图，反复滑动时也不会逐条保留普通触摸记录。
 - iPhone 竖屏和 iPad 横屏测试的切页耗时、图片下载量和内存记录见发布附件。
 - 文件名：`PiliPlus-LiquidGlass-2.2.0-test37-ios-arm64.ipa`。
 - 真机 arm64 Release 构建，使用 iOS 27.2 SDK，最低支持 iOS 15。

@@ -142,6 +142,7 @@ switch ($platform.ToLower()) {
         git reset --hard HEAD
     }
     "ios" {
+        $patches += "lib/scripts/ios_touch_metadata.patch"
         $patches += $ScrollViewPatch
         $patches += $BottomSheetIOSFlutterPatch
         $patches += $NavigatorPatch

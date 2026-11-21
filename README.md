@@ -18,7 +18,7 @@
 
 本项目基于 [PiliPlus 2.2.0.2](https://github.com/bggRGjQaUbCoE/PiliPlus/releases/tag/2.2.0.2)。上游改进了视频选集和番剧下载入口，修复了部分视频评论加载不全的问题。
 
-测试版 37 会按卡片大小加载首页封面和动态预览图，减少切换分类时需要下载的图片数据。在 iPhone 首页向下浏览时，底栏会平滑缩到原来的 76%，只显示图标。首页、动态和我的仍可直接点按，往回滑时底栏会展开，重新显示文字。[查看底栏动画](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases/download/v2.2.0-liquid-glass.test35/home-scroll-test35.mp4)
+测试版 37 会按卡片大小加载首页封面和动态预览图，减少切换分类时需要下载的图片数据，也修复了反复滑动后触摸记录占用内存的问题。在 iPhone 首页向下浏览时，底栏会平滑缩到原来的 76%，只显示图标。首页、动态和我的仍可直接点按，往回滑时底栏会展开，重新显示文字。[查看底栏动画](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases/download/v2.2.0-liquid-glass.test35/home-scroll-test35.mp4)
 
 ## 本分支的主要改动
 

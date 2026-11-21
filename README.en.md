@@ -18,7 +18,7 @@ This repository focuses on iPhone test builds, including window, safe-area and r
 
 This fork is based on [PiliPlus 2.2.0.2](https://github.com/bggRGjQaUbCoE/PiliPlus/releases/tag/2.2.0.2). That release updated the episode picker and the download option for anime. It also fixed an issue that prevented some videos from showing all comments.
 
-Build 37 loads Home covers and Activity previews at the size of the card, reducing image downloads when switching categories. On iPhone, scrolling down the Home feed smoothly shrinks the bottom tab bar to 76% of its usual size. All icons stay visible and tappable. Scroll back up to expand the bar and see the labels again. [Watch the Simulator recording](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases/download/v2.2.0-liquid-glass.test35/home-scroll-test35.mp4)
+Build 37 loads Home covers and Activity previews at the size of the card, reducing image downloads when switching categories. Repeated finger swipes also stop leaving old touch records in memory. On iPhone, scrolling down the Home feed smoothly shrinks the bottom tab bar to 76% of its usual size. All icons stay visible and tappable. Scroll back up to expand the bar and see the labels again. [Watch the Simulator recording](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases/download/v2.2.0-liquid-glass.test35/home-scroll-test35.mp4)
 
 ## Changes in this fork
 
