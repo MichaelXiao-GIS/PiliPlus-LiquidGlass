@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:math' as math;
 
-import 'package:PiliPlus/common/constants.dart';
 import 'package:PiliPlus/common/style.dart';
 import 'package:PiliPlus/common/widgets/badge.dart';
 import 'package:PiliPlus/common/widgets/emote_tooltip.dart';
@@ -9,11 +8,10 @@ import 'package:PiliPlus/common/widgets/gesture/tap_gesture_recognizer.dart';
 import 'package:PiliPlus/common/widgets/image/network_img_layer.dart';
 import 'package:PiliPlus/common/widgets/image_viewer/hero.dart';
 import 'package:PiliPlus/common/widgets/selection_text.dart';
-import 'package:PiliPlus/grpc/bilibili/im/interfaces/v1.pb.dart'
-    show EmotionInfo;
 import 'package:PiliPlus/grpc/bilibili/im/type.pb.dart' show Msg, MsgType;
 import 'package:PiliPlus/http/search.dart';
 import 'package:PiliPlus/models/common/image_preview_type.dart';
+import 'package:PiliPlus/pages/whisper_detail/message_emotes.dart';
 import 'package:PiliPlus/utils/app_scheme.dart';
 import 'package:PiliPlus/utils/date_utils.dart';
 import 'package:PiliPlus/utils/duration_utils.dart';
@@ -34,14 +32,14 @@ class ChatItem extends StatelessWidget {
   const ChatItem({
     super.key,
     required this.item,
-    required this.eInfos,
+    required this.emotes,
     required this.onLongPress,
     required this.onSecondaryTapUp,
     required this.isOwner,
   });
 
   final Msg item;
-  final List<EmotionInfo>? eInfos;
+  final MessageEmotes emotes;
   final VoidCallback onLongPress;
   final GestureTapUpCallback? onSecondaryTapUp;
   final bool isOwner;
@@ -667,27 +665,15 @@ class ChatItem extends StatelessWidget {
   }) {
     final style = TextStyle(color: textColor, letterSpacing: 0.6, height: 1.5);
     final List<InlineSpan> children = [];
-    late final Map<String, Map> emojiMap = {};
-    final List<String> patterns = [Constants.urlRegex.pattern];
-    if (eInfos != null) {
-      for (final e in eInfos!) {
-        emojiMap[e.text] ??= {
-          'url': e.hasGifUrl() ? e.gifUrl : e.url,
-          'size': e.size * 22.0,
-        };
-      }
-      patterns.addAll(emojiMap.keys.map(RegExp.escape));
-    }
-    final regex = RegExp(patterns.join('|'));
     content['content'].splitMapJoin(
-      regex,
+      emotes.pattern,
       onMatch: (Match match) {
         final matchStr = match[0]!;
         if (matchStr.startsWith('[')) {
-          final emoji = emojiMap[matchStr];
+          final emoji = emotes[matchStr];
           if (emoji != null) {
-            final size = emoji['size'];
-            final url = emoji['url'];
+            final size = emoji.size * 22.0;
+            final url = emoji.hasGifUrl() ? emoji.gifUrl : emoji.url;
             children.add(
               WidgetSpan(
                 rawText: matchStr,

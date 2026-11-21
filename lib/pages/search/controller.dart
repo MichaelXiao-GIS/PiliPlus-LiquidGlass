@@ -6,6 +6,7 @@ import 'package:PiliPlus/http/search.dart';
 import 'package:PiliPlus/models/search/suggest.dart';
 import 'package:PiliPlus/models_new/search/search_rcmd/data.dart';
 import 'package:PiliPlus/models_new/search/search_trending/data.dart';
+import 'package:PiliPlus/pages/search/suggestion_request.dart';
 import 'package:PiliPlus/utils/app_scheme.dart';
 import 'package:PiliPlus/utils/extension/get_ext.dart';
 import 'package:PiliPlus/utils/extension/string_ext.dart';
@@ -79,8 +80,7 @@ class BaseSearchController extends GetxController {
   }
 }
 
-class SSearchController extends GetxController
-    with DebounceStreamMixin<String> {
+class SSearchController extends GetxController {
   SSearchController(this.tag);
   final String tag;
 
@@ -102,6 +102,15 @@ class SSearchController extends GetxController
   // suggestion
   bool get searchSuggestion => _baseCtr.searchSuggestion;
   late final RxList<SearchSuggestItem> searchSuggestList;
+
+  late final _suggestions = SuggestionRequest<LoadingState<SearchSuggestModel>>(
+    (term) => SearchHttp.searchSuggest(term: term),
+    (result) {
+      if (result case Success(:final response)) {
+        searchSuggestList.value = response.tag ?? [];
+      }
+    },
+  );
 
   // trending
   bool get enableTrending => _baseCtr.enableTrending;
@@ -125,9 +134,8 @@ class SSearchController extends GetxController
     }
 
     if (searchSuggestion) {
-      subInit();
       searchSuggestList = <SearchSuggestItem>[].obs;
-      if (text != null) onValueChanged(text);
+      if (text != null) _suggestions.update(text, immediate: true);
     }
 
     if (enableSearchRcmd) {
@@ -143,18 +151,18 @@ class SSearchController extends GetxController
   void onChange(String value) {
     validateUid();
     if (searchSuggestion) {
-      if (value.isEmpty) {
-        searchSuggestList.clear();
-      } else {
-        ctr!.add(value);
-      }
+      _suggestions.update(value);
+      if (value.isEmpty) searchSuggestList.clear();
     }
   }
 
   void onClear() {
     if (controller.value.text != '') {
       controller.clear();
-      if (searchSuggestion) searchSuggestList.clear();
+      if (searchSuggestion) {
+        _suggestions.cancel();
+        searchSuggestList.clear();
+      }
       searchFocusNode.requestFocus();
       showUidBtn.value = false;
     } else {
@@ -166,6 +174,7 @@ class SSearchController extends GetxController
   Future<void> submit() async {
     if (controller.text.isEmpty) {
       if (hintText.isNullOrEmpty) return;
+      if (searchSuggestion) _suggestions.cancel();
       controller.text = hintText!;
       validateUid();
     }
@@ -191,9 +200,10 @@ class SSearchController extends GetxController
       parameters: {'tag': tag, 'keyword': text},
       arguments: {'initIndex': initIndex, 'fromSearch': true},
     )?.then((val) {
+      if (isClosed) return;
       searchFocusNode.requestFocus();
-      if (val is bool && val) {
-        onValueChanged(text);
+      if (searchSuggestion && val == true) {
+        _suggestions.update(controller.text, immediate: true);
       }
     });
   }
@@ -206,18 +216,11 @@ class SSearchController extends GetxController
     controller.text = keyword;
     validateUid();
 
-    if (searchSuggestion && clearSuggest) searchSuggestList.clear();
-    submit();
-  }
-
-  @override
-  Future<void> onValueChanged(String value) async {
-    final res = await SearchHttp.searchSuggest(term: value);
-    if (res case Success(:final response)) {
-      if (response.tag?.isNotEmpty == true) {
-        searchSuggestList.value = response.tag!;
-      }
+    if (searchSuggestion) {
+      _suggestions.cancel();
+      if (clearSuggest) searchSuggestList.clear();
     }
+    submit();
   }
 
   void onLongSelect(String word) {
@@ -238,7 +241,7 @@ class SSearchController extends GetxController
 
   @override
   void onClose() {
-    subDispose();
+    if (searchSuggestion) _suggestions.cancel();
     searchFocusNode.dispose();
     controller.dispose();
     super.onClose();

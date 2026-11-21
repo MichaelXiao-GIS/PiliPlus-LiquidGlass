@@ -2,12 +2,13 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:PiliPlus/grpc/bilibili/im/interfaces/v1.pb.dart'
-    show EmotionInfo, RspSessionMsg;
+    show RspSessionMsg;
 import 'package:PiliPlus/grpc/bilibili/im/type.pb.dart' show Msg, MsgType;
 import 'package:PiliPlus/grpc/im.dart';
 import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/http/msg.dart';
 import 'package:PiliPlus/pages/common/common_list_controller.dart';
+import 'package:PiliPlus/pages/whisper_detail/message_emotes.dart';
 import 'package:PiliPlus/utils/accounts.dart';
 import 'package:PiliPlus/utils/extension/scroll_controller_ext.dart';
 import 'package:PiliPlus/utils/feed_back.dart';
@@ -28,7 +29,7 @@ class WhisperDetailController extends CommonListController<RspSessionMsg, Msg> {
   Int64? msgSeqno;
 
   //表情转换图片规则
-  List<EmotionInfo>? eInfos;
+  final emotes = MessageEmotes();
 
   @override
   void onInit() {
@@ -55,8 +56,7 @@ class WhisperDetailController extends CommonListController<RspSessionMsg, Msg> {
         ackSessionMsg(msgs.last.msgSeqno.toInt());
       }
       msgs.removeWhere((e) => e.msgType == MsgType.EN_MSG_TYPE_DRAW_BACK.value);
-      eInfos ??= <EmotionInfo>[];
-      eInfos!.addAll(response.response.eInfos);
+      emotes.addAll(response.response.eInfos);
     }
     return false;
   }
@@ -151,7 +151,7 @@ class WhisperDetailController extends CommonListController<RspSessionMsg, Msg> {
   @override
   Future<void> onRefresh() {
     msgSeqno = null;
-    eInfos = null;
+    emotes.clear();
     scrollController.jumpToTop();
     return super.onRefresh();
   }

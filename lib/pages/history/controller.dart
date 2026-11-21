@@ -39,7 +39,7 @@ class HistoryController
   @override
   void onInit() {
     super.onInit();
-    historyStatus();
+    if (type == null) historyStatus();
     queryData();
   }
 

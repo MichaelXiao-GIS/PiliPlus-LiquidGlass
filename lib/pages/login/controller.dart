@@ -23,31 +23,34 @@ import 'package:material_ui/material_ui.dart';
 
 class LoginPageController extends GetxController
     with GetSingleTickerProviderStateMixin {
+  late final codeInfo =
+      LoadingState<({String authCode, String url})>.loading().obs;
+
+  late final RxInt qrCodeLeftTime = 180.obs;
+  late final RxString statusQRCode = ''.obs;
+
+  Timer? qrCodeTimer;
+  bool _refreshingQrCode = false;
+  int _qrTabVersion = 0;
+  bool _qrTabSelected = false;
+
   final TextEditingController telTextController = TextEditingController();
   final TextEditingController usernameTextController = TextEditingController();
   final TextEditingController passwordTextController = TextEditingController();
   final TextEditingController smsCodeTextController = TextEditingController();
   final TextEditingController cookieTextController = TextEditingController();
 
-  late final codeInfo =
-      LoadingState<({String authCode, String url})>.loading().obs;
-
   late final TabController tabController;
 
   late final CaptchaDataModel captchaData = CaptchaDataModel();
-  late final RxInt qrCodeLeftTime = 180.obs;
-  late final RxString statusQRCode = ''.obs;
-
   late var selectedCountryCodeId = Login.dialPrefix.first;
   late String captchaKey = '';
   late final RxInt smsSendCooldown = 0.obs;
   late int smsSendTimestamp = 0;
 
   // 定时器
-  Timer? qrCodeTimer;
   Timer? smsSendCooldownTimer;
 
-  bool _isReq = false;
   bool _sendingSms = false;
 
   @override
@@ -59,10 +62,10 @@ class LoginPageController extends GetxController
 
   @override
   void onClose() {
+    _disposeQrLogin();
     tabController
       ..removeListener(_handleTabChange)
       ..dispose();
-    qrCodeTimer?.cancel();
     smsSendCooldownTimer?.cancel();
     telTextController.dispose();
     usernameTextController.dispose();
@@ -72,51 +75,84 @@ class LoginPageController extends GetxController
     super.onClose();
   }
 
-  Future<void> refreshQRCode() async {
-    final res = await LoginHttp.getHDcode();
-    if (res case Success(:final response)) {
-      qrCodeTimer?.cancel();
-      codeInfo.value = res;
-      qrCodeTimer = Timer.periodic(const Duration(milliseconds: 1000), (t) {
-        final left = 180 - t.tick;
-        if (left <= 0) {
-          t.cancel();
-          statusQRCode.value = '二维码已过期，请刷新';
-          qrCodeLeftTime.value = 0;
-          return;
-        }
-        qrCodeLeftTime.value = left;
-        if (_isReq || tabController.index != 2) return;
+  void _selectQrTab(bool selected) {
+    if (_qrTabSelected == selected) return;
+    _qrTabSelected = selected;
+    _qrTabVersion++;
+    if (selected && qrCodeTimer?.isActive != true) refreshQRCode();
+  }
 
-        _isReq = true;
-        LoginHttp.codePoll(response.authCode).then((value) async {
-          _isReq = false;
+  void _disposeQrLogin() {
+    _qrTabSelected = false;
+    _qrTabVersion++;
+    qrCodeTimer?.cancel();
+  }
+
+  Future<void> refreshQRCode() async {
+    if (!_qrTabSelected || _refreshingQrCode) return;
+    _refreshingQrCode = true;
+    qrCodeTimer?.cancel();
+    try {
+      final res = await fetchQrCode();
+      if (!_qrTabSelected) return;
+      codeInfo.value = res;
+      if (res case Success(:final response)) {
+        qrCodeLeftTime.value = 180;
+        statusQRCode.value = '';
+        var polling = false;
+        qrCodeTimer = Timer.periodic(const Duration(seconds: 1), (timer) async {
+          final left = 180 - timer.tick;
+          if (left <= 0) {
+            timer.cancel();
+            statusQRCode.value = '二维码已过期，请刷新';
+            qrCodeLeftTime.value = 0;
+            return;
+          }
+          qrCodeLeftTime.value = left;
+          if (polling || !_qrTabSelected) return;
+
+          final version = _qrTabVersion;
+          polling = true;
+          dynamic value;
+          try {
+            value = await pollQrCode(response.authCode);
+          } on DioException {
+            return;
+          } finally {
+            polling = false;
+          }
+          if (!timer.isActive || version != _qrTabVersion) return;
           if (value['status']) {
-            t.cancel();
+            timer.cancel();
             statusQRCode.value = '扫码成功';
             await setAccount(
               value['data'],
               value['data']['cookie_info']['cookies'],
             );
-            Get.back();
+            if (identical(qrCodeTimer, timer) && version == _qrTabVersion) {
+              Get.back();
+            }
           } else if (value['code'] == 86038) {
-            t.cancel();
+            timer.cancel();
             qrCodeLeftTime.value = 0;
           } else {
             statusQRCode.value = value['msg'];
           }
         });
-      });
+      }
+    } on DioException catch (e) {
+      if (_qrTabSelected) codeInfo.value = Error(e.message);
+    } finally {
+      _refreshingQrCode = false;
     }
   }
 
-  void _handleTabChange() {
-    if (tabController.index == 2) {
-      if (qrCodeTimer == null || !qrCodeTimer!.isActive) {
-        refreshQRCode();
-      }
-    }
-  }
+  Future<LoadingState<({String authCode, String url})>> fetchQrCode() =>
+      LoginHttp.getHDcode();
+
+  Future<dynamic> pollQrCode(String authCode) => LoginHttp.codePoll(authCode);
+
+  void _handleTabChange() => _selectQrTab(tabController.index == 2);
 
   // 申请极验验证码
   void getCaptcha(

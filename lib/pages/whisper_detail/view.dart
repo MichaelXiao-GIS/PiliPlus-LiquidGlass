@@ -172,7 +172,7 @@ class _WhisperDetailPageState
                       _whisperDetailController.account.mid;
                   return ChatItem(
                     item: item,
-                    eInfos: _whisperDetailController.eInfos,
+                    emotes: _whisperDetailController.emotes,
                     onLongPress: () => onLongPress(index, item, isOwner),
                     onSecondaryTapUp: PlatformUtils.isDesktop
                         ? (e) =>

@@ -53,7 +53,7 @@ class _HistoryPageState extends State<HistoryPage>
 
   @override
   void dispose() {
-    Get.delete<HistoryBaseController>();
+    if (widget.type == null) Get.delete<HistoryBaseController>();
     super.dispose();
   }
 

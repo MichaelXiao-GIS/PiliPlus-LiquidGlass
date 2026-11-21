@@ -9,6 +9,7 @@
 当前版本为 [测试版 36](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases/tag/v2.2.0-liquid-glass.test36)：
 
 - 应用版本 2.2.0，构建号 36。减少了首页和动态页滑动时重复绘制顶栏和更新底栏的开销。
+- 搜索建议会等输入稍停再请求。私信复用已加载的表情，观看记录切换分类时会复用暂停状态，离线缓存列表也能更快地整理大量条目。修复了离开扫码登录页后仍可能启动定时器的问题。
 - 文件名：`PiliPlus-LiquidGlass-2.2.0-test36-ios-arm64.ipa`。
 - 真机 arm64 Release 构建，使用 iOS 27.2 SDK，最低支持 iOS 15。
 - 原生 Liquid Glass 在 iOS 26 及以上启用；旧系统使用兼容材质。
