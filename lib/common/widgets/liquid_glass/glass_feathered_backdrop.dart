@@ -2,9 +2,6 @@ import 'dart:ui' show ImageFilter;
 
 import 'package:material_ui/material_ui.dart';
 
-/// Clip the backdrop directly: a ShaderMask isolates it from Flutter's content
-/// on Impeller. The narrow feather bands blend the real backdrop with gradually
-/// decreasing blur; the continuous tint gradient hides their tonal boundaries.
 class GlassFeatheredBackdrop extends StatelessWidget {
   const GlassFeatheredBackdrop({
     super.key,
@@ -23,64 +20,76 @@ class GlassFeatheredBackdrop extends StatelessWidget {
   final double featherExtent;
   final double sigma;
   final double tintOpacity;
-  // Each band samples the moving feed through a separate backdrop filter.
-  // Keep those samples within the short feather and blend the tint continuously.
-  static const bands = 4;
-
-  Widget _filter(double opacity) => ClipRect(
-    child: BackdropFilter(
-      enabled: !opaque && blur > 0,
-      filter: opacity == 1
-          ? ImageFilter.blur(sigmaX: sigma * blur, sigmaY: sigma * blur)
-          : ImageFilter.compose(
-              outer: ColorFilter.mode(
-                Colors.white.withValues(alpha: opacity),
-                BlendMode.modulate,
-              ),
-              inner: ImageFilter.blur(
-                sigmaX: sigma * blur * opacity,
-                sigmaY: sigma * blur * opacity,
-              ),
-            ),
-      child: const SizedBox.expand(),
-    ),
-  );
 
   @override
-  Widget build(BuildContext context) => Stack(
-    children: [
-      Positioned(
-        top: 0,
-        left: 0,
-        right: 0,
-        height: solidExtent,
-        child: _filter(1),
-      ),
-      if (!opaque && blur > 0)
-        for (var i = 0; i < bands; i++)
-          Positioned(
-            top: solidExtent + i * featherExtent / bands,
-            left: 0,
-            right: 0,
-            height: featherExtent / bands,
-            child: _filter(1 - (i + 0.5) / bands),
+  Widget build(BuildContext context) {
+    final enabled = !opaque && blur > 0;
+    final tint = color.withValues(alpha: opaque ? 1 : tintOpacity * blur);
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        ClipRect(
+          child: BackdropFilter(
+            enabled: enabled,
+            filter: ImageFilter.blur(
+              sigmaX: sigma * blur,
+              sigmaY: sigma * blur,
+            ),
+            child: CustomPaint(
+              painter: enabled
+                  ? _FeatherMask(solidExtent, featherExtent)
+                  : null,
+            ),
           ),
-      Positioned.fill(
-        child: DecoratedBox(
+        ),
+        DecoratedBox(
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [
-                color.withValues(alpha: opaque ? 1 : tintOpacity * blur),
-                color.withValues(alpha: opaque ? 1 : tintOpacity * blur),
-                color.withValues(alpha: 0),
-              ],
+              colors: [tint, tint, color.withValues(alpha: 0)],
               stops: [0, solidExtent / (solidExtent + featherExtent), 1],
             ),
           ),
         ),
-      ),
+      ],
+    );
+  }
+}
+
+class _FeatherMask extends CustomPainter {
+  const _FeatherMask(this.solidExtent, this.featherExtent);
+
+  final double solidExtent;
+  final double featherExtent;
+
+  static const _gradient = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [
+      Color(0xFFFFFFFF),
+      Color(0xD7FFFFFF),
+      Color(0x80FFFFFF),
+      Color(0x28FFFFFF),
+      Color(0x00FFFFFF),
     ],
   );
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final feather = Rect.fromLTWH(0, solidExtent, size.width, featherExtent);
+    // Paint inside the backdrop's own layer so the mask fades only the blurred
+    // copy. The original feed beneath it stays sharp as the mask clears.
+    canvas.drawRect(
+      feather,
+      Paint()
+        ..blendMode = BlendMode.dstIn
+        ..shader = _gradient.createShader(feather),
+    );
+  }
+
+  @override
+  bool shouldRepaint(_FeatherMask oldDelegate) =>
+      solidExtent != oldDelegate.solidExtent ||
+      featherExtent != oldDelegate.featherExtent;
 }
