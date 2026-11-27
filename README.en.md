@@ -18,7 +18,7 @@ This repository focuses on iPhone test builds, including window, safe-area and r
 
 This fork is based on [PiliPlus 2.2.0.2](https://github.com/bggRGjQaUbCoE/PiliPlus/releases/tag/2.2.0.2). That release updated the episode picker and the download option for anime. It also fixed an issue that prevented some videos from showing all comments.
 
-Build 38 smooths the fade below the headers on Home and Activity details. As a cover or text scrolls underneath, it gradually comes back into focus.
+Build 39 refines the headers on Home and Activity details. As content scrolls under a header, fine text softens first while colors and large shapes remain visible.
 
 ## Changes in this fork
 
@@ -70,7 +70,7 @@ The two iPhone Home screenshots show the tab bar in build 35. The Duo landscape 
 
 ## Download and install
 
-Download the IPA from [PiliPlus Liquid Glass test build 38](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases/tag/v2.2.0-liquid-glass.test38), app version 2.2.0, build 38.
+Download the IPA from [PiliPlus Liquid Glass test build 39](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases/tag/v2.2.0-liquid-glass.test39), app version 2.2.0, build 39.
 
 - **Package:** an arm64 Release build for iPhone, requiring iOS 15 or later.
 - **Glass effects:** native Liquid Glass on iOS 26 and later, with a compatible material on older systems.

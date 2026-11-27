@@ -25,21 +25,36 @@ class GlassFeatheredBackdrop extends StatelessWidget {
   Widget build(BuildContext context) {
     final enabled = !opaque && blur > 0;
     final tint = color.withValues(alpha: opaque ? 1 : tintOpacity * blur);
+    final radius = sigma * blur;
+    final broadFade = featherExtent * 0.78;
+    final fineFadeStart = featherExtent * 0.20;
     return Stack(
       fit: StackFit.expand,
       children: [
-        ClipRect(
-          child: BackdropFilter(
+        // Soften small strokes before the broad blur fades. Restrict the
+        // extra backdrop read to the transition strip below the solid area.
+        if (enabled)
+          Positioned(
+            left: 0,
+            right: 0,
+            top: solidExtent,
+            height: featherExtent,
+            child: _MaskedBlur(
+              radius: radius * 0.20,
+              fadeStart: fineFadeStart,
+              fadeExtent: featherExtent - fineFadeStart,
+            ),
+          ),
+        Positioned(
+          left: 0,
+          right: 0,
+          top: 0,
+          height: solidExtent + broadFade,
+          child: _MaskedBlur(
             enabled: enabled,
-            filter: ImageFilter.blur(
-              sigmaX: sigma * blur,
-              sigmaY: sigma * blur,
-            ),
-            child: CustomPaint(
-              painter: enabled
-                  ? _FeatherMask(solidExtent, featherExtent)
-                  : null,
-            ),
+            radius: radius,
+            fadeStart: solidExtent,
+            fadeExtent: broadFade,
           ),
         ),
         DecoratedBox(
@@ -55,6 +70,31 @@ class GlassFeatheredBackdrop extends StatelessWidget {
       ],
     );
   }
+}
+
+class _MaskedBlur extends StatelessWidget {
+  const _MaskedBlur({
+    this.enabled = true,
+    required this.radius,
+    required this.fadeStart,
+    required this.fadeExtent,
+  });
+
+  final bool enabled;
+  final double radius;
+  final double fadeStart;
+  final double fadeExtent;
+
+  @override
+  Widget build(BuildContext context) => ClipRect(
+    child: BackdropFilter(
+      enabled: enabled,
+      filter: ImageFilter.blur(sigmaX: radius, sigmaY: radius),
+      child: CustomPaint(
+        painter: enabled ? _FeatherMask(fadeStart, fadeExtent) : null,
+      ),
+    ),
+  );
 }
 
 class _FeatherMask extends CustomPainter {

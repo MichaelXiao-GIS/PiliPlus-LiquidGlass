@@ -18,7 +18,7 @@
 
 本项目基于 [PiliPlus 2.2.0.2](https://github.com/bggRGjQaUbCoE/PiliPlus/releases/tag/2.2.0.2)。上游改进了视频选集和番剧下载入口，修复了部分视频评论加载不全的问题。
 
-测试版 38 修复了首页和动态详情顶栏下方的横条。封面或文字滚到顶栏后，会从模糊平滑过渡到清晰。
+测试版 39 改进了首页和动态详情的顶栏。文字滚到顶栏下方时，笔画会先变模糊，封面的颜色和大轮廓仍然可见。
 
 ## 本分支的主要改动
 
@@ -70,7 +70,7 @@ iPhone 首页两张图展示测试版 35 的底栏。Duo 横屏截图来自测�
 
 ## 下载与安装
 
-前往本仓库的 [Releases](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases) 下载 IPA。当前版本为 [PiliPlus Liquid Glass 测试版 38](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases/tag/v2.2.0-liquid-glass.test38)（应用版本 2.2.0，构建号 38）。后续更新以 Releases 为准。
+前往本仓库的 [Releases](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases) 下载 IPA。当前版本为 [PiliPlus Liquid Glass 测试版 39](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases/tag/v2.2.0-liquid-glass.test39)（应用版本 2.2.0，构建号 39）。后续更新以 Releases 为准。
 
 - **安装包**：iPhone arm64 Release，最低支持 iOS 15。
 - **玻璃效果**：iOS 26 及以上使用原生 Liquid Glass；较旧系统使用兼容材质。
