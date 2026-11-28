@@ -14,7 +14,6 @@ import 'package:PiliPlus/pages/setting/widgets/multi_select_dialog.dart';
 import 'package:PiliPlus/pages/webdav/view.dart';
 import 'package:PiliPlus/utils/accounts.dart';
 import 'package:PiliPlus/utils/accounts/account.dart';
-import 'package:PiliPlus/utils/extension/size_ext.dart';
 import 'package:PiliPlus/utils/utils.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:get/get.dart';
@@ -107,14 +106,14 @@ class _SettingPageState extends State<SettingPage> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-
     theme = Theme.of(context);
-    final media = MediaQuery.of(context);
     // Duo's inner display can be regular while taller than it is wide. Keep
     // the two settings panes only when each has a useful amount of space.
     _isPortrait = GlassCapabilities.isIOS
-        ? media.size.width - media.viewPadding.horizontal < 600
-        : media.size.isPortrait;
+        ? MediaQuery.sizeOf(context).width -
+                  MediaQuery.viewPaddingOf(context).horizontal <
+              600
+        : MediaQuery.isPortraitOf(context);
   }
 
   @override

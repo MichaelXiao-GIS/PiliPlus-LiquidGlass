@@ -15,7 +15,6 @@ import 'package:PiliPlus/pages/home/widgets/ios_home_header_motion.dart';
 import 'package:PiliPlus/pages/main/controller.dart';
 import 'package:PiliPlus/pages/mine/controller.dart';
 import 'package:PiliPlus/utils/extension/get_ext.dart';
-import 'package:PiliPlus/utils/extension/size_ext.dart';
 import 'package:PiliPlus/utils/feed_back.dart';
 import 'package:get/get.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -134,7 +133,7 @@ class _HomePageState extends CommonPageState<HomePage>
         if (!_mainController.useSideBar &&
             (GlassCapabilities.isIOS
                 ? iosBottomNav
-                : MediaQuery.sizeOf(context).isPortrait))
+                : MediaQuery.isPortraitOf(context)))
           customAppBar(),
         tabBar,
       ],

@@ -33,7 +33,7 @@ PODS:
   - GT3Captcha-iOS (0.15.9)
   - image_cropper (0.0.5):
     - Flutter
-    - TOCropViewController (~> 3.1.2)
+    - TOCropViewController (~> 3.2.0)
   - image_picker_ios (0.0.1):
     - Flutter
   - live_photo_maker (0.0.3):
@@ -60,7 +60,7 @@ PODS:
   - shared_preferences_foundation (0.0.1):
     - Flutter
     - FlutterMacOS
-  - TOCropViewController (3.1.2)
+  - TOCropViewController (3.2.0)
   - url_launcher_ios (0.0.1):
     - Flutter
   - wakelock_plus (0.0.1):
@@ -171,8 +171,8 @@ SPEC CHECKSUMS:
   flutter_volume_controller: d9e7a54cb39415100a7cd558240faa1b8e8da6d4
   gt3_flutter_plugin: 37090e5fa66ff2a52939eb9d208fc36fa49d36e5
   GT3Captcha-iOS: aeb6fed2e8594099821430a89208679e5a55b740
-  image_cropper: fca51f94982730acae168c4b5d691e0f11aeb259
-  image_picker_ios: 9285ee31b06d6e15629dd5713b890f0c457a0a8b
+  image_cropper: cef56455944b9f4220f636635d477adc34072aa8
+  image_picker_ios: 872ad7b7cb44bf470e7324191b51ee0e26f45cb9
   live_photo_maker: 29280ca88323bd5a33aafd00d98624d5cf522176
   media_kit_libs_ios_video: 5a18affdb97d1f5d466dc79988b13eff6c5e2854
   media_kit_native_event_loop: 5fba1a849a6c87a34985f1e178a0de5bd444a0cf
@@ -185,10 +185,10 @@ SPEC CHECKSUMS:
   screen_brightness_ios: 212d950bb99c915eee971c884f4a6c87c92cd13d
   share_plus: eccd7beb7cea61271aeed1800e8ccb2b952c0c7f
   shared_preferences_foundation: a7c3904f2dedb3701dd1903cb152ef5e7df92422
-  TOCropViewController: a916930c465b5d9445a74d95e0c0da931771b4df
+  TOCropViewController: 38189148d7014abafbb2914112fd767262d22659
   url_launcher_ios: 7a95fa5b60cc718a708b8f2966718e93db0cef1b
   wakelock_plus: d4ca1e4e4bc9de42cb55d57b5bdc158af318e3c6
 
 PODFILE CHECKSUM: a9d0d1f65b2b442eb9f86352de863e6ec9d7c80f
 
-COCOAPODS: 1.16.2
+COCOAPODS: 1.17.0

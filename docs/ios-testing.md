@@ -6,10 +6,10 @@
 
 从本仓库的 [Releases](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases) 选择最新测试版，下载名称以 `.ipa` 结尾的附件。
 
-当前版本为 [测试版 39](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases/tag/v2.2.0-liquid-glass.test39)：
+当前版本为 [测试版 40](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases/tag/v2.2.1-liquid-glass.test40)：
 
-- 应用版本 2.2.0，构建号 39。滚动首页和动态详情时，顶栏下方的文字会逐渐失焦，封面的大轮廓仍然可见。
-- 文件名：`PiliPlus-LiquidGlass-2.2.0-test39-ios-arm64.ipa`。
+- 应用版本 2.2.1，构建号 40。支持直播粉丝勋章、动态全文、评论串和离线字幕更新。
+- 文件名：`PiliPlus-LiquidGlass-2.2.1-test40-ios-arm64.ipa`。
 - 真机 arm64 Release 构建，使用 iOS 27.2 SDK，最低支持 iOS 15。
 - 原生 Liquid Glass 在 iOS 26 及以上启用；旧系统使用兼容材质。
 - 安装包只有打包用的 ad-hoc 签名，没有 Apple 开发者证书及设备描述文件，安装前需要重新签名。

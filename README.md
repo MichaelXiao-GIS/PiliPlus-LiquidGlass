@@ -16,9 +16,9 @@
 
 本仓库重点维护 iPhone 测试版，并针对 iOS 27.1 与 iPhone Duo 的窗口、安全区和旋转布局进行适配。其他平台的源码继承自上游；本页展示和发布的 Liquid Glass 改动以 iOS 为主。
 
-本项目基于 [PiliPlus 2.2.0.2](https://github.com/bggRGjQaUbCoE/PiliPlus/releases/tag/2.2.0.2)。上游改进了视频选集和番剧下载入口，修复了部分视频评论加载不全的问题。
+本项目基于 [PiliPlus 2.2.1](https://github.com/bggRGjQaUbCoE/PiliPlus/releases/tag/2.2.1)。现在可以管理直播粉丝勋章、展开动态全文、按回复关系查看和保存评论串，还能给已缓存的视频补下字幕、分段和音量信息。
 
-测试版 39 改进了首页和动态详情的顶栏。文字滚到顶栏下方时，笔画会先变模糊，封面的颜色和大轮廓仍然可见。
+测试版 40 把粉丝勋章列表接入了 iOS 玻璃顶栏。在楼中楼评论里长按，也可以从原有菜单保存评论串。
 
 ## 本分支的主要改动
 
@@ -70,7 +70,7 @@ iPhone 首页两张图展示测试版 35 的底栏。Duo 横屏截图来自测�
 
 ## 下载与安装
 
-前往本仓库的 [Releases](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases) 下载 IPA。当前版本为 [PiliPlus Liquid Glass 测试版 39](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases/tag/v2.2.0-liquid-glass.test39)（应用版本 2.2.0，构建号 39）。后续更新以 Releases 为准。
+前往本仓库的 [Releases](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases) 下载 IPA。当前版本为 [PiliPlus Liquid Glass 测试版 40](https://github.com/MichaelXiao-GIS/PiliPlus-LiquidGlass/releases/tag/v2.2.1-liquid-glass.test40)（应用版本 2.2.1，构建号 40）。后续更新以 Releases 为准。
 
 - **安装包**：iPhone arm64 Release，最低支持 iOS 15。
 - **玻璃效果**：iOS 26 及以上使用原生 Liquid Glass；较旧系统使用兼容材质。

@@ -48,11 +48,12 @@ class BottomControl extends StatelessWidget {
       ..hoverDx = null
       ..position.value = milliseconds ~/ 1000
       ..onSeekEnd()
-      ..seekTo(Duration(milliseconds: milliseconds), isSeek: false);
+      ..seekTo(Duration(milliseconds: milliseconds));
   }
 
   void _onHover(double dx, int seconds) {
     if (animCtr.isAnimating) return;
+    if (controller.isSeeking.rawValue) return;
     controller
       ..hoverDx = dx
       ..seekPosition.value = seconds
@@ -60,12 +61,11 @@ class BottomControl extends StatelessWidget {
   }
 
   void _onExit() {
-    if (controller.isSeeking.value || controller.hoverDx == null) {
+    if (controller.isSeeking.rawValue || controller.hoverDx == null) {
       return;
     }
     controller
-      ..hoverDx = null
-      ..showPreview.value = false
+      ..hidePreview()
       ..hideTaskControls();
   }
 
@@ -138,8 +138,7 @@ class BottomControl extends StatelessWidget {
                         child: ViewPointSegmentProgressBar(
                           segments: videoDetailController.viewPointList,
                           onSeek: PlatformUtils.isDesktop
-                              ? (position) =>
-                                    controller.seekTo(position, isSeek: false)
+                              ? controller.seekTo
                               : null,
                         ),
                       ),
